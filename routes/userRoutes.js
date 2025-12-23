@@ -52,5 +52,6 @@ router.patch(
   [param("id").isString().notEmpty()],
   userController.toggleActive
 );
+router.put("/:userId/permissions", userController.updateUserPermissions);
 
 module.exports = router;

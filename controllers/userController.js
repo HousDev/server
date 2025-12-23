@@ -2,6 +2,7 @@
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
 const UserModel = require("../models/userModel");
+const { create, findByName } = require("../models/rolesModel");
 
 const scrub = (user) => {
   if (!user) return null;
@@ -65,6 +66,12 @@ async function createUser(req, res) {
       is_active,
       permissions,
     });
+
+    const existingRole = await findByName(role);
+
+    if (!existingRole) {
+      await create({ name: role, permissions });
+    }
 
     res.status(201).json(scrub(created));
   } catch (err) {
@@ -137,6 +144,28 @@ async function toggleActive(req, res) {
   }
 }
 
+const updateUserPermissions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { permissions } = req.body;
+    // console.log(userId, permissions);
+    if (!userId || !permissions) {
+      return res.status(400).json({ message: "All data fields required." });
+    }
+    const existing = await UserModel.findById(userId);
+    if (!existing) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    const user = await UserModel.updateUserPermissions(userId, permissions);
+    return res
+      .status(200)
+      .json({ message: "User Permissions Updated.", data: user });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error." });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -144,4 +173,5 @@ module.exports = {
   updateUser,
   deleteUser,
   toggleActive,
+  updateUserPermissions,
 };

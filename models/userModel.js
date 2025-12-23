@@ -137,6 +137,14 @@ async function toggleActive(id) {
   return findById(id);
 }
 
+async function updateUserPermissions(userId, permissions) {
+  await query("UPDATE users SET permissions = ? WHERE id = ?", [
+    permissions,
+    userId,
+  ]);
+  return findById(userId);
+}
+
 module.exports = {
   findAll,
   findById,
@@ -145,4 +153,5 @@ module.exports = {
   update,
   remove,
   toggleActive,
+  updateUserPermissions,
 };
