@@ -199,14 +199,25 @@
 // };
 
 // controllers/purchaseOrderController.js
-const { pool } = require("../config/db");
+const { pool, query } = require("../config/db");
 const poSeq = require("./poSequenceController");
 const poTracking = require("./poTrackingController"); // used to call createTrackingRecords if needed
+const {
+  updatePO,
+  findById,
+  deletePO,
+  updatePO_Status,
+  deletePOItems,
+} = require("../models/poModel");
 
 async function createPO(req, res) {
   const payload = req.body;
+
+  console.log("from create : ", payload);
   if (!payload || !payload.vendor_id || !Array.isArray(payload.items)) {
-    return res.status(400).json({ error: "vendor_id and items[] are required" });
+    return res
+      .status(400)
+      .json({ error: "vendor_id and items[] are required" });
   }
 
   // get next PO number using internal function
@@ -288,7 +299,9 @@ async function createPO(req, res) {
       parseFloat(payload.total_paid || 0),
       parseFloat(payload.balance_amount || 0),
 
-      payload.selected_terms_ids ? JSON.stringify(payload.selected_terms_ids) : JSON.stringify([]),
+      payload.selected_terms_ids
+        ? JSON.stringify(payload.selected_terms_ids)
+        : JSON.stringify([]),
       payload.terms_and_conditions || null,
       payload.notes || null,
 
@@ -300,7 +313,9 @@ async function createPO(req, res) {
 
     // dynamic placeholders
     const placeholders = values.map(() => "?").join(", ");
-    const insertSQL = `INSERT INTO purchase_orders (${columns.join(", ")}) VALUES (${placeholders})`;
+    const insertSQL = `INSERT INTO purchase_orders (${columns.join(
+      ", "
+    )}) VALUES (${placeholders})`;
 
     // sanity check
     if ((insertSQL.match(/\?/g) || []).length !== values.length) {
@@ -348,14 +363,20 @@ async function createPO(req, res) {
       ]);
 
       // Bulk insert: VALUES ?
-      const itemSql = `INSERT INTO purchase_order_items (${itemColumns.join(", ")}) VALUES ?`;
+      const itemSql = `INSERT INTO purchase_order_items (${itemColumns.join(
+        ", "
+      )}) VALUES ?`;
       await conn.query(itemSql, [itemsValues]);
     }
 
     // optionally create tracking records using poTracking internal helper
     // (the purchaseOrderController can call createTrackingRecords directly if desired)
     // e.g. if payload.auto_create_tracking true -> create
-    if (payload.auto_create_tracking && Array.isArray(payload.items) && payload.items.length) {
+    if (
+      payload.auto_create_tracking &&
+      Array.isArray(payload.items) &&
+      payload.items.length
+    ) {
       const trackingRecords = payload.items.map((item) => ({
         po_id: newPoId,
         item_id: item.item_id || null,
@@ -379,6 +400,17 @@ async function createPO(req, res) {
   }
 }
 
+const getItemsOfPO = async (req, res) => {
+  try {
+    const rows = await query("SELECT * FROM purchase_order_items");
+
+    return res.status(200).json({ message: "PO Items fetched.", data: rows });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error." });
+  }
+};
+
 /**
  * GET POs list (simple join vendor)
  */
@@ -398,7 +430,103 @@ async function getPOs(req, res) {
   }
 }
 
+async function updatePurchaseOrder(req, res) {
+  try {
+    const payload = req.body;
+    const { poId } = req.params;
+    console.log(poId);
+
+    // console.log(payload, poId);
+    const poData = await updatePO(poId, payload);
+    // console.log(poData);
+    return res
+      .status(200)
+      .json({ message: "PO Updated Successfully.", data: poData });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error." });
+  }
+}
+
+async function deletePurchaseOrder(req, res) {
+  try {
+    const { poId } = req.params;
+    console.log(poId);
+    if (!poId) {
+      return res.status(400).json({ message: "All fields required." });
+    }
+    const existing = await findById(poId);
+    if (!existing) {
+      return res.status(404).json({ message: "Purchase order not found." });
+    }
+    const po = await deletePO(poId);
+    console.log(po, "from up");
+    return res.status(200).json({
+      message: "PO Deleted Successfully.",
+      status: "successful",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+async function updatePurchaseOrderStatus(req, res) {
+  try {
+    const { poId } = req.params;
+    const { status } = req.body;
+    // console.log(poId, vendor_id, project_id);
+    if (!poId || !status) {
+      return res.status(400).json({ message: "All fields required." });
+    }
+    const existing = await findById(poId);
+    if (!existing) {
+      return res.status(404).json({ message: "Purchase order not found." });
+    }
+    const po = await updatePO_Status(poId, status);
+    // console.log(po, "from up");
+    return res.status(200).json({
+      message: "PO Updated Successfully.",
+      data: po,
+      status: "successful",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+const deletePOItem = async (req, res) => {
+  try {
+    const { poItemId, poMaterialTrackingId } = req.params;
+    console.log(poItemId, poMaterialTrackingId);
+    const responseOfDelete = await deletePOItems(
+      poItemId,
+      poMaterialTrackingId
+    );
+    if (
+      responseOfDelete.poDeleteMaterialTracking.affectedRows === 1 &&
+      responseOfDelete.poDeleteItem === 1
+    ) {
+      return res
+        .status(200)
+        .json({ message: "PO Item Deleted.", status: "Completed" });
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Faild to delete PO item.", status: "Faild" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error." });
+  }
+};
+
 module.exports = {
+  getItemsOfPO,
   createPO,
   getPOs,
+  updatePurchaseOrder,
+  deletePurchaseOrder,
+  updatePurchaseOrderStatus,
+  deletePOItem,
 };

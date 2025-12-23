@@ -104,9 +104,16 @@
 //   listTrackingHandler, // optional GET handler for debug/listing
 // };
 
-
 // controllers/poTrackingController.js
 const { pool } = require("../config/db");
+const {
+  findInventoryByItem_id,
+  updateInventoryItemQuantity,
+} = require("../models/inventoryModel");
+const {
+  createInventoryTransaction,
+} = require("../models/inventoryTransactionsModel");
+const poTrackingMaterial = require("../models/poTrackingModel");
 
 async function createTrackingRecords(records) {
   if (!Array.isArray(records) || records.length === 0) {
@@ -137,7 +144,9 @@ async function createTrackingRecords(records) {
       r.status ?? "pending",
     ]);
 
-    const sql = `INSERT INTO po_material_tracking (${cols.join(", ")}) VALUES ?`;
+    const sql = `INSERT INTO po_material_tracking (${cols.join(
+      ", "
+    )}) VALUES ?`;
     await conn.query(sql, [values]);
 
     await conn.commit();
@@ -183,9 +192,65 @@ async function listTrackingHandler(req, res) {
   }
 }
 
+const updateTrackingMaterialQuantity = async (req, res) => {
+  try {
+    console.log("From update traking material");
+    const { quantity_received, quantity_pending } = req.body;
+    const { id } = req.params;
+
+    console.log(id, quantity_pending, quantity_received);
+    if (!id || !quantity_received || !quantity_pending) {
+      return res.status(400).json({ message: "All data fields required." });
+    }
+
+    const existing = await poTrackingMaterial.findById(Number(id));
+    console.log(existing);
+    if (!existing) {
+      return res.status(404).json({ message: "Data not found." });
+    }
+    const status = Number(quantity_pending) === 0 ? "completed" : "pending";
+
+    const trackingMaterial = await poTrackingMaterial.updateMaterialQuantity(
+      id,
+      Number(existing.quantity_received) + Number(quantity_received),
+      quantity_pending,
+      status
+    );
+    console.log("tracking", trackingMaterial);
+
+    if (trackingMaterial.id && Number(quantity_received) > 0) {
+      const storeItem = await findInventoryByItem_id(existing.item_id);
+      console.log("inventory", storeItem);
+      const updatedInventoryItem = await updateInventoryItemQuantity(
+        storeItem.id,
+        Number(storeItem.quantity) + Number(quantity_received)
+      );
+
+      console.log(updatedInventoryItem);
+      await createInventoryTransaction({
+        inventory_item_id: storeItem.id,
+        transaction_qty: quantity_received,
+        transaction_type: "CREDIT",
+        remark: "added to inventory",
+        previous_qty: storeItem.quantity,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Updated Tracking Material Quantity.",
+      data: trackingMaterial,
+      status: "Successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error." });
+  }
+};
+
 module.exports = {
   createTrackingRecords,
   createTracking: createTrackingRecords,
   createTrackingHandler,
   listTrackingHandler,
+  updateTrackingMaterialQuantity,
 };

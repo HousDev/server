@@ -14,7 +14,10 @@ const poTypesRoutes = require("./routes/poTypesRoutes");
 const serviceTypesRoutes = require("./routes/serviceTypesRoutes");
 const serviceOrderRoutes = require("./routes/serviceOrderRoutes");
 const { pool } = require("./config/db");
-
+const roleRouter = require("./routes/rolesRouter.js");
+const termsConditionsRouter = require("./routes/termsConditionsRouter.js");
+const InventoryRouter = require("./routes/InventoryRouter.js");
+const InventoryTransactionRouter = require("./routes/inventoryTransactionRoute.js");
 
 dotenv.config();
 const app = express();
@@ -23,7 +26,7 @@ app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 // public
-app.use('/api/auth', authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/items", itemsRoutes);
 app.use("/api/vendors", vendorRoutes);
@@ -34,6 +37,10 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/po_types", poTypesRoutes);
 app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
+app.use("/api/roles", roleRouter);
+app.use("/api/terms-conditions", termsConditionsRouter);
+app.use("/api/inventory", InventoryRouter);
+app.use("/api/inventory-transaction", InventoryTransactionRouter);
 const PORT = process.env.PORT || 4000;
 (async () => {
   try {

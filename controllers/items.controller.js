@@ -1,4 +1,5 @@
 // backend/controllers/items.controller.js
+const { createInventory } = require("../models/inventoryModel");
 const Items = require("../models/items.model");
 
 exports.listItems = async (req, res) => {
@@ -43,6 +44,19 @@ exports.createItem = async (req, res) => {
     }
 
     const created = await Items.create(payload);
+    if (created.id && payload.category === "material") {
+      const data = {
+        item_id: created.id,
+        name: payload.item_name,
+        description: payload.description,
+        category: payload.category,
+        quantity: 0,
+        reorder_qty: 10,
+        unit: payload.unit,
+      };
+      const createInventoryRes = await createInventory(data);
+      console.log(createInventoryRes);
+    }
     res.status(201).json(created);
   } catch (err) {
     console.error("createItem error", err);

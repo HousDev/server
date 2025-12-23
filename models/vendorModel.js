@@ -1,5 +1,5 @@
 // models/vendorModel.js
-const db = require("../config/db");
+const { query } = require("../config/db");
 
 async function initVendorTable() {
   await db.query(`
@@ -29,4 +29,8 @@ async function initVendorTable() {
   `);
 }
 
-module.exports = { initVendorTable };
+async function findByIdVendor(id) {
+  return await query("SELECT * FROM vendors WHERE id=?", [id]);
+}
+
+module.exports = { initVendorTable, findByIdVendor };
