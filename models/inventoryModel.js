@@ -7,16 +7,15 @@ const { findById } = require("./poTrackingModel");
  * NOTE: status is auto-generated, do NOT pass it
  */
 async function createInventory(data) {
-  const { item_id, name, description, category, quantity, reorder_qty, unit } =
-    data;
+  const { item_id, quantity, reorder_qty } = data;
 
   return await query(
     `
     INSERT INTO inventory
-      (item_id, name, description, category, quantity, reorder_qty, unit)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+      (item_id, quantity, reorder_qty)
+    VALUES (?, ?, ?)
     `,
-    [item_id, name, description, category, quantity, reorder_qty, unit]
+    [item_id, quantity, reorder_qty]
   );
 }
 
@@ -25,21 +24,17 @@ async function createInventory(data) {
  * status auto updates based on quantity & reorder qty
  */
 async function updateInventory(id, data) {
-  const { name, description, category, quantity, reorder_qty, unit } = data;
+  const { quantity, reorder_qty } = data;
 
   return await query(
     `
     UPDATE inventory
     SET
-      name = ?,
-      description = ?,
-      category = ?,
       quantity = ?,
-      reorder_qty = ?,
-      unit = ?
+      reorder_qty = ?
     WHERE id = ?
     `,
-    [name, description, category, quantity, reorder_qty, unit, id]
+    [quantity, reorder_qty, id]
   );
 }
 

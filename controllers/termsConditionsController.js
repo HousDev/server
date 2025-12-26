@@ -57,13 +57,13 @@ const getTCByIdVendorTermsConditions = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch record" });
   }
 };
+
 /**
  * CREATE TC
  */
 const createTCController = async (req, res) => {
   try {
     const payload = req.body;
-    console.log(payload);
     if (
       !payload.vendor_id ||
       !payload.title ||
@@ -126,7 +126,6 @@ const updateIs_DefaultTCController = async (req, res) => {
   try {
     const { id } = req.params;
     const { is_default } = req.body;
-    console.log(id, is_default, "form update default");
     if (!id) {
       return res.status(400).json({ message: "Faild To Set Default" });
     }

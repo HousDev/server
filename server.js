@@ -18,6 +18,7 @@ const roleRouter = require("./routes/rolesRouter.js");
 const termsConditionsRouter = require("./routes/termsConditionsRouter.js");
 const InventoryRouter = require("./routes/InventoryRouter.js");
 const InventoryTransactionRouter = require("./routes/inventoryTransactionRoute.js");
+const path = require("path");
 
 dotenv.config();
 const app = express();
@@ -41,6 +42,8 @@ app.use("/api/roles", roleRouter);
 app.use("/api/terms-conditions", termsConditionsRouter);
 app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 const PORT = process.env.PORT || 4000;
 (async () => {
   try {

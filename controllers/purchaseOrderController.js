@@ -213,7 +213,6 @@ const {
 async function createPO(req, res) {
   const payload = req.body;
 
-  console.log("from create : ", payload);
   if (!payload || !payload.vendor_id || !Array.isArray(payload.items)) {
     return res
       .status(400)
@@ -406,7 +405,6 @@ const getItemsOfPO = async (req, res) => {
 
     return res.status(200).json({ message: "PO Items fetched.", data: rows });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error." });
   }
 };
@@ -434,16 +432,12 @@ async function updatePurchaseOrder(req, res) {
   try {
     const payload = req.body;
     const { poId } = req.params;
-    console.log(poId);
 
-    // console.log(payload, poId);
     const poData = await updatePO(poId, payload);
-    // console.log(poData);
     return res
       .status(200)
       .json({ message: "PO Updated Successfully.", data: poData });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error." });
   }
 }
@@ -451,7 +445,6 @@ async function updatePurchaseOrder(req, res) {
 async function deletePurchaseOrder(req, res) {
   try {
     const { poId } = req.params;
-    console.log(poId);
     if (!poId) {
       return res.status(400).json({ message: "All fields required." });
     }
@@ -460,13 +453,11 @@ async function deletePurchaseOrder(req, res) {
       return res.status(404).json({ message: "Purchase order not found." });
     }
     const po = await deletePO(poId);
-    console.log(po, "from up");
     return res.status(200).json({
       message: "PO Deleted Successfully.",
       status: "successful",
     });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -475,7 +466,7 @@ async function updatePurchaseOrderStatus(req, res) {
   try {
     const { poId } = req.params;
     const { status } = req.body;
-    // console.log(poId, vendor_id, project_id);
+    // poId, vendor_id, project_id);
     if (!poId || !status) {
       return res.status(400).json({ message: "All fields required." });
     }
@@ -484,21 +475,19 @@ async function updatePurchaseOrderStatus(req, res) {
       return res.status(404).json({ message: "Purchase order not found." });
     }
     const po = await updatePO_Status(poId, status);
-    // console.log(po, "from up");
+    // po, "from up");
     return res.status(200).json({
       message: "PO Updated Successfully.",
       data: po,
       status: "successful",
     });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 }
 const deletePOItem = async (req, res) => {
   try {
     const { poItemId, poMaterialTrackingId } = req.params;
-    console.log(poItemId, poMaterialTrackingId);
     const responseOfDelete = await deletePOItems(
       poItemId,
       poMaterialTrackingId
@@ -516,7 +505,6 @@ const deletePOItem = async (req, res) => {
         .json({ message: "Faild to delete PO item.", status: "Faild" });
     }
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error." });
   }
 };

@@ -148,7 +148,7 @@ const updateUserPermissions = async (req, res) => {
   try {
     const { userId } = req.params;
     const { permissions } = req.body;
-    // console.log(userId, permissions);
+    // userId, permissions);
     if (!userId || !permissions) {
       return res.status(400).json({ message: "All data fields required." });
     }
@@ -161,7 +161,6 @@ const updateUserPermissions = async (req, res) => {
       .status(200)
       .json({ message: "User Permissions Updated.", data: user });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ message: "Internal Server Error." });
   }
 };
