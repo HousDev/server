@@ -4,11 +4,6 @@ const router = express.Router();
 
 const projectController = require("../controllers/projectController");
 
-console.log(
-  "projectRoutes: projectController keys=",
-  Object.keys(projectController || {})
-);
-
 function bindRoute(method, path, handler, name) {
   if (typeof handler !== "function") {
     console.error(

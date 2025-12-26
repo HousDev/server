@@ -1,5 +1,6 @@
 const inventoryModel = require("../models/inventoryModel");
-
+const itemModel = require("../models/items.model.js");
+const { query } = require("../config/db");
 /**
  * Validate inventory payload
  */
@@ -82,23 +83,37 @@ async function createInventory(req, res) {
 async function updateInventory(req, res) {
   try {
     const { id } = req.params;
-    console.log(req.body, id);
+    const payload = req.body;
 
     if (!id || isNaN(id)) {
       return res.status(400).json({ message: "Invalid inventory ID" });
-    }
-
-    const errors = validateInventory(req.body, true);
-    if (errors.length > 0) {
-      return res.status(400).json({ errors });
     }
 
     const existing = await inventoryModel.findInventoryById(id);
     if (existing.length === 0) {
       return res.status(404).json({ message: "Inventory not found" });
     }
-
-    await inventoryModel.updateInventory(id, req.body);
+    if (
+      !payload.name ||
+      !payload.location ||
+      !payload.reorder_qty ||
+      !payload.unit ||
+      !payload.rate
+    ) {
+    }
+    await inventoryModel.updateInventory(id, payload);
+    await query(
+      `UPDATE items 
+   SET item_name = ?, location = ?, unit = ?, standard_rate = ?
+   WHERE id = ?`,
+      [
+        payload.name,
+        payload.location,
+        payload.unit,
+        payload.rate,
+        payload.item_id,
+      ]
+    );
 
     return res.json({ message: "Inventory updated successfully" });
   } catch (error) {

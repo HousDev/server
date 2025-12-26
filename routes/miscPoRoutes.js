@@ -6,13 +6,6 @@ const router = express.Router();
 const seqController = require("../controllers/poSequenceController");
 const trackController = require("../controllers/poTrackingController");
 
-// debug: log what we got (remove in production)
-console.log("miscPoRoutes: seqController keys =", Object.keys(seqController));
-console.log(
-  "miscPoRoutes: trackController keys =",
-  Object.keys(trackController)
-);
-
 // helper to ensure function
 function useIfFunction(fn, fallbackName) {
   if (typeof fn === "function") return fn;

@@ -109,7 +109,6 @@ async function findById(id) {
 }
 
 async function updatePO(id, payload) {
-  console.log(payload);
   const updatePOSQL =
     "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?,po_date = ?,delivery_date = ?,is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms_id = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?,status = ?,material_status = ?,payment_status = ?,created_by = ?,updated_at = NOW() WHERE id = ?";
 
@@ -155,7 +154,6 @@ async function updatePO(id, payload) {
   ];
 
   const poUpdateResponse = await query(updatePOSQL, updatePOValues);
-  console.log(poUpdateResponse);
 
   for (const it of payload.items) {
     const updatePOItemsSql = `
@@ -247,7 +245,6 @@ async function updatePO(id, payload) {
         createColsForMaterialTracking,
         createValuesForMaterialTracking
       );
-      console.log("material tracking", materialTracking);
     } else {
       await query(updatePOItemsSql, updatePOItemsValues);
 
@@ -284,7 +281,6 @@ async function deletePOItems(poItemId, poMaterialTrackingId) {
     `DELETE FROM purchase_order_items WHERE id = ?`,
     [id]
   );
-  console.log(poDeleteMaterialTracking, poDeleteItem);
 
   return { poDeleteMaterialTracking, poDeleteItem };
 }

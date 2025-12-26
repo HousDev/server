@@ -38,15 +38,6 @@ const router = express.Router();
 const poController = require("../controllers/purchaseOrderController");
 const poSeqController = require("../controllers/poSequenceController");
 
-console.log(
-  "purchaseOrderRoutes: poController keys=",
-  Object.keys(poController || {})
-);
-console.log(
-  "purchaseOrderRoutes: poSeqController keys=",
-  Object.keys(poSeqController || {})
-);
-
 function bindRoute(method, path, handler, name) {
   if (typeof handler !== "function") {
     console.error(

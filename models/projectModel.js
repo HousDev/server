@@ -21,7 +21,7 @@ async function initProjectTable() {
   const conn = await pool.getConnection();
   try {
     await conn.query(sql);
-    console.log("projects table initialized");
+    "projects table initialized");
   } catch (err) {
     console.error("initProjectTable error", err);
     throw err;

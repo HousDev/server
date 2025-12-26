@@ -1,93 +1,157 @@
 // models/inventoryTransactionModel.js
-const { query } = require("../config/db");
+const { pool, query } = require("../config/db");
+const inventoryModel = require("../models/inventoryModel");
+const poTrackingMaterial = require("../models/poTrackingModel");
 
-/**
- * Create inventory transaction
- */
-async function createInventoryTransaction(data) {
-  const {
-    previous_qty,
-    inventory_item_id,
-    transaction_qty,
-    transaction_type,
-    remark,
-  } = data;
+const createInventoryTransaction = async (transactionData) => {
+  const connection = await pool.getConnection();
 
-  return await query(
-    `
-    INSERT INTO inventory_transactions
-      (inventory_item_id, transaction_qty, transaction_type, remark,previous_qty)
-    VALUES (?, ?, ?, ?,?)
-    `,
-    [inventory_item_id, transaction_qty, transaction_type, remark, previous_qty]
-  );
-}
+  try {
+    await connection.beginTransaction();
 
-/**
- * UPDATE transaction
- * (quantity or remark only – type & inventory_item_id should NOT change)
- */
-async function updateInventoryTransaction(id, data) {
-  const { transaction_qty, remark } = data;
+    const {
+      po_id,
+      vendor_id,
+      challan_number,
+      challan_image,
+      receiving_date,
+      receiver_name,
+      receiver_phone,
+      delivery_location,
+      items,
+    } = transactionData;
 
-  return await query(
-    `
-    UPDATE inventory_transactions
-    SET transaction_qty = ?, remark = ?
-    WHERE id = ?
-    `,
-    [transaction_qty, remark, id]
-  );
-}
+    // 1️⃣ Insert transaction
+    const [trxResult] = await connection.execute(
+      `INSERT INTO inventory_transactions
+       (po_id, vendor_id, challan_number, challan_image,
+        receiving_date, receiver_name, receiver_phone,
+        trasaction_type, delivery_location)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'INWARD', ?)`,
+      [
+        po_id,
+        vendor_id,
+        challan_number,
+        challan_image,
+        receiving_date,
+        receiver_name,
+        receiver_phone,
+        delivery_location,
+      ]
+    );
 
-/**
- * Find transaction by ID
- */
-async function findInventoryTransactionById(id) {
-  return await query("SELECT * FROM inventory_transactions WHERE id = ?", [id]);
-}
+    const transactionId = trxResult.insertId;
 
-/**
- * Find all transactions
- */
-async function findAllInventoryTransactions() {
-  return await query(
-    `
-    SELECT it.*, i.name AS item_name
+    // 2️⃣ Items + inventory + PO tracking
+    for (const item of items) {
+      const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
+        item.id
+      );
+
+      await connection.execute(
+        `INSERT INTO inventory_transactions_items
+         (transaction_id, item_id, quantity_issued, initial_quantity)
+         VALUES (?, ?, ?, ?)`,
+        [
+          transactionId,
+          item.id,
+          item.quantity_issued,
+          inventoryMaterial.quantity,
+        ]
+      );
+
+      const poTracking = await poTrackingMaterial.findByIdAndPO_ID(
+        item.id,
+        po_id
+      );
+
+      if (item.quantity_issued > poTracking.quantity_pending) {
+        throw new Error("Issued quantity exceeds pending quantity");
+      }
+
+      const status =
+        poTracking.quantity_pending - item.quantity_issued === 0
+          ? "completed"
+          : "pending";
+
+      await connection.execute(
+        `UPDATE po_material_tracking SET
+         quantity_received = quantity_received + ?,
+         quantity_pending = quantity_pending - ?,
+         status = ?
+         WHERE id = ?`,
+        [item.quantity_issued, item.quantity_issued, status, poTracking.id]
+      );
+
+      await connection.execute(
+        `UPDATE inventory SET quantity = quantity + ? WHERE id = ?`,
+        [item.quantity_issued, inventoryMaterial.id]
+      );
+    }
+
+    // 3️⃣ Fetch created transaction
+    const [rows] = await connection.execute(
+      `SELECT 
+        it.*,
+        iti.id AS transaction_item_id,
+        iti.item_id,
+        iti.quantity_issued,
+        iti.initial_quantity
+       FROM inventory_transactions it
+       LEFT JOIN inventory_transactions_items iti
+         ON it.id = iti.transaction_id
+       WHERE it.id = ?`,
+      [transactionId]
+    );
+
+    await connection.commit();
+
+    return {
+      ...rows[0],
+      items: rows.map((r) => ({
+        transaction_item_id: r.transaction_item_id,
+        item_id: r.item_id,
+        quantity_issued: r.quantity_issued,
+        initial_quantity: r.initial_quantity,
+      })),
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+const getAllInventoryTransactions = async () => {
+  const rows = await query(`
+    SELECT 
+      it.id AS transaction_id,
+      it.po_id,
+      it.vendor_id,
+      it.challan_number,
+      it.challan_image,
+      it.receiving_date,
+      it.receiver_name,
+      it.receiver_phone,
+      it.trasaction_type,
+      it.delivery_location,
+      it.created_at,
+
+      iti.id AS transaction_item_id,
+      iti.item_id,
+      iti.quantity_issued,
+      iti.initial_quantity
     FROM inventory_transactions it
-    JOIN inventory i ON i.id = it.inventory_item_id
-    ORDER BY it.id DESC
-    `
-  );
-}
+    LEFT JOIN inventory_transactions_items iti
+      ON it.id = iti.transaction_id
+    ORDER BY it.created_at DESC
+  `);
 
-/**
- * Find transactions by inventory_item_id
- */
-async function findTransactionsByItemId(inventory_item_id) {
-  return await query(
-    `
-    SELECT *
-    FROM inventory_transactions
-    WHERE inventory_item_id = ?
-    ORDER BY id DESC
-    `,
-    [inventory_item_id]
-  );
-}
-
-/**
- * Delete transaction
- */
-async function deleteInventoryTransaction(id) {
-  return await query("DELETE FROM inventory_transactions WHERE id = ?", [id]);
-}
+  return rows;
+};
 
 module.exports = {
   createInventoryTransaction,
-  findInventoryTransactionById,
-  findAllInventoryTransactions,
-  findTransactionsByItemId,
-  deleteInventoryTransaction,
-  updateInventoryTransaction,
+  getAllInventoryTransactions,
 };

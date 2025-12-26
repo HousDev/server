@@ -53,9 +53,9 @@ exports.createItem = async (req, res) => {
         quantity: 0,
         reorder_qty: 10,
         unit: payload.unit,
+        location: payload.location,
       };
       const createInventoryRes = await createInventory(data);
-      console.log(createInventoryRes);
     }
     res.status(201).json(created);
   } catch (err) {

@@ -1,29 +1,22 @@
 const express = require("express");
 const InventoryTransactionRouter = express.Router();
+const upload = require("../middleware/upload");
 
 const {
   createInventoryTransaction,
-  getAllInventoryTransactions,
-  getTransactionsByItemId,
-  deleteInventoryTransaction,
-  updateInventoryTransaction,
+  getAllInventoryTransaction,
 } = require("../controllers/inventoryTransactionController");
 
 /**
  * Inventory transaction routes
  */
-
-// Create CREDIT / DEBIT transaction
-InventoryTransactionRouter.post("/", createInventoryTransaction);
+InventoryTransactionRouter.post(
+  "/",
+  upload.single("challan_image"),
+  createInventoryTransaction
+);
 
 // Get all transactions
-InventoryTransactionRouter.get("/", getAllInventoryTransactions);
-
-// Get transactions by inventory item id
-InventoryTransactionRouter.get("/:inventory_item_id", getTransactionsByItemId);
-
-// Delete transaction (admin only – recommended)
-InventoryTransactionRouter.delete("/:id", deleteInventoryTransaction);
-InventoryTransactionRouter.put("/:id", updateInventoryTransaction);
+InventoryTransactionRouter.get("/", getAllInventoryTransaction);
 
 module.exports = InventoryTransactionRouter;
