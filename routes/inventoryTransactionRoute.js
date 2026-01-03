@@ -5,6 +5,9 @@ const upload = require("../middleware/upload");
 const {
   createInventoryTransaction,
   getAllInventoryTransaction,
+  createInventoryTransactionOut,
+  createInventoryTransactionIssueMaterial,
+  getAllIssueMaterialInventoryTransaction,
 } = require("../controllers/inventoryTransactionController");
 
 /**
@@ -16,7 +19,18 @@ InventoryTransactionRouter.post(
   createInventoryTransaction
 );
 
+InventoryTransactionRouter.post("/materialOut", createInventoryTransactionOut);
+
+InventoryTransactionRouter.post(
+  "/issueMaterial",
+  createInventoryTransactionIssueMaterial
+);
+
 // Get all transactions
 InventoryTransactionRouter.get("/", getAllInventoryTransaction);
+InventoryTransactionRouter.get(
+  "/issueMaterialTransaction",
+  getAllIssueMaterialInventoryTransaction
+);
 
 module.exports = InventoryTransactionRouter;
