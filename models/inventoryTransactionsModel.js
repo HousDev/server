@@ -123,12 +123,200 @@ const createInventoryTransaction = async (transactionData) => {
   }
 };
 
+const createInventoryTransactionOut = async (transactionData) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const {
+      remark,
+      receiving_date,
+      receiver_name,
+      receiver_phone,
+      delivery_location,
+      items,
+    } = transactionData;
+
+    // 1️⃣ Insert transaction
+    const [trxResult] = await connection.execute(
+      `INSERT INTO inventory_transactions
+       (remark,
+        receiving_date, receiver_name, receiver_phone,
+        trasaction_type, delivery_location)
+       VALUES ( ?, ?, ?, ?, 'OUTWARD', ?)`,
+      [remark, receiving_date, receiver_name, receiver_phone, delivery_location]
+    );
+
+    const transactionId = trxResult.insertId;
+
+    // 2️⃣ Items + inventory + PO tracking
+    for (const item of items) {
+      const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
+        item.materialId
+      );
+
+      await connection.execute(
+        `INSERT INTO inventory_transactions_items
+         (transaction_id, item_id, quantity_issued, initial_quantity)
+         VALUES (?, ?, ?, ?)`,
+        [
+          transactionId,
+          item.materialId,
+          item.quantity,
+          inventoryMaterial.quantity,
+        ]
+      );
+
+      await connection.execute(
+        `UPDATE inventory SET quantity = quantity - ? WHERE id = ?`,
+        [item.quantity, inventoryMaterial.id]
+      );
+    }
+
+    // 3️⃣ Fetch created transaction
+    const [rows] = await connection.execute(
+      `SELECT 
+        it.*,
+        iti.id AS transaction_item_id,
+        iti.item_id,
+        iti.quantity_issued,
+        iti.initial_quantity
+       FROM inventory_transactions it
+       LEFT JOIN inventory_transactions_items iti
+         ON it.id = iti.transaction_id
+       WHERE it.id = ?`,
+      [transactionId]
+    );
+
+    await connection.commit();
+
+    return {
+      ...rows[0],
+      items: rows.map((r) => ({
+        transaction_item_id: r.transaction_item_id,
+        item_id: r.item_id,
+        quantity_issued: r.quantity_issued,
+        initial_quantity: r.initial_quantity,
+      })),
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+const createInventoryTransactionIssueMaterial = async (transactionData) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const {
+      purpose,
+      projectId,
+      buildingId,
+      floorId,
+      flatId,
+      commonAreaId,
+      vendorId,
+      receiver_name,
+      receiver_number,
+      issue_date,
+      items,
+    } = transactionData;
+
+    // 1️⃣ Insert transaction
+    const [trxResult] = await connection.execute(
+      `INSERT INTO issue_material_transactions
+       (purpose,
+        projectId, buildingId, floorId,
+        flatId, commonAreaId,vendorId,receiver_name,receiver_number,issue_date)
+       VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        purpose,
+        projectId,
+        buildingId,
+        floorId,
+        flatId,
+        commonAreaId,
+        vendorId,
+        receiver_name,
+        receiver_number,
+        issue_date,
+      ]
+    );
+
+    const transactionId = trxResult.insertId;
+
+    // 2️⃣ Items + inventory + PO tracking
+    for (const item of items) {
+      const inventoryMaterial = await inventoryModel.findInventoryById(
+        item.materialId
+      );
+
+      await connection.execute(
+        `INSERT INTO issue_material_transactions_items
+         (transaction_id, item_id, quantity_issued, initial_quantity)
+         VALUES (?, ?, ?, ?)`,
+        [
+          transactionId,
+          inventoryMaterial.item_id,
+          item.quantity,
+          inventoryMaterial.quantity,
+        ]
+      );
+
+      await connection.execute(
+        `UPDATE inventory SET quantity = quantity - ? WHERE id = ?`,
+        [item.quantity, inventoryMaterial.id]
+      );
+    }
+
+    // 3️⃣ Fetch created transaction
+    const [rows] = await connection.execute(
+      `SELECT 
+        it.*,
+        iti.id AS transaction_item_id,
+        iti.item_id,
+        iti.quantity_issued,
+        iti.initial_quantity
+       FROM issue_material_transactions it
+       LEFT JOIN issue_material_transactions_items iti
+         ON it.id = iti.transaction_id
+       WHERE it.id = ?`,
+      [transactionId]
+    );
+
+    await connection.commit();
+
+    return {
+      ...rows[0],
+      items: rows.map((r) => ({
+        transaction_item_id: r.transaction_item_id,
+        item_id: r.item_id,
+        quantity_issued: r.quantity_issued,
+        initial_quantity: r.initial_quantity,
+      })),
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 const getAllInventoryTransactions = async () => {
   const rows = await query(`
     SELECT 
       it.id AS transaction_id,
       it.po_id,
       it.vendor_id,
+      po.po_number,
+      v.name,
       it.challan_number,
       it.challan_image,
       it.receiving_date,
@@ -137,15 +325,74 @@ const getAllInventoryTransactions = async () => {
       it.trasaction_type,
       it.delivery_location,
       it.created_at,
+      it.remark,
 
       iti.id AS transaction_item_id,
       iti.item_id,
+      i.item_name,                
       iti.quantity_issued,
       iti.initial_quantity
+
     FROM inventory_transactions it
+
     LEFT JOIN inventory_transactions_items iti
       ON it.id = iti.transaction_id
+
+    LEFT JOIN purchase_orders po
+      ON it.po_id = po.id
+
+    LEFT JOIN vendors v
+      ON it.vendor_id = v.id
+
+    LEFT JOIN items i               
+      ON i.id = iti.item_id
+
     ORDER BY it.created_at DESC
+  `);
+
+  return rows;
+};
+
+const getAllIssueMaterialTransactions = async () => {
+  const rows = await query(`
+    SELECT
+      it.id AS transaction_id,
+      it.issue_date,
+      it.purpose,
+      it.receiver_name,
+      it.receiver_number,
+
+      p.name AS project_name,
+      b.building_name,
+      f.floor_name,
+
+      fl.flat_name,
+      ca.common_area_name,
+
+      v.name AS vendor_name,
+
+      iti.id AS transaction_item_id,
+      i.item_name,
+      iti.quantity_issued,
+      iti.initial_quantity
+
+    FROM issue_material_transactions it
+
+    JOIN projects p ON p.id = it.projectId
+    JOIN buildings b ON b.id = it.buildingId
+    JOIN floors f ON f.id = it.floorId
+    JOIN vendors v ON v.id = it.vendorId
+
+    LEFT JOIN flats fl ON fl.id = it.flatId
+    LEFT JOIN common_areas ca ON ca.id = it.commonAreaId
+
+    JOIN issue_material_transactions_items iti
+      ON iti.transaction_id = it.id
+
+    JOIN items i
+      ON i.id = iti.item_id
+
+    ORDER BY it.id DESC
   `);
 
   return rows;
@@ -154,4 +401,7 @@ const getAllInventoryTransactions = async () => {
 module.exports = {
   createInventoryTransaction,
   getAllInventoryTransactions,
+  createInventoryTransactionOut,
+  createInventoryTransactionIssueMaterial,
+  getAllIssueMaterialTransactions,
 };

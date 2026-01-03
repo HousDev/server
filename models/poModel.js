@@ -238,10 +238,10 @@ async function updatePO(id, payload) {
         it.description,
         it.quantity,
         0,
-        0,
+        it.quantity,
         "pending",
       ];
-      const materialTracking = await query(
+      await query(
         createColsForMaterialTracking,
         createValuesForMaterialTracking
       );
@@ -249,10 +249,15 @@ async function updatePO(id, payload) {
       await query(updatePOItemsSql, updatePOItemsValues);
 
       const updateColsForMaterialTracking = `UPDATE  po_material_tracking  SET
-    quantity_ordered = ?
+    quantity_ordered = ?, quantity_pending = ?
    WHERE po_id = ? AND item_id = ?`;
 
-      const updateValuesForMaterialTracking = [it.quantity, id, it.item_id];
+      const updateValuesForMaterialTracking = [
+        it.quantity,
+        it.quantity,
+        id,
+        it.item_id,
+      ];
       await query(
         updateColsForMaterialTracking,
         updateValuesForMaterialTracking
