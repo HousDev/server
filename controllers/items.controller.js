@@ -31,10 +31,14 @@ exports.getItem = async (req, res) => {
 exports.createItem = async (req, res) => {
   try {
     const payload = req.body;
-    if (!payload.item_code || !payload.item_name) {
-      return res
-        .status(400)
-        .json({ message: "item_code and item_name are required" });
+    if (
+      !payload.item_code ||
+      !payload.item_name ||
+      !payload.category ||
+      !payload.unit ||
+      !payload.location
+    ) {
+      return res.status(400).json({ message: "all fields are required" });
     }
 
     // check duplicate code
@@ -44,6 +48,7 @@ exports.createItem = async (req, res) => {
     }
 
     const created = await Items.create(payload);
+
     if (created.id && payload.category === "material") {
       const data = {
         item_id: created.id,

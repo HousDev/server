@@ -168,7 +168,9 @@ async function updatePO(id, payload) {
         unit = ?,
         rate = ?,
         amount = ?,
-        gst_rate = ?,
+        igst_rate=?,
+        cgst_rate=?,
+        sgst_rate=?,
         gst_amount = ?
       WHERE id = ? AND po_id = ?
     `;
@@ -184,10 +186,12 @@ async function updatePO(id, payload) {
         unit,
         rate,
         amount,
-        gst_rate,
+        igst_rate,
+        cgst_rate,
+        sgst_rate,
         gst_amount
         )
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `;
 
     const createPOItemsValues = [
@@ -201,7 +205,9 @@ async function updatePO(id, payload) {
       it.unit || null,
       parseFloat(it.rate || 0),
       parseFloat(it.amount || 0),
-      parseFloat(it.gst_rate || 0),
+      parseFloat(it.igst_rate || 0),
+      parseFloat(it.cgst_rate || 0),
+      parseFloat(it.sgst_rate || 0),
       parseFloat(it.gst_amount || 0),
     ];
     const updatePOItemsValues = [
@@ -214,7 +220,9 @@ async function updatePO(id, payload) {
       it.unit || null,
       parseFloat(it.rate || 0),
       parseFloat(it.amount || 0),
-      parseFloat(it.gst_rate || 0),
+      parseFloat(it.igst_rate || 0),
+      parseFloat(it.cgst_rate || 0),
+      parseFloat(it.sgst_rate || 0),
       parseFloat(it.gst_amount || 0),
       it.id,
       id,

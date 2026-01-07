@@ -270,8 +270,8 @@ async function createPO(req, res) {
     ];
 
     // coerce numeric values and created_by -> INT or null
-    const createdBy = Number(payload.created_by);
-    const createdByVal = Number.isInteger(createdBy) ? createdBy : null;
+    // const createdBy = Number(payload.created_by);
+    // const createdByVal = Number.isInteger(createdBy) ? createdBy : null;
 
     const values = [
       poNumber,
@@ -307,7 +307,7 @@ async function createPO(req, res) {
       payload.status || "draft",
       payload.material_status || "pending",
       payload.payment_status || "pending",
-      createdByVal,
+      payload.created_by,
     ];
 
     // dynamic placeholders
@@ -342,7 +342,9 @@ async function createPO(req, res) {
         "unit",
         "rate",
         "amount",
-        "gst_rate",
+        "igst_rate",
+        "cgst_rate",
+        "sgst_rate",
         "gst_amount",
       ];
 
@@ -357,7 +359,9 @@ async function createPO(req, res) {
         it.unit || null,
         parseFloat(it.rate || 0),
         parseFloat(it.amount || 0),
-        parseFloat(it.gst_rate || 0),
+        parseFloat(it.igst_rate || 0),
+        parseFloat(it.cgst_rate || 0),
+        parseFloat(it.sgst_rate || 0),
         parseFloat(it.gst_amount || 0),
       ]);
 
