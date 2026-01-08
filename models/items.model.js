@@ -31,7 +31,9 @@ const create = async (data) => {
     description = null,
     unit = "nos",
     hsn_code = null,
-    gst_rate = 0,
+    igst_rate = 0,
+    cgst_rate = 0,
+    sgst_rate = 0,
     standard_rate = 0,
     is_active = 1,
     location,
@@ -39,8 +41,8 @@ const create = async (data) => {
 
   const [result] = await promisePool.query(
     `INSERT INTO items
-      (item_code, item_name, category, description, unit, hsn_code, gst_rate, standard_rate, is_active,location)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (item_code, item_name, category, description, unit, hsn_code, igst_rate, cgst_rate, sgst_rate, standard_rate, is_active,location)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item_code,
       item_name,
@@ -48,7 +50,9 @@ const create = async (data) => {
       description,
       unit,
       hsn_code,
-      gst_rate,
+      igst_rate,
+      cgst_rate,
+      sgst_rate,
       standard_rate,
       is_active ? 1 : 0,
       location,
@@ -70,7 +74,9 @@ const update = async (id, data) => {
     "description",
     "unit",
     "hsn_code",
-    "gst_rate",
+    "igst_rate",
+    "cgst_rate",
+    "sgst_rate",
     "standard_rate",
     "is_active",
     "location",

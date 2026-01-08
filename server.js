@@ -23,6 +23,7 @@ const workflowRoutes = require("./routes/workflowRoutes.js");
 const path = require("path");
 const ProjectDetailsRouter = require("./routes/proectDetailsRoutes.js");
 const templateRoutes = require("./routes/templateRoutes.js");
+const requestMaterialRoute = require("./routes/requestMaterialRoutes.js");
 
 dotenv.config();
 const app = express();
@@ -51,6 +52,7 @@ app.use("/api/workflow", workflowRoutes);
 app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
+app.use("/api/requestMaterial", requestMaterialRoute);
 
 const PORT = process.env.PORT || 4000;
 (async () => {

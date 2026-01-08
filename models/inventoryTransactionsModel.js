@@ -72,6 +72,8 @@ const createInventoryTransaction = async (transactionData) => {
       const status =
         poTracking.quantity_pending - item.quantity_issued === 0
           ? "completed"
+          : poTracking.quantity_pending - item.quantity_issued > 0
+          ? "partial"
           : "pending";
 
       await connection.execute(
@@ -81,6 +83,31 @@ const createInventoryTransaction = async (transactionData) => {
          status = ?
          WHERE id = ?`,
         [item.quantity_issued, item.quantity_issued, status, poTracking.id]
+      );
+
+      const [[findPoStatus]] = await connection.execute(
+        `
+  SELECT
+    SUM(status = 'pending')   AS pending_count,
+    SUM(status = 'partial')   AS partial_count,
+    SUM(status = 'completed') AS completed_count
+  FROM po_material_tracking
+  WHERE po_id = ?
+  `,
+        [po_id]
+      );
+
+      let po_material_status = "completed";
+
+      if (findPoStatus.pending_count > 0) {
+        po_material_status = "pending";
+      } else if (findPoStatus.partial_count > 0) {
+        po_material_status = "partial";
+      }
+
+      await connection.execute(
+        `UPDATE purchase_orders SET material_status = ? WHERE id = ?`,
+        [po_material_status, po_id]
       );
 
       await connection.execute(
