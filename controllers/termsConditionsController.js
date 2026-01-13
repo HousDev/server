@@ -64,12 +64,7 @@ const getTCByIdVendorTermsConditions = async (req, res) => {
 const createTCController = async (req, res) => {
   try {
     const payload = req.body;
-    if (
-      !payload.vendor_id ||
-      !payload.title ||
-      !payload.category ||
-      !payload.content
-    ) {
+    if (!payload.category || !payload.content) {
       return res.status(400).json({ message: "All fields required." });
     }
     const existingVendor = findByIdVendor(payload.vendor_id);
@@ -97,13 +92,7 @@ const updateTCController = async (req, res) => {
     const { id } = req.params;
     const payload = req.body;
 
-    if (
-      !id ||
-      !payload.vendor_id ||
-      !payload.title ||
-      !payload.category ||
-      !payload.content
-    ) {
+    if (!id || !payload.category || !payload.content) {
       return res.status(400).json({ message: "All fields required." });
     }
 

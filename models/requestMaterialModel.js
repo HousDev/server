@@ -1,4 +1,5 @@
 const { pool, query } = require("../config/db");
+const { createActivityLog } = require("../models/logsModel");
 
 const createRequestMaterialModel = async (data) => {
   const connection = await pool.getConnection();
@@ -44,15 +45,30 @@ const createRequestMaterialModel = async (data) => {
 
     // 2️⃣ Insert request_material_items
     for (const item of items) {
-      await connection.execute(
-        `INSERT INTO request_material_items
+      if (item.approved_quantity) {
+        await connection.execute(
+          `INSERT INTO request_material_items
+         (requestMaterialId, itemId, required_quantity, approved_quantity)
+         VALUES (?, ?, ?, ?)`,
+          [
+            requestMaterialId,
+            item.itemId,
+            item.required_quantity,
+            item.approved_quantity,
+          ]
+        );
+      } else {
+        await connection.execute(
+          `INSERT INTO request_material_items
          (requestMaterialId, itemId, required_quantity)
          VALUES (?, ?, ?)`,
-        [requestMaterialId, item.itemId, item.required_quantity]
-      );
+          [requestMaterialId, item.itemId, item.required_quantity]
+        );
+      }
     }
     const user = await query("SELECT * FROM users WHERE id = ? ", [userId]);
-    await connection.execute(
+
+    const [notifyRes] = await connection.execute(
       `INSERT INTO notifications
          (title, description, type)
          VALUES (?, ?, ?)`,
@@ -62,6 +78,15 @@ const createRequestMaterialModel = async (data) => {
         "Requirement",
       ]
     );
+
+    if (notifyRes.affectedRows === 1)
+      createActivityLog(
+        "Material Request",
+        requestMaterialId,
+        "Material Request Created",
+        `Material Request Created Request ID: ${requestMaterialId}, By User Id: ${userId}`,
+        userId
+      );
 
     await connection.commit();
 
@@ -96,7 +121,12 @@ const getAllRequestMaterialsModel = async () => {
       rm.start_date,
       rm.status,
       rm.remark,
-
+      rm.projectId,
+      rm.buildingId,
+      rm.floorId,
+      rm.flatId,
+      rm.commonAreaId,
+      u.id AS user_id,
       u.full_name AS user_name,
       u.phone AS user_phone,
 
@@ -108,7 +138,11 @@ const getAllRequestMaterialsModel = async () => {
 
       rmi.itemId AS request_item_id,
       i.item_name,
-      rmi.required_quantity
+      i.unit AS unit,
+      rmi.id,
+      rmi.required_quantity,
+      rmi.approved_quantity,
+      rmi.status as item_status
 
     FROM request_material rm
 
@@ -132,20 +166,123 @@ const getAllRequestMaterialsModel = async () => {
   return rows;
 };
 
-const updateRequestMaterialStatusModel = async (id, status) => {
+const updateRequestMaterialStatusModel = async (id, status, user_id) => {
   const result = await query(
     `UPDATE request_material
      SET status = ?, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
     [status, id]
   );
-
+  if (result.affectedRows === 1)
+    createActivityLog(
+      "Material Request",
+      id,
+      "Updated Material Request Status",
+      `Material Request Status Updated For Request ID: ${id}, STATUS:${status}`,
+      user_id
+    );
   // result.affectedRows tells if any row was updated
   return result.affectedRows > 0;
+};
+
+const updateRequestMaterialItemsAndStatusModel = async (
+  materialRequestId,
+  items,
+  userId
+) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 1️⃣ Update approved_quantity + item status
+    for (const item of items) {
+      const approvedQty = Number(item.approveQuantity) || 0;
+      const requiredQty = Number(item.required_quantity);
+
+      let itemStatus = "pending";
+      if (approvedQty + Number(item.approved_quantity) === requiredQty) {
+        itemStatus = "approved";
+      } else if (
+        approvedQty + Number(item.approved_quantity) < requiredQty &&
+        approvedQty + Number(item.approved_quantity) > 0
+      ) {
+        itemStatus = "partial";
+      }
+
+      const [updateMaterialRequestItem] = await connection.execute(
+        `UPDATE request_material_items
+         SET approved_quantity = approved_quantity + ? , status = ?
+         WHERE id = ? AND requestMaterialId = ?`,
+        [approvedQty, itemStatus, item.id, materialRequestId]
+      );
+      if (updateMaterialRequestItem.affectedRows === 1)
+        createActivityLog(
+          "Material Request",
+          item.id,
+          "Updated Material Request Items.",
+          `Updated Material Request Item, Item ID: ${item.id}, STATUS: ${itemStatus}}`,
+          userId
+        );
+
+      const quantity_after_approve = Number(item.stock_quantity) - approvedQty;
+      if (quantity_after_approve < 0) {
+        throw new Error(
+          "Approved Quantity is greater than approved stock quantity"
+        );
+      }
+      await query(
+        `UPDATE inventory
+     SET quantity_after_approve = ?
+     WHERE item_id = ?`,
+        [quantity_after_approve, item.request_material_item_id]
+      );
+    }
+
+    // 2️⃣ Check if ALL items are approved
+    const [rows] = await connection.execute(
+      `SELECT COUNT(*) AS total,
+              SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved_count
+       FROM request_material_items
+       WHERE requestMaterialId = ?`,
+      [materialRequestId]
+    );
+
+    const { total, approved_count } = rows[0];
+
+    // 3️⃣ Update request_material status ONLY if all items approved
+
+    if (Number(total) === Number(approved_count) && total > 0) {
+      const [updatedMaterialRequest] = await connection.execute(
+        `UPDATE request_material
+         SET status = 'approved', updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [materialRequestId]
+      );
+      if (updatedMaterialRequest.affectedRows === 1)
+        createActivityLog(
+          "Material Request",
+          materialRequestId,
+          "Approve Material Request.",
+          `Material Request Status Updated For Request ID: ${materialRequestId}, STATUS: approved}`,
+          userId
+        );
+    }
+
+    await connection.commit();
+
+    return { success: true };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 };
 
 module.exports = {
   createRequestMaterialModel,
   getAllRequestMaterialsModel,
   updateRequestMaterialStatusModel,
+  updateRequestMaterialItemsAndStatusModel,
 };

@@ -38,7 +38,6 @@ async function createRequestMaterial(req, res) {
       request_no: req_no,
       items,
     };
-    console.log(payload);
 
     // 🔴 Required field validation
     if (
@@ -101,9 +100,14 @@ const getAllRequestMaterials = async (req, res) => {
         requestMap.set(row.request_id, {
           request_material_id: row.request_id,
           request_no: row.request_no,
-
+          user_id: row.user_id,
           user_name: row.user_name,
           user_phone: row.user_phone,
+          projectId: row.projectId,
+          buildingId: row.buildingId,
+          floorId: row.floorId,
+          flatId: row.flatId,
+          commonAreaId: row.commonAreaId,
 
           project_name: row.project_name,
           building_name: row.building_name,
@@ -122,10 +126,13 @@ const getAllRequestMaterials = async (req, res) => {
       }
 
       requestMap.get(row.request_id).items.push({
+        id: row.id,
         request_material_item_id: row.request_item_id,
         item_name: row.item_name,
         required_quantity: row.required_quantity,
+        approved_quantity: row.approved_quantity || 0,
         unit: row.unit,
+        status: row.item_status,
       });
     });
 
@@ -139,10 +146,10 @@ const getAllRequestMaterials = async (req, res) => {
 const updateRequestMaterialStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, user_id } = req.body;
 
     // ✅ Allowed status values (as per ENUM)
-    const allowedStatus = ["draft", "pending", "approved"];
+    const allowedStatus = ["rejected", "pending", "approved"];
 
     if (!id) {
       return res.status(400).json({
@@ -151,7 +158,7 @@ const updateRequestMaterialStatus = async (req, res) => {
       });
     }
 
-    if (!status || !allowedStatus.includes(status)) {
+    if (!status || !allowedStatus.includes(status, user_id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid status value",
@@ -160,7 +167,8 @@ const updateRequestMaterialStatus = async (req, res) => {
 
     const updated = await requestMaterialModel.updateRequestMaterialStatusModel(
       id,
-      status
+      status,
+      user_id
     );
 
     if (!updated) {
@@ -183,8 +191,39 @@ const updateRequestMaterialStatus = async (req, res) => {
   }
 };
 
+const updateRequestMaterialItemsAndStatusController = async (req, res) => {
+  try {
+    const { materialRequestId, items, userId } = req.body; // assuming auth middleware sets req.user
+    console.log(materialRequestId, items, userId);
+    if (!materialRequestId || !Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        message: "materialRequestId and items are required",
+      });
+    }
+
+    await requestMaterialModel.updateRequestMaterialItemsAndStatusModel(
+      materialRequestId,
+      items,
+      userId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Material request items updated successfully",
+    });
+  } catch (error) {
+    console.error("Update Material Request Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update material request",
+    });
+  }
+};
+
 module.exports = {
   createRequestMaterial,
   getAllRequestMaterials,
   updateRequestMaterialStatus,
+  updateRequestMaterialItemsAndStatusController,
 };
