@@ -114,7 +114,6 @@ async function createInventoryTransactionOut(req, res) {
 }
 
 async function createInventoryTransactionIssueMaterial(req, res) {
-  console.log(req.body);
   try {
     // 🔹 Parse items JSON
     let items = req.body.materials;
@@ -153,7 +152,6 @@ async function createInventoryTransactionIssueMaterial(req, res) {
       await inventoryTransactionModel.createInventoryTransactionIssueMaterial(
         payload
       );
-    console.log(transaction);
 
     return res.status(201).json({
       success: true,

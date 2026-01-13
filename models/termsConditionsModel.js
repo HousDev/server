@@ -7,20 +7,21 @@ async function findByIdTC(id) {
   return await query("SELECT * FROM terms_conditions WHERE id=?", [id]);
 }
 async function findByIdVendorsTC(id) {
-  return await query("SELECT * FROM terms_conditions WHERE vendor_id=?", [id]);
+  return await query(
+    "SELECT * FROM terms_conditions WHERE vendor_id=? OR vendor_id=null OR vendor_id=0",
+    [id]
+  );
 }
 async function createTC(payload) {
   return await query(
     `INSERT INTO terms_conditions (
 vendor_id,
-title,
 category,
 content,
 is_active,
-is_default) VALUES(?,?,?,?,?,?)`,
+is_default) VALUES(?,?,?,?,?)`,
     [
-      payload.vendor_id,
-      payload.title,
+      payload.vendor_id ?? null,
       payload.category,
       payload.content,
       payload.is_active,
@@ -33,7 +34,6 @@ async function updateTC(id, payload) {
     `UPDATE terms_conditions
 SET
   vendor_id = ?,
-  title = ?,
   category = ?,
   content = ?,
   is_active = ?,
@@ -41,8 +41,7 @@ SET
 WHERE id = ?;
 `,
     [
-      payload.vendor_id,
-      payload.title,
+      payload.vendor_id ?? null,
       payload.category,
       payload.content,
       payload.is_active,

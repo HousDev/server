@@ -14,5 +14,9 @@ requestMaterialRoute.put(
   "/status/:id",
   requestMaterialController.updateRequestMaterialStatus
 );
+requestMaterialRoute.put(
+  "/update-items",
+  requestMaterialController.updateRequestMaterialItemsAndStatusController
+);
 
 module.exports = requestMaterialRoute;

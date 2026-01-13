@@ -24,6 +24,8 @@ const path = require("path");
 const ProjectDetailsRouter = require("./routes/proectDetailsRoutes.js");
 const templateRoutes = require("./routes/templateRoutes.js");
 const requestMaterialRoute = require("./routes/requestMaterialRoutes.js");
+const logsRoutes = require("./routes/logsRoutes.js");
+const pdfRouter = require("./generatePdf/pdfRoutes.js");
 
 dotenv.config();
 const app = express();
@@ -53,6 +55,8 @@ app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
+app.use("/api/logs", logsRoutes);
+app.use("/api/pdf", pdfRouter);
 
 const PORT = process.env.PORT || 4000;
 (async () => {
