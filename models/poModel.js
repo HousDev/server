@@ -110,7 +110,7 @@ async function findById(id) {
 
 async function updatePO(id, payload) {
   const updatePOSQL =
-    "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?,po_date = ?,delivery_date = ?,is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms_id = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?,status = ?,material_status = ?,payment_status = ?,created_by = ?,updated_at = NOW() WHERE id = ?";
+    "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?,po_date = ?,delivery_date = ?, due_date=?, is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms_id = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?,status = ?,material_status = ?,payment_status = ?,created_by = ?,updated_at = NOW() WHERE id = ?";
 
   const updatePOValues = [
     payload.vendor_id,
@@ -118,6 +118,7 @@ async function updatePO(id, payload) {
     String(payload.po_type_id) || null,
     payload.po_date || null,
     payload.delivery_date || null,
+    payload.due_date,
     payload.is_interstate ? 1 : 0,
 
     parseFloat(payload.subtotal || 0),
@@ -136,11 +137,7 @@ async function updatePO(id, payload) {
     parseFloat(payload.total_paid || 0),
     parseFloat(payload.balance_amount || 0),
 
-    JSON.stringify(
-      Array.isArray(payload.selected_terms_ids)
-        ? payload.selected_terms_ids
-        : []
-    ),
+    payload.selected_terms_ids || null,
 
     payload.terms_and_conditions || null,
     payload.notes || null,

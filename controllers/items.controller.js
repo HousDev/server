@@ -35,8 +35,7 @@ exports.createItem = async (req, res) => {
       !payload.item_code ||
       !payload.item_name ||
       !payload.category ||
-      !payload.unit ||
-      !payload.location
+      !payload.unit
     ) {
       return res.status(400).json({ message: "all fields are required" });
     }

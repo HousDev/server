@@ -241,6 +241,7 @@ async function createPO(req, res) {
       "po_type_id",
       "po_date",
       "delivery_date",
+      "due_date",
       "is_interstate",
 
       "subtotal",
@@ -280,6 +281,7 @@ async function createPO(req, res) {
       payload.po_type_id || null,
       payload.po_date || null,
       payload.delivery_date || null,
+      payload.due_date || null,
       payload.is_interstate ? 1 : 0,
 
       parseFloat(payload.subtotal || 0),
