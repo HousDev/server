@@ -26,6 +26,9 @@ const templateRoutes = require("./routes/templateRoutes.js");
 const requestMaterialRoute = require("./routes/requestMaterialRoutes.js");
 const logsRoutes = require("./routes/logsRoutes.js");
 const pdfRouter = require("./generatePdf/pdfRoutes.js");
+const poPaymentRouter = require("./routes/poPaymentRouter.js");
+const poPaymentReminderRoutes = require("./routes/poPaymentReminderRoutes.js");
+const startPoPaymentReminderCron = require("./corn/poPaymentReminder.cron.js");
 
 dotenv.config();
 const app = express();
@@ -57,7 +60,9 @@ app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
 app.use("/api/logs", logsRoutes);
 app.use("/api/pdf", pdfRouter);
-
+app.use("/api/po-payments", poPaymentRouter);
+app.use("/api/po-payment-reminders", poPaymentReminderRoutes);
+startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;
 (async () => {
   try {

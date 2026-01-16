@@ -25,18 +25,12 @@ router.post(
   "/po-sequences/next",
   useIfFunction(seqController.next, "poSequenceController.next")
 );
+
 router.post(
   "/po-material-tracking",
   useIfFunction(
     trackController.createTracking,
     "poTrackingController.createTracking"
-  )
-);
-router.post(
-  "/po-payments",
-  useIfFunction(
-    trackController.createPayment,
-    "poTrackingController.createPayment"
   )
 );
 
