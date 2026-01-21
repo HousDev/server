@@ -21,7 +21,17 @@ async function findAll() {
   const rows = await query(
     `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
      FROM users
-     ORDER BY COALESCE(full_name, '') ASC`
+     ORDER BY COALESCE(full_name, '') ASC`,
+  );
+  return rows.map(normalizePermissions);
+}
+
+async function findAllByRole(role) {
+  const rows = await query(
+    `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
+     FROM users where role=?
+     ORDER BY COALESCE(full_name, '') ASC`,
+    [role],
   );
   return rows.map(normalizePermissions);
 }
@@ -30,7 +40,7 @@ async function findById(id) {
   const rows = await query(
     `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
      FROM users WHERE id = ? LIMIT 1`,
-    [id]
+    [id],
   );
   return normalizePermissions(rows[0] || null);
 }
@@ -39,7 +49,7 @@ async function findByEmailWithPassword(email) {
   const rows = await query(
     `SELECT id, email, full_name, phone, role, department, is_active, permissions, password, created_at, updated_at
      FROM users WHERE email = ? LIMIT 1`,
-    [email]
+    [email],
   );
   const row = rows[0] || null;
   if (row) {
@@ -78,14 +88,14 @@ async function create({
       is_active ? 1 : 0,
       passwordHash,
       JSON.stringify(permissions || {}),
-    ]
+    ],
   );
   return findById(id);
 }
 
 async function update(
   id,
-  { full_name, phone, role, department, passwordHash, is_active, permissions }
+  { full_name, phone, role, department, passwordHash, is_active, permissions },
 ) {
   const fields = [];
   const params = [];
@@ -147,6 +157,7 @@ async function updateUserPermissions(userId, permissions) {
 
 module.exports = {
   findAll,
+  findAllByRole,
   findById,
   findByEmailWithPassword,
   create,

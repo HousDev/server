@@ -21,6 +21,17 @@ async function getAllUsers(req, res) {
   }
 }
 
+async function getAllUsersByRole(req, res) {
+  try {
+    const role = req.params.role;
+    const users = await UserModel.findAllByRole(role);
+    res.json(users.map(scrub));
+  } catch (err) {
+    console.error("getAllUsers error:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+}
+
 async function getUserById(req, res) {
   try {
     const user = await UserModel.findById(req.params.id);
@@ -173,4 +184,5 @@ module.exports = {
   deleteUser,
   toggleActive,
   updateUserPermissions,
+  getAllUsersByRole,
 };

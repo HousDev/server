@@ -3,7 +3,7 @@ const { query } = require("../config/db");
 
 function startPoPaymentReminderCron() {
   cron.schedule(
-    "53 16 * * *", // 8:00 AM every day
+    "45 18 * * *", // 8:00 AM every day
     async () => {
       console.log("PO Payment Reminder cron running");
       const allPos = await query(`SELECT p.*, v.name AS vendor_name
