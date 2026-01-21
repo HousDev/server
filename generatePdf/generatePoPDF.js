@@ -4,29 +4,42 @@ const path = require("path");
 const fs = require("fs");
 
 async function generatePoPdf(data) {
-  // 🔥 READ LOGO
+  // READ LOGO
   const logoPath = path.join(__dirname, "Logo.png");
   const logoBase64 = fs.readFileSync(logoPath, "base64");
 
-  // 🔥 ATTACH LOGO TO TEMPLATE DATA
   const templateData = {
     ...data,
     logoBase64: `data:image/webp;base64,${logoBase64}`,
   };
 
+  // LOAD TEMPLATE
   const templatePath = path.join(__dirname, "generatePO.ejs");
   const html = await ejs.renderFile(templatePath, templateData);
 
+  // DETECT OS
+  const isLinux = process.platform === "linux";
+
+  // SET EXECUTABLE PATH
+  const executablePath = isLinux
+    ? "/usr/bin/chromium-browser"
+    : "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+
+  // LAUNCH BROWSER
   const browser = await puppeteer.launch({
     headless: "new",
-    executablePath:
-      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
   });
 
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: "networkidle0" });
 
+  // DATE FORMATTING
   const now = new Date();
   const generatedOn = now.toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -34,6 +47,7 @@ async function generatePoPdf(data) {
     year: "numeric",
   });
 
+  // GENERATE PDF
   const pdf = await page.pdf({
     format: "A4",
     printBackground: true,

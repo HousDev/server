@@ -14,7 +14,7 @@ const poTypesRoutes = require("./routes/poTypesRoutes");
 const serviceTypesRoutes = require("./routes/serviceTypesRoutes");
 const serviceOrderRoutes = require("./routes/serviceOrderRoutes");
 const { pool } = require("./config/db");
-const roleRouter = require("./routes/rolesRouter.js");
+const roleRoutes = require("./routes/roleRoutes");
 const termsConditionsRouter = require("./routes/termsConditionsRouter.js");
 const InventoryRouter = require("./routes/InventoryRouter.js");
 const InventoryTransactionRouter = require("./routes/inventoryTransactionRoute.js");
@@ -33,6 +33,7 @@ const areaTasksRoutes = require("./routes/areaTasks.router.js");
 const areaSubTasksRoutes = require("./routes/subTask.router.js");
 const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
 
+const departmentRoutes = require("./routes/departmentRoutes");
 dotenv.config();
 const app = express();
 app.use(cors());
@@ -51,7 +52,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/po_types", poTypesRoutes);
 app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
-app.use("/api/roles", roleRouter);
+// Routes
+app.use('/api/roles', roleRoutes);
 app.use("/api/terms-conditions", termsConditionsRouter);
 app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
@@ -69,6 +71,7 @@ app.use("/api/area-tasks", areaTasksRoutes);
 app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 
+app.use("/api/departments", departmentRoutes);
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;
 (async () => {
