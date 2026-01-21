@@ -22,6 +22,22 @@ const normalizePermissions = (row) => {
 
 // ✅ सभी users fetch करें
 async function findAll() {
+  const rows = await query(
+    `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
+     FROM users
+     ORDER BY COALESCE(full_name, '') ASC`,
+  );
+  return rows.map(normalizePermissions);
+}
+
+async function findAllByRole(role) {
+  const rows = await query(
+    `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
+     FROM users where role=?
+     ORDER BY COALESCE(full_name, '') ASC`,
+    [role],
+  );
+  return rows.map(normalizePermissions);
   try {
     const rows = await query(
       `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
@@ -37,6 +53,12 @@ async function findAll() {
 
 // ✅ ID से user find करें
 async function findById(id) {
+  const rows = await query(
+    `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
+     FROM users WHERE id = ? LIMIT 1`,
+    [id],
+  );
+  return normalizePermissions(rows[0] || null);
   try {
     const rows = await query(
       `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
@@ -52,6 +74,18 @@ async function findById(id) {
 
 // ✅ Email से user find करें (password के साथ)
 async function findByEmailWithPassword(email) {
+  const rows = await query(
+    `SELECT id, email, full_name, phone, role, department, is_active, permissions, password, created_at, updated_at
+     FROM users WHERE email = ? LIMIT 1`,
+    [email],
+  );
+  const row = rows[0] || null;
+  if (row) {
+    try {
+      if (typeof row.permissions === "string")
+        row.permissions = JSON.parse(row.permissions);
+    } catch {
+      row.permissions = {};
   try {
     const rows = await query(
       `SELECT id, email, full_name, phone, role, department, is_active, permissions, password, created_at, updated_at
@@ -99,6 +133,13 @@ async function create({
       full_name,
       phone,
       role,
+      department || null,
+      is_active ? 1 : 0,
+      passwordHash,
+      JSON.stringify(permissions || {}),
+    ],
+  );
+  return findById(id);
       department,
       is_active,
       permissions,
@@ -140,6 +181,7 @@ async function create({
 // ✅ User update करें (FIXED)
 async function update(
   id,
+  { full_name, phone, role, department, passwordHash, is_active, permissions },
   { full_name, phone, role, department, password, is_active, permissions },
 ) {
   try {
@@ -235,6 +277,7 @@ async function updateUserPermissions(userId, permissions) {
 
 module.exports = {
   findAll,
+  findAllByRole,
   findById,
   findByEmailWithPassword,
   create,

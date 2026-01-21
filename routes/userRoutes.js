@@ -8,11 +8,13 @@ const router = express.Router();
 // GET /api/users
 router.get("/", userController.getAllUsers);
 
+router.get("/role/:role", userController.getAllUsersByRole);
+
 // GET /api/users/:id
 router.get(
   "/:id",
   [param("id").isString().notEmpty()],
-  userController.getUserById
+  userController.getUserById,
 );
 
 // POST /api/users
@@ -24,7 +26,7 @@ router.post(
     body("role").optional().isString(),
     body("permissions").optional().isObject(),
   ],
-  userController.createUser
+  userController.createUser,
 );
 
 // PUT /api/users/:id
@@ -36,21 +38,21 @@ router.put(
     body("password").optional().isLength({ min: 6 }),
     body("permissions").optional().isObject(),
   ],
-  userController.updateUser
+  userController.updateUser,
 );
 
 // DELETE /api/users/:id
 router.delete(
   "/:id",
   [param("id").isString().notEmpty()],
-  userController.deleteUser
+  userController.deleteUser,
 );
 
 // PATCH /api/users/:id/toggle-active
 router.patch(
   "/:id/toggle-active",
   [param("id").isString().notEmpty()],
-  userController.toggleActive
+  userController.toggleActive,
 );
 router.put("/:userId/permissions", userController.updateUserPermissions);
 
