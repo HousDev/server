@@ -65,10 +65,6 @@ const updateDepartmentValidation = [
     .trim()
     .isLength({ max: 500 })
     .withMessage("Description cannot exceed 500 characters"),
-  body("manager_id")
-    .optional()
-    .isString()
-    .withMessage("Manager ID must be a string"),
   body("is_active")
     .optional()
     .isBoolean()

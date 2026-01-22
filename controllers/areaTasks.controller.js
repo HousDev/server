@@ -21,6 +21,18 @@ const getAllTasks = async (req, res) => {
   }
 };
 
+const getAllTasksByProjectId = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const tasks = await areaTasksModel.findAllByProjectId(projectId);
+
+    return res.status(200).json({ success: true, data: tasks });
+  } catch (error) {
+    console.error("getAllTasks error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // Get single main task by ID
 const getTaskById = async (req, res) => {
   try {
@@ -119,6 +131,7 @@ const toggleTaskStatus = async (req, res) => {
 module.exports = {
   getAllTasks,
   getTaskById,
+  getAllTasksByProjectId,
   createTask,
   updateTask,
   deleteTask,

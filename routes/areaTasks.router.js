@@ -10,6 +10,12 @@ const areaTasksController = require("../controllers/areaTasks.controller");
 // Get all main tasks (optionally filtered by project/building/floor/area/engineer)
 router.get("/", areaTasksController.getAllTasks);
 
+// Get all main tasks (optionally filtered by project/building/floor/area/engineer)
+router.get(
+  "/projectTasks/:projectId",
+  areaTasksController.getAllTasksByProjectId,
+);
+
 // Get a single main task by ID
 router.get("/:id", areaTasksController.getTaskById);
 

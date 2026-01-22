@@ -107,10 +107,7 @@ class Department {
 
   // Soft delete department (set is_active = false)
   static async delete(id) {
-    await query(
-      "UPDATE departments SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [id],
-    );
+    await query("DELETE FROM departments WHERE id = ?", [id]);
     return true;
   }
 
