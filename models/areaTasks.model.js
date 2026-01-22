@@ -56,6 +56,32 @@ const findAll = async (filters = {}) => {
   return rows;
 };
 
+const findAllByProjectId = async (project_id) => {
+  let sql = `
+    SELECT 
+      at.*,
+      p.name AS project_name,
+      b.building_name,
+      f.floor_name,
+      fl.flat_name,
+      ca.common_area_name,
+      u1.full_name AS assigned_engineer_name,
+      u2.full_name AS created_by_name
+    FROM area_tasks at
+    LEFT JOIN projects p ON at.project_id = p.id
+    LEFT JOIN buildings b ON at.building_id = b.id
+    LEFT JOIN floors f ON at.floor_id = f.id
+    LEFT JOIN flats fl ON at.flat_id = fl.id
+    LEFT JOIN common_areas ca ON at.common_area_id = ca.id
+    LEFT JOIN users u1 ON at.assigned_engineer = u1.id
+    LEFT JOIN users u2 ON at.created_by = u2.id
+    WHERE at.project_id = ?
+  `;
+
+  const [rows] = await promisePool.query(sql, [Number(project_id)]);
+  return rows;
+};
+
 // Get single task by ID with FK names
 const findById = async (id) => {
   const [rows] = await promisePool.query(
@@ -179,6 +205,7 @@ const toggleActive = async (id) => {
 module.exports = {
   findAll,
   findById,
+  findAllByProjectId,
   create,
   update,
   remove,
