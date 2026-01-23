@@ -5,6 +5,7 @@ const controller = require("../controllers/subTask.controller");
 // ✅ Get all sub-tasks (optionally filter by main task)
 // GET /api/area-sub-tasks?area_task_id=12
 router.get("/", controller.findAll);
+router.get("/subTasks/:areaId", controller.findAllByAreaId);
 
 // ✅ Get single sub-task by ID
 // GET /api/area-sub-tasks/:id
