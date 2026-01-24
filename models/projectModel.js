@@ -28,11 +28,11 @@ const createProjectWithHierarchy = async (projectData) => {
         projectData.location,
         projectData.start_date || null,
         projectData.end_date || null,
-      ]
+      ],
     );
 
     const projectId = projectResult.insertId;
-
+    //for error
     // 2. Create buildings
     if (projectData.buildings && projectData.buildings.length > 0) {
       for (const building of projectData.buildings) {
@@ -43,7 +43,7 @@ const createProjectWithHierarchy = async (projectData) => {
         const [buildingResult] = await connection.execute(
           `INSERT INTO buildings (project_id, building_name) 
            VALUES (?, ?)`,
-          [projectId, building.building_name]
+          [projectId, building.building_name],
         );
 
         const buildingId = buildingResult.insertId;
@@ -58,7 +58,7 @@ const createProjectWithHierarchy = async (projectData) => {
             const [floorResult] = await connection.execute(
               `INSERT INTO floors (building_id, floor_name) 
                VALUES (?, ?)`,
-              [buildingId, floor.floor_name]
+              [buildingId, floor.floor_name],
             );
 
             const floorId = floorResult.insertId;
@@ -73,7 +73,7 @@ const createProjectWithHierarchy = async (projectData) => {
                 await connection.execute(
                   `INSERT INTO flats (floor_id, flat_name) 
                    VALUES (?, ?)`,
-                  [floorId, flat.flat_name]
+                  [floorId, flat.flat_name],
                 );
               }
             }
@@ -91,7 +91,7 @@ const createProjectWithHierarchy = async (projectData) => {
                 await connection.execute(
                   `INSERT INTO common_areas (floor_id, common_area_name) 
                    VALUES (?, ?)`,
-                  [floorId, commonArea.common_area_name]
+                  [floorId, commonArea.common_area_name],
                 );
               }
             }
@@ -145,7 +145,7 @@ const getProjectHierarchy = async (projectId) => {
        LEFT JOIN common_areas ca ON f.id = ca.floor_id
        WHERE b.project_id = ?
        ORDER BY b.id, f.id, fl.id, ca.id`,
-      [projectId]
+      [projectId],
     );
 
     // Process the flat result into hierarchy
@@ -246,7 +246,7 @@ const getProjectHierarchy = async (projectId) => {
 const getAllProjects = async () => {
   try {
     const projects = await query(
-      "SELECT * FROM projects ORDER BY created_at DESC"
+      "SELECT * FROM projects ORDER BY created_at DESC",
     );
     return projects;
   } catch (error) {
@@ -292,7 +292,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
           projectData.start_date || null,
           projectData.end_date || null,
           projectId,
-        ]
+        ],
       );
     }
 
@@ -301,11 +301,11 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
       // Get existing buildings for this project
       const [existingBuildings] = await connection.execute(
         "SELECT id, building_name FROM buildings WHERE project_id = ?",
-        [projectId]
+        [projectId],
       );
 
       const existingBuildingMap = new Map(
-        existingBuildings.map((b) => [b.id, b])
+        existingBuildings.map((b) => [b.id, b]),
       );
       const incomingBuildingMap = new Map();
 
@@ -323,14 +323,14 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
             `UPDATE buildings 
              SET building_name = ?
              WHERE id = ? AND project_id = ?`,
-            [building.building_name, building.id, projectId]
+            [building.building_name, building.id, projectId],
           );
         } else {
           // Create new building
           const [buildingResult] = await connection.execute(
             `INSERT INTO buildings (project_id, building_name) 
              VALUES (?, ?)`,
-            [projectId, building.building_name]
+            [projectId, building.building_name],
           );
 
           // Store new ID for floor processing
@@ -344,11 +344,11 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
           // Get existing floors for this building
           const [existingFloors] = await connection.execute(
             "SELECT id, floor_name FROM floors WHERE building_id = ?",
-            [buildingDbId]
+            [buildingDbId],
           );
 
           const existingFloorMap = new Map(
-            existingFloors.map((f) => [f.id, f])
+            existingFloors.map((f) => [f.id, f]),
           );
 
           // Process each floor
@@ -363,7 +363,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                 `UPDATE floors 
                  SET floor_name = ?
                  WHERE id = ? AND building_id = ?`,
-                [floor.floor_name, floor.id, buildingDbId]
+                [floor.floor_name, floor.id, buildingDbId],
               );
 
               existingFloorMap.delete(floor.id);
@@ -372,7 +372,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
               const [floorResult] = await connection.execute(
                 `INSERT INTO floors (building_id, floor_name) 
                  VALUES (?, ?)`,
-                [buildingDbId, floor.floor_name]
+                [buildingDbId, floor.floor_name],
               );
 
               // Store new ID for flats/common areas processing
@@ -386,11 +386,11 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
               // Get existing flats for this floor
               const [existingFlats] = await connection.execute(
                 "SELECT id, flat_name FROM flats WHERE floor_id = ?",
-                [floorDbId]
+                [floorDbId],
               );
 
               const existingFlatMap = new Map(
-                existingFlats.map((f) => [f.id, f])
+                existingFlats.map((f) => [f.id, f]),
               );
 
               // Process each flat
@@ -405,7 +405,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                     `UPDATE flats 
                      SET flat_name = ?
                      WHERE id = ? AND floor_id = ?`,
-                    [flat.flat_name, flat.id, floorDbId]
+                    [flat.flat_name, flat.id, floorDbId],
                   );
 
                   existingFlatMap.delete(flat.id);
@@ -414,7 +414,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                   await connection.execute(
                     `INSERT INTO flats (floor_id, flat_name) 
                      VALUES (?, ?)`,
-                    [floorDbId, flat.flat_name]
+                    [floorDbId, flat.flat_name],
                   );
                 }
               }
@@ -434,11 +434,11 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
               // Get existing common areas for this floor
               const [existingCommonAreas] = await connection.execute(
                 "SELECT id, common_area_name FROM common_areas WHERE floor_id = ?",
-                [floorDbId]
+                [floorDbId],
               );
 
               const existingCommonAreaMap = new Map(
-                existingCommonAreas.map((ca) => [ca.id, ca])
+                existingCommonAreas.map((ca) => [ca.id, ca]),
               );
 
               // Process each common area
@@ -456,7 +456,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                     `UPDATE common_areas 
                      SET common_area_name = ?
                      WHERE id = ? AND floor_id = ?`,
-                    [commonArea.common_area_name, commonArea.id, floorDbId]
+                    [commonArea.common_area_name, commonArea.id, floorDbId],
                   );
 
                   existingCommonAreaMap.delete(commonArea.id);
@@ -465,7 +465,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                   await connection.execute(
                     `INSERT INTO common_areas (floor_id, common_area_name) 
                      VALUES (?, ?)`,
-                    [floorDbId, commonArea.common_area_name]
+                    [floorDbId, commonArea.common_area_name],
                   );
                 }
               }
@@ -474,7 +474,7 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
               for (const [commonAreaId, commonArea] of existingCommonAreaMap) {
                 await connection.execute(
                   "DELETE FROM common_areas WHERE id = ?",
-                  [commonAreaId]
+                  [commonAreaId],
                 );
               }
             }
