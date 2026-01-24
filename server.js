@@ -59,8 +59,8 @@ app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/workflow", workflowRoutes);
-app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api/project-details", ProjectDetailsRouter);
+// ⭐ REMOVE /api prefix - uploads should be served at root level
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
 app.use("/api/logs", logsRoutes);
