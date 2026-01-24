@@ -24,7 +24,8 @@ const normalizePermissions = (row) => {
 async function findAll() {
   try {
     const rows = await query(
-      `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
+      `SELECT id, email, full_name, phone, role, department, is_active, 
+              permissions, profile_picture, created_at, updated_at
        FROM users
        ORDER BY COALESCE(full_name, '') ASC`,
     );
@@ -54,7 +55,8 @@ async function findAllByRole(role) {
 async function findById(id) {
   try {
     const rows = await query(
-      `SELECT id, email, full_name, phone, role, department, is_active, permissions, created_at, updated_at
+      `SELECT id, email, full_name, phone, role, department, is_active, 
+              permissions, profile_picture, created_at, updated_at
        FROM users WHERE id = ? LIMIT 1`,
       [id],
     );
@@ -65,11 +67,12 @@ async function findById(id) {
   }
 }
 
-// ✅ Email से user find करें (password के साथ)
+// Update findByEmailWithPassword function
 async function findByEmailWithPassword(email) {
   try {
     const rows = await query(
-      `SELECT id, email, full_name, phone, role, department, is_active, permissions, password, created_at, updated_at
+      `SELECT id, email, full_name, phone, role, department, is_active, 
+              permissions, profile_picture, password, created_at, updated_at
        FROM users WHERE email = ? LIMIT 1`,
       [email],
     );
@@ -94,6 +97,7 @@ async function findByEmailWithPassword(email) {
 }
 
 // ✅ नया user create करें
+// Update create function
 async function create({
   email,
   full_name,
@@ -101,6 +105,7 @@ async function create({
   role = "USER",
   department,
   password,
+  profile_picture = null,
   is_active = true,
   permissions = {},
 }) {
@@ -111,27 +116,17 @@ async function create({
     const safeFullName = full_name || null;
     const safePhone = phone || null;
     const safeDepartment = department || null;
+    const safeProfilePicture = profile_picture || null;
     const safePermissions = permissions
       ? JSON.stringify(permissions)
       : JSON.stringify({});
     const safeIsActive = is_active ? 1 : 0;
     const safeRole = role || "USER";
 
-    // Debug logging
-    console.log("Creating user with data:", {
-      id,
-      email,
-      full_name: safeFullName,
-      phone: safePhone,
-      role: safeRole,
-      department: safeDepartment,
-      is_active: safeIsActive,
-      permissions: safePermissions,
-    });
-
     await query(
-      `INSERT INTO users (id, email, full_name, phone, role, department, is_active, password, permissions, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO users (id, email, full_name, phone, role, department, 
+        is_active, password, permissions, profile_picture, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         id,
         email,
@@ -142,6 +137,7 @@ async function create({
         safeIsActive,
         password,
         safePermissions,
+        safeProfilePicture,
       ],
     );
 
@@ -153,9 +149,10 @@ async function create({
 }
 
 // ✅ User update करें
+// Update update function
 async function update(
   id,
-  { full_name, phone, role, department, password, is_active, permissions },
+  { full_name, phone, role, department, password, profile_picture, is_active, permissions },
 ) {
   try {
     const fields = [];
@@ -185,6 +182,10 @@ async function update(
     if (password !== undefined) {
       fields.push("password = ?");
       params.push(password);
+    }
+    if (profile_picture !== undefined) {
+      fields.push("profile_picture = ?");
+      params.push(profile_picture || null);
     }
     if (permissions !== undefined) {
       fields.push("permissions = ?");

@@ -1,8 +1,9 @@
-// controllers/userController.js
+
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
 const UserModel = require("../models/userModel");
-const RoleModel = require("../models/roleModel");
+const Role = require("../models/roleModel"); // Changed from RoleModel to Role
+const fs = require("fs"); // Add this for file handling
 
 // ✅ Password और sensitive data remove करें
 const scrub = (user) => {
@@ -55,10 +56,10 @@ async function getUserById(req, res) {
       });
     }
 
-    // Get role permissions
+    // Get role permissions - FIXED: Changed from RoleModel.getRoleByName to Role.findByName
     let rolePermissions = {};
     try {
-      const role = await RoleModel.getRoleByName(user.role);
+      const role = await Role.findByName(user.role); // FIXED HERE
       if (role) {
         rolePermissions = role.permissions || {};
       }
@@ -103,6 +104,7 @@ async function createUser(req, res) {
       role = "USER",
       department,
       password,
+      profile_picture = null,
       is_active = true,
       permissions = {},
     } = req.body;
@@ -143,6 +145,7 @@ async function createUser(req, res) {
       phone: phone || null,
       role: role.toUpperCase(),
       department: department || null,
+      profile_picture: profile_picture || null,
       password: hash,
       is_active: is_active !== false,
       permissions: permissions || {},
@@ -150,16 +153,16 @@ async function createUser(req, res) {
 
     console.log("User created successfully:", created);
 
-    // Check if role exists, if not create it
+    // Check if role exists, if not create it - FIXED: Changed from RoleModel.getRoleByName to Role.findByName
     try {
-      const existingRole = await RoleModel.getRoleByName(role);
+      const existingRole = await Role.findByName(role); // FIXED HERE
       if (!existingRole) {
-        // Create default permissions for new role
+        // Create default permissions for new role - FIXED: Changed from RoleModel.createRole to Role.create
         const defaultPermissions = {
           view_dashboard: true,
           view_service_orders: true,
         };
-        await RoleModel.createRole({
+        await Role.create({ // FIXED HERE
           name: role,
           description: `Auto-created role for ${role}`,
           permissions: defaultPermissions,
@@ -214,6 +217,7 @@ async function updateUser(req, res) {
       role,
       department,
       password,
+      profile_picture,
       is_active,
       permissions,
     } = req.body;
@@ -227,6 +231,7 @@ async function updateUser(req, res) {
     if (phone !== undefined) updateData.phone = phone || null;
     if (role !== undefined) updateData.role = role.toUpperCase();
     if (department !== undefined) updateData.department = department || null;
+    if (profile_picture !== undefined) updateData.profile_picture = profile_picture || null;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (permissions !== undefined) updateData.permissions = permissions || {};
 
@@ -254,6 +259,70 @@ async function updateUser(req, res) {
     res.status(500).json({
       success: false,
       error: "Failed to update user",
+      message: err.message,
+    });
+  }
+}
+
+// ✅ Profile picture upload करें
+// ✅ Profile picture upload करें - FIXED VERSION
+async function uploadProfilePicture(req, res) {
+  try {
+    const { id } = req.params;
+    
+    console.log("Upload profile picture request for user:", id);
+    console.log("File received:", req.file);
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "No file uploaded",
+      });
+    }
+
+    const user = await UserModel.findById(id);
+    if (!user) {
+      // Delete the uploaded file since user doesn't exist
+      if (req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupErr) {
+          console.error("Failed to cleanup file:", cleanupErr);
+        }
+      }
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    // ✅ FIX: Consistent URL format - always use `/uploads/filename`
+    const profilePictureUrl = `/uploads/${req.file.filename}`;
+    console.log("Profile picture URL:", profilePictureUrl);
+
+    // Update user profile picture
+    const updated = await UserModel.update(id, { profile_picture: profilePictureUrl });
+
+    res.json({
+      success: true,
+      data: scrub(updated),
+      message: "Profile picture uploaded successfully",
+    });
+  } catch (err) {
+    console.error("uploadProfilePicture error:", err);
+    
+    // Clean up file if there was an error
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupErr) {
+        console.error("Failed to cleanup file:", cleanupErr);
+      }
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: "Failed to upload profile picture",
       message: err.message,
     });
   }
@@ -323,7 +392,7 @@ async function toggleActive(req, res) {
 }
 
 // ✅ User permissions update करें
-const updateUserPermissions = async (req, res) => {
+async function updateUserPermissions(req, res) {
   try {
     const { userId } = req.params;
     const { permissions } = req.body;
@@ -359,7 +428,7 @@ const updateUserPermissions = async (req, res) => {
       error: error.message,
     });
   }
-};
+}
 
 // ✅ Login function
 async function login(req, res) {
@@ -399,10 +468,10 @@ async function login(req, res) {
       });
     }
 
-    // Get role permissions
+    // Get role permissions - FIXED: Changed from RoleModel.getRoleByName to Role.findByName
     let rolePermissions = {};
     try {
-      const role = await RoleModel.getRoleByName(user.role);
+      const role = await Role.findByName(user.role); // FIXED HERE
       if (role) {
         rolePermissions = role.permissions || {};
       }
@@ -448,10 +517,10 @@ async function getProfile(req, res) {
       });
     }
 
-    // Get role permissions
+    // Get role permissions - FIXED: Changed from RoleModel.getRoleByName to Role.findByName
     let rolePermissions = {};
     try {
-      const role = await RoleModel.getRoleByName(user.role);
+      const role = await Role.findByName(user.role); // FIXED HERE
       if (role) {
         rolePermissions = role.permissions || {};
       }
@@ -488,4 +557,5 @@ module.exports = {
   getAllUsersByRole,
   login,
   getProfile,
+  uploadProfilePicture,
 };
