@@ -19,6 +19,21 @@ const findAll = async (filters = {}) => {
   return rows;
 };
 
+const findAllByAreaId = async (filters = {}) => {
+  let sql = "SELECT * FROM area_sub_tasks WHERE 1=1";
+  const values = [];
+
+  if (filters.area_task_id) {
+    sql += " AND area_task_id = ?";
+    values.push(filters.area_task_id);
+  }
+
+  sql += " ORDER BY created_at ASC";
+
+  const [rows] = await promisePool.query(sql, values);
+  return rows;
+};
+
 /**
  * Get sub-task by ID
  */
@@ -38,23 +53,29 @@ const create = async (data) => {
     area_task_id,
     name,
     unit,
+    start_date,
+    end_date,
     total_work,
-    progress = 0,
+    progress = 0.0,
     status = "pending",
   } = data;
+  console.log(data);
 
   const sql = `
     INSERT INTO area_sub_tasks
-      (area_task_id, name, unit, total_work, progress, status)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (area_task_id, name, unit, start_date, end_date, predicted_date,  total_work, progress, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const [result] = await promisePool.query(sql, [
     area_task_id,
     name,
     unit,
+    start_date,
+    end_date,
+    end_date,
     total_work,
-    progress,
+    0.0,
     status,
   ]);
 
@@ -106,6 +127,7 @@ module.exports = {
   findAll,
   findById,
   create,
+  findAllByAreaId,
   update,
   remove,
   updateProgress,

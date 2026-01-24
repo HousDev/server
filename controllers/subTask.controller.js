@@ -38,6 +38,19 @@ exports.findAll = async (req, res) => {
   }
 };
 
+exports.findAllByAreaId = async (req, res) => {
+  try {
+    const areaId = req.params.areaId;
+    if (!areaId) {
+      return res.status(400).json({ message: "areaId required." });
+    }
+    const subTasks = await subTaskModel.findAllByAreaId(filters);
+    res.json(subTasks);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /**
  * Get sub-task by ID
  */

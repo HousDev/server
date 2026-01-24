@@ -32,11 +32,12 @@ const startPoPaymentReminderCron = require("./corn/poPaymentReminder.cron.js");
 const areaTasksRoutes = require("./routes/areaTasks.router.js");
 const areaSubTasksRoutes = require("./routes/subTask.router.js");
 const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
+const employeeRoute = require("./routes/employees.router.js");
 
 const departmentRoutes = require("./routes/departmentRoutes");
 dotenv.config();
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
@@ -53,7 +54,7 @@ app.use("/api/po_types", poTypesRoutes);
 app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
 // Routes
-app.use('/api/roles', roleRoutes);
+app.use("/api/roles", roleRoutes);
 app.use("/api/terms-conditions", termsConditionsRouter);
 app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
@@ -70,6 +71,7 @@ app.use("/api/po-payment-reminders", poPaymentReminderRoutes);
 app.use("/api/area-tasks", areaTasksRoutes);
 app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
+app.use("/api/employees", employeeRoute);
 
 app.use("/api/departments", departmentRoutes);
 startPoPaymentReminderCron();
