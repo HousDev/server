@@ -33,6 +33,7 @@ const areaTasksRoutes = require("./routes/areaTasks.router.js");
 const areaSubTasksRoutes = require("./routes/subTask.router.js");
 const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
 const employeeRoute = require("./routes/employees.router.js");
+const companyRoutes = require("./routes/companyRoutes");
 
 const departmentRoutes = require("./routes/departmentRoutes");
 dotenv.config();
@@ -72,6 +73,7 @@ app.use("/api/area-tasks", areaTasksRoutes);
 app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 app.use("/api/employees", employeeRoute);
+app.use("/api/companies", companyRoutes);
 
 app.use("/api/departments", departmentRoutes);
 startPoPaymentReminderCron();
