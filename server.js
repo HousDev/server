@@ -36,6 +36,7 @@ const employeeRoute = require("./routes/employees.router.js");
 const companyRoutes = require("./routes/companyRoutes");
 
 const departmentRoutes = require("./routes/departmentRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
 dotenv.config();
 const app = express();
 app.use(cors({ origin: "*" }));
@@ -76,6 +77,8 @@ app.use("/api/employees", employeeRoute);
 app.use("/api/companies", companyRoutes);
 
 app.use("/api/departments", departmentRoutes);
+app.use("/api/attendance", attendanceRoutes);
+
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;
 (async () => {
