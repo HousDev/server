@@ -34,6 +34,7 @@ const areaSubTasksRoutes = require("./routes/subTask.router.js");
 const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
 const employeeRoute = require("./routes/employees.router.js");
 const companyRoutes = require("./routes/companyRoutes");
+const securitySettingsRoutes = require('./routes/securitySettings.routes');
 
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
@@ -75,6 +76,8 @@ app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 app.use("/api/employees", employeeRoute);
 app.use("/api/companies", companyRoutes);
+app.use('/api/security-settings', securitySettingsRoutes);
+
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);

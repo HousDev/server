@@ -202,14 +202,18 @@ exports.deleteCompany = async (req, res) => {
 };
 
 // GET /api/companies/:id/locations
+// GET /api/companies/:id/locations
 exports.getCompanyLocations = async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Remove the "AND is_active = 1" filter to get ALL branches
     const sql = `
       SELECT * FROM office_locations 
-      WHERE company_id = ? AND is_active = 1 
-      ORDER BY created_at DESC
+      WHERE company_id = ? 
+      ORDER BY 
+        is_active DESC,  -- Show active first
+        created_at DESC
     `;
     const [locations] = await pool.query(sql, [id]);
     return res.json(locations || []);
@@ -307,6 +311,7 @@ exports.createOfficeLocation = async (req, res) => {
 };
 
 // PUT /api/companies/locations/:id
+// PUT /api/companies/locations/:id
 exports.updateOfficeLocation = async (req, res) => {
   const { id } = req.params;
   const {
@@ -321,7 +326,7 @@ exports.updateOfficeLocation = async (req, res) => {
     geofence_radius_meters,
     contact_email,
     contact_phone,
-    is_active,
+    is_active, // Make sure this is included
   } = req.body;
 
   try {
@@ -351,7 +356,7 @@ exports.updateOfficeLocation = async (req, res) => {
       geofence_radius_meters || 1000,
       contact_email || null,
       contact_phone || null,
-      is_active !== undefined ? is_active : 1,
+      is_active !== undefined ? (is_active ? 1 : 0) : 1, // Handle boolean conversion
       id,
     ];
 
@@ -366,6 +371,8 @@ exports.updateOfficeLocation = async (req, res) => {
 };
 
 // DELETE /api/companies/locations/:id
+// DELETE /api/companies/locations/:id
+// DELETE /api/companies/locations/:id - HARD DELETE
 exports.deleteOfficeLocation = async (req, res) => {
   const { id } = req.params;
 
@@ -375,13 +382,10 @@ exports.deleteOfficeLocation = async (req, res) => {
       return res.status(404).json({ message: "Office location not found" });
     }
 
-    // Soft delete - set is_active = 0
-    await pool.query(
-      "UPDATE office_locations SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [id]
-    );
+    // HARD DELETE - permanently remove from database
+    await pool.query("DELETE FROM office_locations WHERE id = ?", [id]);
 
-    return res.json({ message: "Office location deleted successfully" });
+    return res.json({ message: "Office location deleted permanently" });
   } catch (err) {
     console.error("deleteOfficeLocation error", err);
     return res.status(500).json({ message: "Server error deleting office location" });
