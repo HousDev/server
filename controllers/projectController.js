@@ -4,7 +4,7 @@ const projectModel = require("../models/projectModel");
 const createProject = async (req, res) => {
   try {
     const projectData = req.body;
-
+    // console.log(JSON.stringify(projectData));
     // Validate required fields
     if (!projectData.name || !projectData.name.trim()) {
       return res.status(400).json({
@@ -68,7 +68,7 @@ const getProject = async (req, res) => {
     }
 
     const project = await projectModel.getProjectHierarchy(parseInt(projectId));
-
+    console.log(project);
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -126,7 +126,7 @@ const updateProjectHierarchy = async (req, res) => {
 
     // Validate project exists
     const existingProject = await projectModel.getProjectHierarchy(
-      parseInt(projectId)
+      parseInt(projectId),
     );
     if (!existingProject) {
       return res.status(404).json({
@@ -137,7 +137,7 @@ const updateProjectHierarchy = async (req, res) => {
 
     const result = await projectModel.updateProjectWithHierarchy(
       parseInt(projectId),
-      projectData
+      projectData,
     );
 
     res.json({
