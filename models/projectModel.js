@@ -13,6 +13,7 @@ const validateProjectData = (projectData) => {
 // Create project with full hierarchy (Project -> Buildings -> Floors -> Flats/Common Areas)
 const createProjectWithHierarchy = async (projectData) => {
   validateProjectData(projectData);
+  console.log(projectData);
 
   const connection = await pool.getConnection();
 
@@ -70,11 +71,35 @@ const createProjectWithHierarchy = async (projectData) => {
                   throw new Error("Flat name is required");
                 }
 
-                await connection.execute(
+                const [flatResult] = await connection.execute(
                   `INSERT INTO flats (floor_id, flat_name) 
                    VALUES (?, ?)`,
                   [floorId, flat.flat_name],
                 );
+
+                const flatId = flatResult.insertId;
+                console.log("out side");
+                console.log(flat.areas);
+                if (flat.areas && flat.areas.length > 0) {
+                  console.log("in side");
+                  for (const area of flat.areas) {
+                    if (!area.name || !area.name.trim()) {
+                      throw new Error("Flat name is required");
+                    }
+
+                    await connection.execute(
+                      `INSERT INTO area_component (name,area_type,area_id, area_size,unit) 
+                   VALUES (?, ?, ?, ?, ?)`,
+                      [
+                        area.name,
+                        area.area_type,
+                        flatId,
+                        area.area_size,
+                        area.unit,
+                      ],
+                    );
+                  }
+                }
               }
             }
 
@@ -89,9 +114,14 @@ const createProjectWithHierarchy = async (projectData) => {
                 }
 
                 await connection.execute(
-                  `INSERT INTO common_areas (floor_id, common_area_name) 
-                   VALUES (?, ?)`,
-                  [floorId, commonArea.common_area_name],
+                  `INSERT INTO common_areas (floor_id, common_area_name,area_size,unit) 
+                   VALUES (?, ?, ?, ?)`,
+                  [
+                    floorId,
+                    commonArea.common_area_name,
+                    commonArea.area_size,
+                    commonArea.unit,
+                  ],
                 );
               }
             }
@@ -138,11 +168,13 @@ const getProjectHierarchy = async (projectId) => {
         b.id as building_id, b.building_name, b.status as building_status, b.progress_percentage as building_progress,
         f.id as floor_id, f.floor_name, f.status as floor_status, f.progress_percentage as floor_progress,
         fl.id as flat_id, fl.flat_name, fl.status as flat_status, fl.workflow as flat_workflow, fl.progress_percentage as flat_progress,
-        ca.id as common_area_id, ca.common_area_name, ca.status as common_area_status, ca.workflow as common_area_workflow, ca.progress_percentage as common_area_progress
+        ca.id as common_area_id, ca.common_area_name, ca.status as common_area_status, ca.workflow as common_area_workflow, ca.progress_percentage as common_area_progress, ca.area_size as common_area_size, ca.unit as common_area_size_unit,
+        ac.id as area_component_id, ac.name as area_component_name, ac.area_id as area_id, ac.area_size as area_component_size, ac.unit as area_component_size_unit, ac.status as area_component_status 
        FROM buildings b
        LEFT JOIN floors f ON b.id = f.building_id
        LEFT JOIN flats fl ON f.id = fl.floor_id
        LEFT JOIN common_areas ca ON f.id = ca.floor_id
+       LEFT JOIN area_component ac ON fl.id = ac.area_id
        WHERE b.project_id = ?
        ORDER BY b.id, f.id, fl.id, ca.id`,
       [projectId],
@@ -150,7 +182,7 @@ const getProjectHierarchy = async (projectId) => {
 
     // Process the flat result into hierarchy
     const buildingsMap = new Map();
-
+    console.log(rows);
     rows.forEach((row) => {
       // Process building
       if (!buildingsMap.has(row.building_id)) {
@@ -221,6 +253,8 @@ const getProjectHierarchy = async (projectId) => {
             id: row.common_area_id,
             floor_id: row.floor_id,
             common_area_name: row.common_area_name,
+            common_area_size: row.common_area_size,
+            common_area_size_unit: row.common_area_size_unit,
             status: row.common_area_status,
             workflow: workflow,
             progress_percentage: row.common_area_progress,
