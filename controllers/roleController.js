@@ -106,7 +106,7 @@ class RoleController {
       }
 
       const roleData = {
-        name: req.body.name,
+        name: req.body.name.toLowerCase(),
         description: req.body.description,
         permissions: req.body.permissions || {},
         is_active: req.body.is_active !== false,
@@ -161,7 +161,7 @@ class RoleController {
       }
 
       const updateData = {};
-      if (req.body.name !== undefined) updateData.name = req.body.name;
+      if (req.body.name !== undefined) updateData.name = req.body.name.toLowerCase();
       if (req.body.description !== undefined)
         updateData.description = req.body.description;
       if (req.body.permissions !== undefined)

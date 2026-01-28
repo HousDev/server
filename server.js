@@ -37,7 +37,7 @@ const companyRoutes = require("./routes/companyRoutes");
 const securitySettingsRoutes = require('./routes/securitySettings.routes');
 
 const departmentRoutes = require("./routes/departmentRoutes");
-const attendanceRoutes = require("./routes/attendanceRoutes");
+const attendanceRoutes = require("./routes/attendance.routes.js");
 dotenv.config();
 const app = express();
 app.use(cors({ origin: "*" }));
@@ -63,8 +63,8 @@ app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/workflow", workflowRoutes);
-// ⭐ REMOVE /api prefix - uploads should be served at root level
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));app.use("/api/project-details", ProjectDetailsRouter);
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
 app.use("/api/logs", logsRoutes);
@@ -81,6 +81,7 @@ app.use('/api/security-settings', securitySettingsRoutes);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
+
 
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;
