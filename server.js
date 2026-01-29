@@ -40,7 +40,7 @@ const expenseRoutes = require('./routes/expense.routes');
 const ticketRoutes = require("./routes/ticket.routes.js");
 
 const departmentRoutes = require("./routes/departmentRoutes");
-const attendanceRoutes = require("./routes/attendanceroutes.js");
+const attendanceRoutes = require("./routes/attendanceRoutes.js");
 dotenv.config();
 const app = express();
 app.use(express.json({ limit: "100mb" }));
