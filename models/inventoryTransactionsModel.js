@@ -37,7 +37,7 @@ const createInventoryTransaction = async (transactionData) => {
         receiver_name,
         receiver_phone,
         delivery_location,
-      ]
+      ],
     );
 
     const transactionId = trxResult.insertId;
@@ -45,7 +45,7 @@ const createInventoryTransaction = async (transactionData) => {
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
       const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
-        item.id
+        item.id,
       );
 
       await connection.execute(
@@ -57,12 +57,12 @@ const createInventoryTransaction = async (transactionData) => {
           item.id,
           item.quantity_issued,
           inventoryMaterial.quantity,
-        ]
+        ],
       );
 
       const poTracking = await poTrackingMaterial.findByIdAndPO_ID(
         item.id,
-        po_id
+        po_id,
       );
 
       if (item.quantity_issued > poTracking.quantity_pending) {
@@ -73,8 +73,8 @@ const createInventoryTransaction = async (transactionData) => {
         poTracking.quantity_pending - item.quantity_issued === 0
           ? "completed"
           : poTracking.quantity_pending - item.quantity_issued > 0
-          ? "partial"
-          : "pending";
+            ? "partial"
+            : "pending";
 
       await connection.execute(
         `UPDATE po_material_tracking SET
@@ -82,7 +82,7 @@ const createInventoryTransaction = async (transactionData) => {
          quantity_pending = quantity_pending - ?,
          status = ?
          WHERE id = ?`,
-        [item.quantity_issued, item.quantity_issued, status, poTracking.id]
+        [item.quantity_issued, item.quantity_issued, status, poTracking.id],
       );
 
       const [[findPoStatus]] = await connection.execute(
@@ -94,7 +94,7 @@ const createInventoryTransaction = async (transactionData) => {
   FROM po_material_tracking
   WHERE po_id = ?
   `,
-        [po_id]
+        [po_id],
       );
 
       let po_material_status = "completed";
@@ -107,12 +107,12 @@ const createInventoryTransaction = async (transactionData) => {
 
       await connection.execute(
         `UPDATE purchase_orders SET material_status = ? WHERE id = ?`,
-        [po_material_status, po_id]
+        [po_material_status, po_id],
       );
 
       await connection.execute(
         `UPDATE inventory SET quantity = quantity + ? WHERE id = ?`,
-        [item.quantity_issued, inventoryMaterial.id]
+        [item.quantity_issued, inventoryMaterial.id],
       );
     }
 
@@ -128,7 +128,7 @@ const createInventoryTransaction = async (transactionData) => {
        LEFT JOIN inventory_transactions_items iti
          ON it.id = iti.transaction_id
        WHERE it.id = ?`,
-      [transactionId]
+      [transactionId],
     );
 
     await connection.commit();
@@ -172,7 +172,13 @@ const createInventoryTransactionOut = async (transactionData) => {
         receiving_date, receiver_name, receiver_phone,
         trasaction_type, delivery_location)
        VALUES ( ?, ?, ?, ?, 'OUTWARD', ?)`,
-      [remark, receiving_date, receiver_name, receiver_phone, delivery_location]
+      [
+        remark,
+        receiving_date,
+        receiver_name,
+        receiver_phone,
+        delivery_location,
+      ],
     );
 
     const transactionId = trxResult.insertId;
@@ -180,7 +186,7 @@ const createInventoryTransactionOut = async (transactionData) => {
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
       const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
-        item.materialId
+        item.materialId,
       );
 
       await connection.execute(
@@ -192,12 +198,12 @@ const createInventoryTransactionOut = async (transactionData) => {
           item.materialId,
           item.quantity,
           inventoryMaterial.quantity,
-        ]
+        ],
       );
 
       await connection.execute(
         `UPDATE inventory SET quantity = quantity - ? WHERE id = ?`,
-        [item.quantity, inventoryMaterial.id]
+        [item.quantity, inventoryMaterial.id],
       );
     }
 
@@ -213,7 +219,7 @@ const createInventoryTransactionOut = async (transactionData) => {
        LEFT JOIN inventory_transactions_items iti
          ON it.id = iti.transaction_id
        WHERE it.id = ?`,
-      [transactionId]
+      [transactionId],
     );
 
     await connection.commit();
@@ -273,7 +279,7 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
         receiver_name,
         receiver_number,
         issue_date,
-      ]
+      ],
     );
 
     const transactionId = trxResult.insertId;
@@ -281,7 +287,7 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
       const inventoryMaterial = await inventoryModel.findInventoryById(
-        item.materialId
+        item.materialId,
       );
 
       await connection.execute(
@@ -293,12 +299,12 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
           inventoryMaterial.item_id,
           item.quantity,
           inventoryMaterial.quantity,
-        ]
+        ],
       );
 
       await connection.execute(
         `UPDATE inventory SET quantity = quantity - ? WHERE id = ?`,
-        [item.quantity, inventoryMaterial.id]
+        [item.quantity, inventoryMaterial.id],
       );
     }
 
@@ -314,7 +320,7 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
        LEFT JOIN issue_material_transactions_items iti
          ON it.id = iti.transaction_id
        WHERE it.id = ?`,
-      [transactionId]
+      [transactionId],
     );
 
     await connection.commit();

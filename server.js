@@ -34,12 +34,14 @@ const areaSubTasksRoutes = require("./routes/subTask.router.js");
 const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
 const employeeRoute = require("./routes/employees.router.js");
 const companyRoutes = require("./routes/companyRoutes");
-const securitySettingsRoutes = require('./routes/securitySettings.routes');
+const securitySettingsRoutes = require("./routes/securitySettings.routes");
 
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 dotenv.config();
 const app = express();
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
@@ -64,7 +66,19 @@ app.use("/api/inventory-transaction", InventoryTransactionRouter);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/workflow", workflowRoutes);
 // ⭐ REMOVE /api prefix - uploads should be served at root level
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));app.use("/api/project-details", ProjectDetailsRouter);
+// app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/api/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".pdf")) {
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "inline");
+      }
+    },
+  }),
+);
+app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
 app.use("/api/logs", logsRoutes);
@@ -76,8 +90,7 @@ app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 app.use("/api/employees", employeeRoute);
 app.use("/api/companies", companyRoutes);
-app.use('/api/security-settings', securitySettingsRoutes);
-
+app.use("/api/security-settings", securitySettingsRoutes);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);

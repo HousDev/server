@@ -13,7 +13,6 @@ const validateProjectData = (projectData) => {
 // Create project with full hierarchy (Project -> Buildings -> Floors -> Flats/Common Areas)
 const createProjectWithHierarchy = async (projectData) => {
   validateProjectData(projectData);
-  console.log(projectData);
 
   const connection = await pool.getConnection();
 
@@ -78,10 +77,7 @@ const createProjectWithHierarchy = async (projectData) => {
                 );
 
                 const flatId = flatResult.insertId;
-                console.log("out side");
-                console.log(flat.areas);
                 if (flat.areas && flat.areas.length > 0) {
-                  console.log("in side");
                   for (const area of flat.areas) {
                     if (!area.name || !area.name.trim()) {
                       throw new Error("Flat name is required");
@@ -149,42 +145,69 @@ const createProjectWithHierarchy = async (projectData) => {
   }
 };
 
-// Get project with full hierarchy (Optimized with JOINs)
 const getProjectHierarchy = async (projectId) => {
   try {
-    // Get project details
+    // 1️⃣ Get project
     const [projects] = await query("SELECT * FROM projects WHERE id = ?", [
       projectId,
     ]);
-    if (!projects) {
-      return null;
-    }
+
+    if (!projects) return null;
 
     const project = projects;
 
-    // Get all data with optimized query using JOINs
+    // 2️⃣ Fetch hierarchy
     const rows = await query(
-      `SELECT 
-        b.id as building_id, b.building_name, b.status as building_status, b.progress_percentage as building_progress,
-        f.id as floor_id, f.floor_name, f.status as floor_status, f.progress_percentage as floor_progress,
-        fl.id as flat_id, fl.flat_name, fl.status as flat_status, fl.workflow as flat_workflow, fl.progress_percentage as flat_progress,
-        ca.id as common_area_id, ca.common_area_name, ca.status as common_area_status, ca.workflow as common_area_workflow, ca.progress_percentage as common_area_progress, ca.area_size as common_area_size, ca.unit as common_area_size_unit,
-        ac.id as area_component_id, ac.name as area_component_name, ac.area_id as area_id, ac.area_size as area_component_size, ac.unit as area_component_size_unit, ac.status as area_component_status 
-       FROM buildings b
-       LEFT JOIN floors f ON b.id = f.building_id
-       LEFT JOIN flats fl ON f.id = fl.floor_id
-       LEFT JOIN common_areas ca ON f.id = ca.floor_id
-       LEFT JOIN area_component ac ON fl.id = ac.area_id
-       WHERE b.project_id = ?
-       ORDER BY b.id, f.id, fl.id, ca.id`,
+      `
+      SELECT 
+        b.id AS building_id,
+        b.building_name,
+        b.status AS building_status,
+        b.progress_percentage AS building_progress,
+
+        f.id AS floor_id,
+        f.floor_name,
+        f.status AS floor_status,
+        f.progress_percentage AS floor_progress,
+
+        fl.id AS flat_id,
+        fl.flat_name,
+        fl.status AS flat_status,
+        fl.workflow AS flat_workflow,
+        fl.progress_percentage AS flat_progress,
+
+        ca.id AS common_area_id,
+        ca.common_area_name,
+        ca.status AS common_area_status,
+        ca.workflow AS common_area_workflow,
+        ca.progress_percentage AS common_area_progress,
+        ca.area_size AS common_area_size,
+        ca.unit AS common_area_size_unit,
+
+        ac.id AS area_component_id,
+        ac.name AS area_component_name,
+        ac.area_id AS area_id,
+        ac.area_size AS area_component_size,
+        ac.unit AS area_component_size_unit,
+        ac.status AS area_component_status
+
+      FROM buildings b
+      LEFT JOIN floors f ON b.id = f.building_id
+      LEFT JOIN flats fl ON f.id = fl.floor_id
+      LEFT JOIN common_areas ca ON f.id = ca.floor_id
+      LEFT JOIN area_component ac 
+        ON fl.id = ac.area_id AND ac.area_type = 'flat'
+      WHERE b.project_id = ?
+      ORDER BY b.id, f.id, fl.id, ca.id
+      `,
       [projectId],
     );
 
-    // Process the flat result into hierarchy
+    // 3️⃣ Build hierarchy
     const buildingsMap = new Map();
-    console.log(rows);
+
     rows.forEach((row) => {
-      // Process building
+      // 🏢 Building
       if (!buildingsMap.has(row.building_id)) {
         buildingsMap.set(row.building_id, {
           id: row.building_id,
@@ -198,7 +221,7 @@ const getProjectHierarchy = async (projectId) => {
 
       const building = buildingsMap.get(row.building_id);
 
-      // Process floor (if exists)
+      // 🏬 Floor
       if (row.floor_id && !building.floors.has(row.floor_id)) {
         building.floors.set(row.floor_id, {
           id: row.floor_id,
@@ -211,59 +234,76 @@ const getProjectHierarchy = async (projectId) => {
         });
       }
 
-      if (row.floor_id) {
-        const floor = building.floors.get(row.floor_id);
+      if (!row.floor_id) return;
 
-        // Add flat (if exists and not already added)
-        if (row.flat_id && !floor.flats.some((f) => f.id === row.flat_id)) {
-          let workflow = row.flat_workflow;
-          if (typeof workflow === "string") {
-            try {
-              workflow = JSON.parse(workflow);
-            } catch {
-              workflow = [];
-            }
+      const floor = building.floors.get(row.floor_id);
+
+      // 🏠 Flat
+      if (row.flat_id && !floor.flats.some((f) => f.id === row.flat_id)) {
+        let workflow = row.flat_workflow;
+        if (typeof workflow === "string") {
+          try {
+            workflow = JSON.parse(workflow);
+          } catch {
+            workflow = [];
           }
-
-          floor.flats.push({
-            id: row.flat_id,
-            floor_id: row.floor_id,
-            flat_name: row.flat_name,
-            status: row.flat_status,
-            workflow: workflow,
-            progress_percentage: row.flat_progress,
-          });
         }
 
-        // Add common area (if exists and not already added)
-        if (
-          row.common_area_id &&
-          !floor.common_areas.some((ca) => ca.id === row.common_area_id)
-        ) {
-          let workflow = row.common_area_workflow;
-          if (typeof workflow === "string") {
-            try {
-              workflow = JSON.parse(workflow);
-            } catch {
-              workflow = [];
-            }
-          }
+        floor.flats.push({
+          id: row.flat_id,
+          floor_id: row.floor_id,
+          flat_name: row.flat_name,
+          status: row.flat_status,
+          workflow,
+          progress_percentage: row.flat_progress,
+          areas: [], // 👈 important
+        });
+      }
 
-          floor.common_areas.push({
-            id: row.common_area_id,
-            floor_id: row.floor_id,
-            common_area_name: row.common_area_name,
-            common_area_size: row.common_area_size,
-            common_area_size_unit: row.common_area_size_unit,
-            status: row.common_area_status,
-            workflow: workflow,
-            progress_percentage: row.common_area_progress,
+      // 📐 Area Components (Flat Areas)
+      if (row.area_component_id && row.flat_id) {
+        const flat = floor.flats.find((f) => f.id === row.flat_id);
+
+        if (flat && !flat.areas.some((a) => a.id === row.area_component_id)) {
+          flat.areas.push({
+            id: row.area_component_id,
+            name: row.area_component_name,
+            area_id: row.area_id,
+            area_size: row.area_component_size,
+            unit: row.area_component_size_unit,
+            status: row.area_component_status,
           });
         }
       }
+
+      // 🏢 Common Areas
+      if (
+        row.common_area_id &&
+        !floor.common_areas.some((ca) => ca.id === row.common_area_id)
+      ) {
+        let workflow = row.common_area_workflow;
+        if (typeof workflow === "string") {
+          try {
+            workflow = JSON.parse(workflow);
+          } catch {
+            workflow = [];
+          }
+        }
+
+        floor.common_areas.push({
+          id: row.common_area_id,
+          floor_id: row.floor_id,
+          common_area_name: row.common_area_name,
+          common_area_size: row.common_area_size,
+          common_area_size_unit: row.common_area_size_unit,
+          status: row.common_area_status,
+          workflow,
+          progress_percentage: row.common_area_progress,
+        });
+      }
     });
 
-    // Convert maps to arrays
+    // 4️⃣ Convert maps → arrays
     project.buildings = Array.from(buildingsMap.values()).map((building) => ({
       ...building,
       floors: Array.from(building.floors.values()),
