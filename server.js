@@ -40,7 +40,7 @@ const expenseRoutes = require('./routes/expense.routes');
 const ticketRoutes = require("./routes/ticket.routes.js");
 
 const departmentRoutes = require("./routes/departmentRoutes");
-const attendanceRoutes = require("./routes/attendance.routes.js");
+const attendanceRoutes = require("./routes/attendanceroutes.js");
 dotenv.config();
 const app = express();
 app.use(cors({ origin: "*" }));
