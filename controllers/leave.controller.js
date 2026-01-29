@@ -410,7 +410,7 @@ class LeaveController {
       return res.status(500).json({
         success: false,
         message: error.message || 'Failed to reject leave'
-    });
+      });
     }
   }
 
@@ -486,7 +486,7 @@ class LeaveController {
     }
   }
 
-  // Delete leave
+  // Delete leave - FIXED
   static async deleteLeave(req, res) {
     try {
       const { id } = req.params;
@@ -502,16 +502,18 @@ class LeaveController {
 
       // Delete attachment file if exists
       if (leave.attachment_path && fs.existsSync(leave.attachment_path)) {
-        fs.unlinkSync(leave.attachment_path);
+        try {
+          fs.unlinkSync(leave.attachment_path);
+        } catch (fileError) {
+          console.error('Error deleting attachment file:', fileError);
+          // Continue with database deletion even if file deletion fails
+        }
       }
 
-      // Delete from database
-      const [result] = await promisePool.query(
-        'DELETE FROM hrms_leaves WHERE id = ?',
-        [id]
-      );
+      // Delete from database using LeaveModel
+      const success = await LeaveModel.deleteLeave(id);
 
-      if (result.affectedRows > 0) {
+      if (success) {
         return res.status(200).json({
           success: true,
           message: 'Leave deleted successfully'
@@ -519,7 +521,7 @@ class LeaveController {
       } else {
         return res.status(500).json({
           success: false,
-          message: 'Failed to delete leave'
+          message: 'Failed to delete leave from database'
         });
       }
 
@@ -527,7 +529,7 @@ class LeaveController {
       console.error('Delete leave error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to delete leave'
+        message: error.message || 'Failed to delete leave'
       });
     }
   }
