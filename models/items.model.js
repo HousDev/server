@@ -1,9 +1,9 @@
 // backend/models/items.model.js
-const { promisePool } = require("../config/db");
+const { promisePool, pool } = require("../config/db");
 
 const findAll = async () => {
   const [rows] = await promisePool.query(
-    "SELECT * FROM items ORDER BY item_name"
+    "SELECT * FROM items ORDER BY item_code",
   );
   return rows;
 };
@@ -18,7 +18,7 @@ const findById = async (id) => {
 const findByCode = async (item_code) => {
   const [rows] = await promisePool.query(
     "SELECT * FROM items WHERE item_code = ?",
-    [item_code]
+    [item_code],
   );
   return rows[0] || null;
 };
@@ -56,7 +56,7 @@ const create = async (data) => {
       standard_rate,
       is_active ? 1 : 0,
       location,
-    ]
+    ],
   );
 
   const inserted = await findById(result.insertId);
@@ -99,10 +99,27 @@ const update = async (id, data) => {
 };
 
 const remove = async (id) => {
-  const [result] = await promisePool.query("DELETE FROM items WHERE id = ?", [
-    id,
-  ]);
-  return result.affectedRows > 0;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 2️⃣ Delete item
+    const [result] = await connection.query("DELETE FROM items WHERE id = ?", [
+      id,
+    ]);
+
+    // 1️⃣ Delete inventory first
+    await connection.query("DELETE FROM inventory WHERE item_id = ?", [id]);
+
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
 };
 
 const toggleActive = async (id) => {

@@ -15,7 +15,7 @@ async function createInventory(data) {
       (item_id, quantity, reorder_qty)
     VALUES (?, ?, ?)
     `,
-    [item_id, quantity, reorder_qty]
+    [item_id, quantity, reorder_qty],
   );
 }
 
@@ -34,7 +34,7 @@ async function updateInventory(id, data) {
       reorder_qty = ?
     WHERE id = ?
     `,
-    [quantity, reorder_qty, id]
+    [quantity, reorder_qty, id],
   );
 }
 
