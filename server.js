@@ -35,9 +35,13 @@ const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
 const employeeRoute = require("./routes/employees.router.js");
 const companyRoutes = require("./routes/companyRoutes");
 const securitySettingsRoutes = require("./routes/securitySettings.routes");
+const securitySettingsRoutes = require('./routes/securitySettings.routes');
+const leaveRoutes = require("./routes/leave.routes");
+const expenseRoutes = require('./routes/expense.routes');
+const ticketRoutes = require("./routes/ticket.routes.js");
 
 const departmentRoutes = require("./routes/departmentRoutes");
-const attendanceRoutes = require("./routes/attendanceRoutes");
+const attendanceRoutes = require("./routes/attendanceroutes.js");
 dotenv.config();
 const app = express();
 app.use(express.json({ limit: "100mb" }));
@@ -78,6 +82,7 @@ app.use(
     },
   }),
 );
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
@@ -91,9 +96,15 @@ app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 app.use("/api/employees", employeeRoute);
 app.use("/api/companies", companyRoutes);
 app.use("/api/security-settings", securitySettingsRoutes);
+app.use('/api/security-settings', securitySettingsRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use("/api/tickets", ticketRoutes);
+
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
+
 
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;
