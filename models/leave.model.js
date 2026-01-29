@@ -174,6 +174,15 @@ const LeaveModel = {
     return result.affectedRows > 0;
   },
   
+  // Delete leave
+  deleteLeave: async (id) => {
+    const [result] = await promisePool.query(
+      'DELETE FROM hrms_leaves WHERE id = ?',
+      [id]
+    );
+    return result.affectedRows > 0;
+  },
+  
   // Get leave statistics with half day support
   getLeaveStats: async () => {
     const query = `
