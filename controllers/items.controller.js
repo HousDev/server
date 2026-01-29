@@ -1,6 +1,7 @@
 // backend/controllers/items.controller.js
 const { createInventory } = require("../models/inventoryModel");
 const Items = require("../models/items.model");
+const { query } = require("../config/db");
 
 exports.listItems = async (req, res) => {
   try {
@@ -119,5 +120,61 @@ exports.toggleActive = async (req, res) => {
     res
       .status(500)
       .json({ message: "Server error", error: err.message || err });
+  }
+};
+
+exports.importItems = async (req, res) => {
+  try {
+    const items = req.body;
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ message: "Invalid items data" });
+    }
+
+    const values = items.map((item) => [
+      item.item_code,
+      item.item_name,
+      item.category,
+      item.item_category,
+      item.item_sub_category,
+      item.description,
+      item.unit,
+      item.hsn_code,
+      item.igst_rate ?? 18,
+      item.cgst_rate ?? 9,
+      item.sgst_rate ?? 9,
+      item.standard_rate ?? 0,
+      item.is_active ?? 1,
+      item.location ?? "",
+    ]);
+
+    const sql = `
+      INSERT INTO items (
+        item_code,
+        item_name,
+        category,
+        item_category,
+        item_sub_category,
+        description,
+        unit,
+        hsn_code,
+        igst_rate,
+        cgst_rate,
+        sgst_rate,
+        standard_rate,
+        is_active, location
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    values.forEach(async (element) => {
+      await query(sql, element);
+    });
+
+    res.json({
+      success: true,
+      inserted: values.length,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to import items" });
   }
 };
