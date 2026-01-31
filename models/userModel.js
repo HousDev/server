@@ -444,6 +444,23 @@ const findByEmailWithPassword = async (email) => {
  * Create new user - FIXED: Generate UUID for id
  */
 const create = async (data) => {
+}
+
+// ✅ User update करें
+// Update update function
+async function update(
+  id,
+  {
+    full_name,
+    phone,
+    role,
+    department,
+    password,
+    profile_picture,
+    is_active,
+    permissions,
+  },
+) {
   try {
     // First check if department_id column exists
     const hasDepartmentIdColumn = await checkColumnExists('users', 'department_id');

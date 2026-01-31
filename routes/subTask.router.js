@@ -7,6 +7,8 @@ const controller = require("../controllers/subTask.controller");
 router.get("/", controller.findAll);
 router.get("/subTasks/:areaId", controller.findAllByAreaId);
 
+router.get("/tasks/:projectId", controller.findTaskByProjects);
+
 // ✅ Get single sub-task by ID
 // GET /api/area-sub-tasks/:id
 router.get("/:id", controller.findById);

@@ -119,6 +119,8 @@ router.post("/", createRoleValidation, RoleController.createRole);
 // PUT /api/roles/:id - Update role
 router.put("/:id", updateRoleValidation, RoleController.updateRole);
 
+router.put("/:roleId/permissions", RoleController.updateRolePermissions);
+
 // PATCH /api/roles/:id/toggle - Toggle role active status
 router.patch(
   "/:id/toggle",

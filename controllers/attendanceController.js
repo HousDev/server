@@ -55,19 +55,8 @@ class AttendanceController {
 
   // ---------------- PUNCH IN ---------------- //
   punchIn = async (req, res) => {
-    console.log("🔵 PUNCH IN API CALLED");
-    console.log("Body:", req.body);
-    console.log("File:", req.file);
-
     try {
-      const {
-        user_id,
-        latitude,
-        longitude,
-        work_type = "office",
-        project_id,
-        project_location,
-      } = req.body;
+      const { user_id, latitude, longitude } = req.body;
 
       if (!user_id || !latitude || !longitude)
         return res.status(400).json({
@@ -80,22 +69,20 @@ class AttendanceController {
           .status(400)
           .json({ success: false, message: "Selfie image is required" });
 
-      if (work_type === "office") {
-        const withinRange = this.isWithinRadius(
-          parseFloat(latitude),
-          parseFloat(longitude),
-          this.OFFICE_LOCATION.latitude,
-          this.OFFICE_LOCATION.longitude,
-          this.MAX_DISTANCE_METERS,
-        );
+      const withinRange = this.isWithinRadius(
+        parseFloat(latitude),
+        parseFloat(longitude),
+        this.OFFICE_LOCATION.latitude,
+        this.OFFICE_LOCATION.longitude,
+        this.MAX_DISTANCE_METERS,
+      );
 
-        if (!withinRange) {
-          await fs.unlink(req.file.path);
-          return res.status(400).json({
-            success: false,
-            message: `You must be within ${this.MAX_DISTANCE_METERS}m of office`,
-          });
-        }
+      if (!withinRange) {
+        await fs.unlink(req.file.path);
+        return res.status(400).json({
+          success: false,
+          message: `You must be within ${this.MAX_DISTANCE_METERS}m of office`,
+        });
       }
 
       const existing = await attendanceModel.getTodayByUser(user_id);

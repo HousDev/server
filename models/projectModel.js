@@ -189,7 +189,8 @@ const getProjectHierarchy = async (projectId) => {
         ac.area_id AS area_id,
         ac.area_size AS area_component_size,
         ac.unit AS area_component_size_unit,
-        ac.status AS area_component_status
+        ac.status AS area_component_status,
+        ac.workflow AS area_workflow
 
       FROM buildings b
       LEFT JOIN floors f ON b.id = f.building_id
@@ -272,6 +273,7 @@ const getProjectHierarchy = async (projectId) => {
             area_size: row.area_component_size,
             unit: row.area_component_size_unit,
             status: row.area_component_status,
+            area_workflow: row.area_workflow,
           });
         }
       }
@@ -482,14 +484,74 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                     [flat.flat_name, flat.id, floorDbId],
                   );
 
+                  const [existingAreaComponents] = await connection.execute(
+                    "SELECT id, name FROM area_component WHERE area_id = ?",
+                    [flat.id],
+                  );
+
+                  const existingAreaComponentsMap = new Map(
+                    existingAreaComponents.map((f) => [f.id, f]),
+                  );
+
+                  for (const element of flat.areas) {
+                    if (element.id) {
+                      await connection.execute(
+                        `UPDATE area_component 
+                     SET name = ?, area_type = ?, area_size = ?, unit = ?
+                     WHERE id = ? AND area_id = ?`,
+                        [
+                          element.name,
+                          element.area_type ?? "flat",
+                          element.area_size,
+                          element.unit,
+                          element.id,
+                          flat.id,
+                        ],
+                      );
+                      existingAreaComponentsMap.delete(element.id);
+                    } else {
+                      await connection.execute(
+                        `INSERT INTO area_component( name , area_type , area_size , unit ,area_id)
+                     VALUES(?, ?, ?, ?, ?)`,
+                        [
+                          element.name,
+                          element.area_type ?? "flat",
+                          element.area_size,
+                          element.unit,
+                          flat.id,
+                        ],
+                      );
+                    }
+                    // Delete removed area components (only if flats array was provided)
+                    for (const [areaId, area] of existingAreaComponentsMap) {
+                      await connection.execute(
+                        "DELETE FROM area_component WHERE id = ?",
+                        [areaId],
+                      );
+                    }
+                  }
+
                   existingFlatMap.delete(flat.id);
                 } else {
                   // Create new flat
-                  await connection.execute(
+                  const [insertedFlat] = await connection.execute(
                     `INSERT INTO flats (floor_id, flat_name) 
                      VALUES (?, ?)`,
                     [floorDbId, flat.flat_name],
                   );
+                  for (const element of flat.areas) {
+                    await connection.execute(
+                      `INSERT INTO area_component (name, area_type, area_size, unit, area_id)
+     VALUES (?, ?, ?, ?, ?)`,
+                      [
+                        element.name ?? null,
+                        element.area_type ?? "flat",
+                        element.area_size ?? null,
+                        element.unit ?? null,
+                        insertedFlat.insertId, // or insertedFlatId
+                      ],
+                    );
+                  }
                 }
               }
 
@@ -528,18 +590,29 @@ const updateProjectWithHierarchy = async (projectId, projectData) => {
                   // Update existing common area
                   await connection.execute(
                     `UPDATE common_areas 
-                     SET common_area_name = ?
+                     SET common_area_name = ?, area_size = ?, unit = ?
                      WHERE id = ? AND floor_id = ?`,
-                    [commonArea.common_area_name, commonArea.id, floorDbId],
+                    [
+                      commonArea.common_area_name,
+                      commonArea.common_area_size,
+                      commonArea.common_area_size_unit,
+                      commonArea.id,
+                      floorDbId,
+                    ],
                   );
 
                   existingCommonAreaMap.delete(commonArea.id);
                 } else {
                   // Create new common area
                   await connection.execute(
-                    `INSERT INTO common_areas (floor_id, common_area_name) 
-                     VALUES (?, ?)`,
-                    [floorDbId, commonArea.common_area_name],
+                    `INSERT INTO common_areas (floor_id, common_area_name, area_size, unit) 
+                     VALUES (?, ?, ?, ?)`,
+                    [
+                      floorDbId,
+                      commonArea.common_area_name,
+                      commonArea.common_area_size,
+                      commonArea.common_area_size_unit,
+                    ],
                   );
                 }
               }

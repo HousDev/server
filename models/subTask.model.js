@@ -19,6 +19,13 @@ const findAll = async (filters = {}) => {
   return rows;
 };
 
+const findAllTaskByProjectId = async (projectId) => {
+  const sql = "SELECT * FROM area_sub_tasks WHERE project_id=?";
+
+  const [rows] = await promisePool.query(sql, [projectId]);
+  return rows;
+};
+
 const findAllByAreaId = async (filters = {}) => {
   let sql = "SELECT * FROM area_sub_tasks WHERE 1=1";
   const values = [];
@@ -50,33 +57,41 @@ const findById = async (id) => {
  */
 const create = async (data) => {
   const {
-    area_task_id,
+    project_id,
+    building_id,
+    floor_id,
+    flat_id,
+    common_area_id,
+    area_id,
+    engineer_id,
     name,
     unit,
+    total_work,
     start_date,
     end_date,
-    total_work,
-    progress = 0.0,
-    status = "pending",
   } = data;
-  console.log(data);
 
   const sql = `
     INSERT INTO area_sub_tasks
-      (area_task_id, name, unit, start_date, end_date, predicted_date,  total_work, progress, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (project_id, building_id, floor_id, flat_id, common_area_id, area_id, engineer_id, name, unit, total_work,  start_date, end_date, progress, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const [result] = await promisePool.query(sql, [
-    area_task_id,
+    project_id,
+    building_id,
+    floor_id,
+    flat_id || null,
+    common_area_id || null,
+    area_id || null,
+    engineer_id,
     name,
     unit,
+    total_work,
     start_date,
     end_date,
-    end_date,
-    total_work,
     0.0,
-    status,
+    "pending",
   ]);
 
   return await findById(result.insertId);
@@ -87,16 +102,22 @@ const create = async (data) => {
  */
 const update = async (id, data) => {
   // Use destructuring and provide default fallbacks
-  const { name, unit, total_work, progress, status } = data;
-  console.log(status);
+  const { total_work, unit, engineer_id, start_date, end_date } = data;
 
   const sql = `
     UPDATE area_sub_tasks
-    SET name = ?, unit = ?, total_work = ?, progress = ?, status = ?
+    SET total_work = ?, unit = ?,engineer_id = ?,  start_date = ?, end_date = ?
     WHERE id = ?
   `;
 
-  await promisePool.query(sql, [name, unit, total_work, progress, status, id]);
+  await promisePool.query(sql, [
+    total_work,
+    unit,
+    engineer_id,
+    start_date,
+    end_date,
+    id,
+  ]);
   return await findById(id);
 };
 
@@ -126,6 +147,7 @@ const updateProgress = async (id, progress, status) => {
 module.exports = {
   findAll,
   findById,
+  findAllTaskByProjectId,
   create,
   findAllByAreaId,
   update,
