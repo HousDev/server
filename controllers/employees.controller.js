@@ -531,7 +531,9 @@ exports.createEmployee = async (req, res) => {
         date_of_leaving: req.body.date_of_leaving || null,
         job_title: req.body.job_title || null,
         notice_period: req.body.notice_period || '30',
-        
+          salary: req.body.salary || null,
+  salary_type: req.body.salary_type || 'monthly',
+
         // System Details
         laptop_assigned: req.body.laptop_assigned || 'no',
         system_login_id: req.body.system_login_id || null,
@@ -676,7 +678,8 @@ exports.updateEmployee = async (req, res) => {
         date_of_leaving: req.body.date_of_leaving !== undefined ? req.body.date_of_leaving : employee.date_of_leaving,
         job_title: req.body.job_title !== undefined ? req.body.job_title : employee.job_title,
         notice_period: req.body.notice_period !== undefined ? req.body.notice_period : employee.notice_period,
-        
+        salary: req.body.salary !== undefined ? req.body.salary : employee.salary,
+  salary_type: req.body.salary_type !== undefined ? req.body.salary_type : employee.salary_type,
         // System Details
         laptop_assigned: req.body.laptop_assigned !== undefined ? req.body.laptop_assigned : employee.laptop_assigned,
         system_login_id: req.body.system_login_id !== undefined ? req.body.system_login_id : employee.system_login_id,
@@ -776,7 +779,8 @@ exports.updateAdditionalDetails = async (req, res) => {
       date_of_leaving: req.body.date_of_leaving !== undefined ? req.body.date_of_leaving : employee.date_of_leaving,
       job_title: req.body.job_title !== undefined ? req.body.job_title : employee.job_title,
       notice_period: req.body.notice_period !== undefined ? req.body.notice_period : employee.notice_period,
-      
+       salary: req.body.salary !== undefined ? req.body.salary : employee.salary,
+  salary_type: req.body.salary_type !== undefined ? req.body.salary_type : employee.salary_type,
       // System Details
       laptop_assigned: req.body.laptop_assigned !== undefined ? req.body.laptop_assigned : employee.laptop_assigned,
       system_login_id: req.body.system_login_id !== undefined ? req.body.system_login_id : employee.system_login_id,
@@ -885,7 +889,9 @@ exports.createEmployeeFromUser = async (req, res) => {
       office_location: office_location || null,
       attendence_location,
       profile_picture: profile_picture || null,
-      employee_status: 'active'
+      employee_status: 'active',
+        salary: req.body.salary || null,
+  salary_type: req.body.salary_type || 'monthly',
     };
 
     console.log("Creating employee from user with data:", employeeData);

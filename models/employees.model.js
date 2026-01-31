@@ -489,6 +489,8 @@ const create = async (data) => {
       date_of_leaving: data.date_of_leaving,
       job_title: data.job_title,
       notice_period: data.notice_period,
+        salary: data.salary,
+  salary_type: data.salary_type,
       
       // System Details
       laptop_assigned: data.laptop_assigned,
@@ -560,6 +562,8 @@ const update = async (id, data) => {
       "profile_picture",
       "employee_code",
       "employee_status",
+      "salary",
+  "salary_type",
       
       // Personal Details
       "blood_group",
