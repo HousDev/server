@@ -166,7 +166,11 @@ exports.importItems = async (req, res) => {
     `;
 
     values.forEach(async (element) => {
-      await query(sql, element);
+      const item = await query(sql, element);
+      query(
+        `INSERT INTO inventory(item_id,quantity,quantity_after_approve,reorder_qty) VALUES(?,?,?,?)`,
+        [item.insertId, 0, 0, 10],
+      );
     });
 
     res.json({
@@ -176,5 +180,27 @@ exports.importItems = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to import items" });
+  }
+};
+
+exports.getLastItemCode = async (req, res) => {
+  try {
+    const sql = `
+      SELECT item_code
+      FROM items
+      ORDER BY id DESC
+      LIMIT 1
+    `;
+
+    const rows = await query(sql);
+
+    if (!rows.length) {
+      return res.json({ lastItemCode: "MAT0000" });
+    }
+
+    res.json({ lastItemCode: rows[0].item_code });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch last item code" });
   }
 };

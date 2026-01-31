@@ -152,7 +152,16 @@ async function create({
 // Update update function
 async function update(
   id,
-  { full_name, phone, role, department, password, profile_picture, is_active, permissions },
+  {
+    full_name,
+    phone,
+    role,
+    department,
+    password,
+    profile_picture,
+    is_active,
+    permissions,
+  },
 ) {
   try {
     const fields = [];

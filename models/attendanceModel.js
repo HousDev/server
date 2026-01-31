@@ -16,7 +16,7 @@ LEFT JOIN hrms_employees u ON u.id = a.user_id
 WHERE a.date = CURDATE()
 ORDER BY a.punch_in_time ASC`,
       );
-      console.log("this is rows",rows)
+      console.log("this is rows", rows);
 
       return rows;
     } catch (error) {
@@ -113,18 +113,13 @@ ORDER BY a.punch_in_time ASC`,
         punch_in_location,
         punch_in_latitude,
         punch_in_longitude,
-        punch_in_selfie,
-        work_type,
-        project_id,
-        project_location,
         status,
       } = data;
 
       const result = await db.query(
         `INSERT INTO attendance (
           user_id, date, punch_in_time, punch_in_location,
-          punch_in_latitude, punch_in_longitude, punch_in_selfie,
-          work_type, project_id, project_location, status
+          punch_in_latitude, punch_in_longitude, punch_in_selfie, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           user_id,
@@ -134,9 +129,6 @@ ORDER BY a.punch_in_time ASC`,
           punch_in_latitude,
           punch_in_longitude,
           punch_in_selfie,
-          work_type,
-          project_id || null,
-          project_location || null,
           status || "present",
         ],
       );
