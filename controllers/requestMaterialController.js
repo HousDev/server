@@ -89,6 +89,68 @@ async function createRequestMaterial(req, res) {
   }
 }
 
+async function createPORequestMaterial(req, res) {
+  try {
+    // 🔹 Parse materials
+    const req_no = await generateRequestNo();
+    let items = req.body.materials;
+
+    const payload = {
+      ...req.body,
+      request_no: req_no,
+      items,
+    };
+
+    // 🔴 Required field validation
+    if (
+      !payload.userId ||
+      !payload.projectId ||
+      !payload.buildingId ||
+      !payload.floorId ||
+      !payload.work ||
+      !payload.start_date ||
+      !payload.previous_request_id ||
+      !Array.isArray(payload.items) ||
+      payload.items.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields required.",
+      });
+    }
+
+    // 🔹 Validate items
+    for (const item of payload.items) {
+      if (
+        !item.itemId ||
+        !item.required_quantity ||
+        Number(item.required_quantity) <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid item data",
+        });
+      }
+    }
+
+    const request =
+      await requestMaterialModel.createPORequestMaterialModel(payload);
+
+    return res.status(201).json({
+      success: true,
+      message: "Request material created successfully",
+      data: request,
+    });
+  } catch (error) {
+    console.error("Create Request Material Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
 const getAllRequestMaterials = async (req, res) => {
   try {
     const rows = await requestMaterialModel.getAllRequestMaterialsModel();
@@ -108,6 +170,7 @@ const getAllRequestMaterials = async (req, res) => {
           floorId: row.floorId,
           flatId: row.flatId,
           commonAreaId: row.commonAreaId,
+          previous_request_id: row.previous_request_id,
 
           project_name: row.project_name,
           building_name: row.building_name,
@@ -168,7 +231,7 @@ const updateRequestMaterialStatus = async (req, res) => {
     const updated = await requestMaterialModel.updateRequestMaterialStatusModel(
       id,
       status,
-      user_id
+      user_id,
     );
 
     if (!updated) {
@@ -205,7 +268,7 @@ const updateRequestMaterialItemsAndStatusController = async (req, res) => {
     await requestMaterialModel.updateRequestMaterialItemsAndStatusModel(
       materialRequestId,
       items,
-      userId
+      userId,
     );
 
     return res.status(200).json({
@@ -225,5 +288,6 @@ module.exports = {
   createRequestMaterial,
   getAllRequestMaterials,
   updateRequestMaterialStatus,
+  createPORequestMaterial,
   updateRequestMaterialItemsAndStatusController,
 };

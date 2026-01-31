@@ -5,6 +5,7 @@ const requestMaterialController = require("../controllers/requestMaterialControl
 
 // 1️⃣ Create a new request material
 requestMaterialRoute.post("/", requestMaterialController.createRequestMaterial);
+requestMaterialRoute.post("/po-request", requestMaterialController.createPORequestMaterial);
 
 // 2️⃣ Get all request materials
 requestMaterialRoute.get("/", requestMaterialController.getAllRequestMaterials);
