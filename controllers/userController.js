@@ -1,4 +1,3 @@
-
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
 const UserModel = require("../models/userModel");
@@ -143,7 +142,7 @@ async function createUser(req, res) {
       email: email.trim(),
       full_name: full_name || null,
       phone: phone || null,
-      role: role.toUpperCase(),
+      role: role.toLowerCase(),
       department: department || null,
       profile_picture: profile_picture || null,
       password: hash,
@@ -162,7 +161,8 @@ async function createUser(req, res) {
           view_dashboard: true,
           view_service_orders: true,
         };
-        await Role.create({ // FIXED HERE
+        await Role.create({
+          // FIXED HERE
           name: role,
           description: `Auto-created role for ${role}`,
           permissions: defaultPermissions,
@@ -229,9 +229,10 @@ async function updateUser(req, res) {
 
     if (full_name !== undefined) updateData.full_name = full_name || null;
     if (phone !== undefined) updateData.phone = phone || null;
-    if (role !== undefined) updateData.role = role.toUpperCase();
+    if (role !== undefined) updateData.role = role.toLowerCase();
     if (department !== undefined) updateData.department = department || null;
-    if (profile_picture !== undefined) updateData.profile_picture = profile_picture || null;
+    if (profile_picture !== undefined)
+      updateData.profile_picture = profile_picture || null;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (permissions !== undefined) updateData.permissions = permissions || {};
 
@@ -269,10 +270,10 @@ async function updateUser(req, res) {
 async function uploadProfilePicture(req, res) {
   try {
     const { id } = req.params;
-    
+
     console.log("Upload profile picture request for user:", id);
     console.log("File received:", req.file);
-    
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -301,7 +302,9 @@ async function uploadProfilePicture(req, res) {
     console.log("Profile picture URL:", profilePictureUrl);
 
     // Update user profile picture
-    const updated = await UserModel.update(id, { profile_picture: profilePictureUrl });
+    const updated = await UserModel.update(id, {
+      profile_picture: profilePictureUrl,
+    });
 
     res.json({
       success: true,
@@ -310,7 +313,7 @@ async function uploadProfilePicture(req, res) {
     });
   } catch (err) {
     console.error("uploadProfilePicture error:", err);
-    
+
     // Clean up file if there was an error
     if (req.file && req.file.path) {
       try {
@@ -319,7 +322,7 @@ async function uploadProfilePicture(req, res) {
         console.error("Failed to cleanup file:", cleanupErr);
       }
     }
-    
+
     res.status(500).json({
       success: false,
       error: "Failed to upload profile picture",
@@ -395,7 +398,7 @@ async function toggleActive(req, res) {
 async function updateUserPermissions(req, res) {
   try {
     const { userId } = req.params;
-    const { permissions } = req.body;
+    const permissions = req.body;
 
     if (!userId || permissions === undefined) {
       return res.status(400).json({

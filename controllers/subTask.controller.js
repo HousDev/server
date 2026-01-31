@@ -51,6 +51,21 @@ exports.findAllByAreaId = async (req, res) => {
   }
 };
 
+exports.findTaskByProjects = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    console.log("asdflkjsd", projectId);
+    if (!projectId) {
+      return res.status(400).json({ message: "areaId required." });
+    }
+
+    const subTasks = await subTaskModel.findAllTaskByProjectId(projectId);
+    res.json(subTasks);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /**
  * Get sub-task by ID
  */
@@ -70,9 +85,26 @@ exports.findById = async (req, res) => {
  */
 exports.create = async (req, res) => {
   try {
+    const payload = req.body;
+    if (
+      !payload.project_id ||
+      !payload.building_id ||
+      !payload.floor_id ||
+      !payload.engineer_id ||
+      !payload.name ||
+      !payload.unit ||
+      !payload.total_work ||
+      !payload.start_date ||
+      !payload.end_date
+    ) {
+      return res.status(201).json({ message: "Fill required fields." });
+    }
     const subTask = await subTaskModel.create(req.body);
-    res.status(201).json({ message: "Sub-task created", subTask });
+    res
+      .status(201)
+      .json({ message: "Sub-task created", subTask, success: true });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -82,16 +114,21 @@ exports.create = async (req, res) => {
  */
 exports.update = async (req, res) => {
   try {
+    const payload = req.body;
+    if (
+      !payload.engineer_id ||
+      !payload.unit ||
+      !payload.total_work ||
+      !payload.start_date ||
+      !payload.end_date
+    ) {
+      return res.status(404).json({ message: "Fill all required fields" });
+    }
     const subTask = await subTaskModel.update(req.params.id, req.body);
     if (!subTask)
       return res.status(404).json({ message: "Sub-task not found" });
 
-    // Optional: recalculate progress if total_work changed
-    if (req.body.total_work) {
-      await recalculateProgress(req.params.id);
-    }
-
-    res.json({ message: "Sub-task updated", subTask });
+    res.json({ message: "Sub-task updated", subTask, success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });

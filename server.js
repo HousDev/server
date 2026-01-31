@@ -35,9 +35,8 @@ const dailyLogsRoutes = require("./routes/subTaskLogs.route.js");
 const employeeRoute = require("./routes/employees.router.js");
 const companyRoutes = require("./routes/companyRoutes");
 const securitySettingsRoutes = require("./routes/securitySettings.routes");
-const securitySettingsRoutes = require('./routes/securitySettings.routes');
 const leaveRoutes = require("./routes/leave.routes");
-const expenseRoutes = require('./routes/expense.routes');
+const expenseRoutes = require("./routes/expense.routes");
 const ticketRoutes = require("./routes/ticket.routes.js");
 
 const departmentRoutes = require("./routes/departmentRoutes");
@@ -96,15 +95,13 @@ app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 app.use("/api/employees", employeeRoute);
 app.use("/api/companies", companyRoutes);
 app.use("/api/security-settings", securitySettingsRoutes);
-app.use('/api/security-settings', securitySettingsRoutes);
+app.use("/api/security-settings", securitySettingsRoutes);
 app.use("/api/leaves", leaveRoutes);
-app.use('/api/expenses', expenseRoutes);
+app.use("/api/expenses", expenseRoutes);
 app.use("/api/tickets", ticketRoutes);
-
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
-
 
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;

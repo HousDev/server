@@ -58,7 +58,6 @@
 
 // module.exports = router;
 
-
 // routes/userRoutes.js
 const express = require("express");
 const userController = require("../controllers/userController");
@@ -88,7 +87,7 @@ router.delete("/:id", userController.deleteUser);
 router.patch(
   "/:id/profile-picture",
   upload.single("profile_picture"),
-  userController.uploadProfilePicture
+  userController.uploadProfilePicture,
 );
 
 // PATCH /api/users/:id/toggle-active

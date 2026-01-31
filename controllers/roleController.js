@@ -1,4 +1,5 @@
 // controllers/roleController.js
+const { query } = require("../config/db");
 const Role = require("../models/roleModel");
 const { validationResult } = require("express-validator");
 
@@ -161,7 +162,8 @@ class RoleController {
       }
 
       const updateData = {};
-      if (req.body.name !== undefined) updateData.name = req.body.name.toLowerCase();
+      if (req.body.name !== undefined)
+        updateData.name = req.body.name.toLowerCase();
       if (req.body.description !== undefined)
         updateData.description = req.body.description;
       if (req.body.permissions !== undefined)
@@ -323,7 +325,36 @@ class RoleController {
       });
     }
   }
+  static async updateRolePermissions(req, res) {
+    const roleId = req.params.roleId;
+    try {
+      const { permissions } = req.body;
+      if (!roleId) {
+        return res.json("Role id required.");
+      }
+      const existingRole = await Role.findById(roleId);
+      if (!existingRole) {
+        return res.json("Role not exisisted.");
+      }
+      const updatedRole = await query(
+        "UPDATE roles set permissions = ? WHERE id = ?",
+        [permissions, roleId],
+      );
 
+      res.json({
+        success: true,
+        message: "Role permissions updated.",
+        data: updatedRole,
+      });
+    } catch (error) {
+      console.error("Error fetching role stats:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch role statistics",
+        message: error.message,
+      });
+    }
+  }
   // Get all permissions
   static async getAllPermissions(req, res) {
     try {
