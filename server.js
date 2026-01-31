@@ -38,6 +38,8 @@ const securitySettingsRoutes = require("./routes/securitySettings.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const expenseRoutes = require('./routes/expense.routes');
 const ticketRoutes = require("./routes/ticket.routes.js");
+const designationRoutes = require("./routes/designationRoutes");
+const locationRoutes = require('./routes/locationRoutes'); // Make sure this is imported
 
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceroutes.js");
@@ -61,6 +63,10 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/po_types", poTypesRoutes);
 app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
+app.use("/api/designations", designationRoutes);
+app.use('/api/locations', locationRoutes);
+
+
 // Routes
 app.use("/api/roles", roleRoutes);
 app.use("/api/terms-conditions", termsConditionsRouter);

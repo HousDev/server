@@ -70,20 +70,30 @@ const LeaveModel = {
     return rows[0];
   },
   
-  // Create new leave application with half day support
+  // Create new leave application with half day support - FIXED with transaction
   createLeave: async (leaveData) => {
+  const connection = await promisePool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
     const year = new Date().getFullYear();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');
     
-    // Get latest sequence number
-    const [seqRows] = await promisePool.query(
-      "SELECT COUNT(*) as count FROM hrms_leaves WHERE YEAR(applied_at) = ? AND MONTH(applied_at) = ?",
+    // ⭐ FIXED: Use MAX() instead of COUNT() to get the highest sequence
+    const [seqRows] = await connection.query(
+      `SELECT COALESCE(MAX(
+        CAST(SUBSTRING_INDEX(application_number, '/', -1) AS UNSIGNED)
+      ), 0) as max_seq
+       FROM hrms_leaves 
+       WHERE YEAR(applied_at) = ? AND MONTH(applied_at) = ?
+       FOR UPDATE`,
       [year, month]
     );
     
-    const sequence = (seqRows[0].count || 0) + 1;
+    const sequence = seqRows[0].max_seq + 1;
     const application_number = `LV/${year}/${month}/${String(sequence).padStart(4, '0')}`;
-    
+      
     // For half day, ensure to_date = from_date
     if (leaveData.is_half_day) {
       leaveData.to_date = leaveData.from_date;
@@ -95,7 +105,7 @@ const LeaveModel = {
     }
     
     // Insert leave
-    const [result] = await promisePool.query(
+    const [result] = await connection.query(
       "INSERT INTO hrms_leaves SET ?",
       { 
         ...leaveData, 
@@ -104,8 +114,17 @@ const LeaveModel = {
       }
     );
     
+    await connection.commit();
+    
     return { id: result.insertId, application_number };
-  },
+    
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+},
   
   // Update leave status with half day support
   updateLeaveStatus: async (id, status, userData, reason = null) => {
