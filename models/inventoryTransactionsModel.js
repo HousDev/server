@@ -111,8 +111,8 @@ const createInventoryTransaction = async (transactionData) => {
       );
 
       await connection.execute(
-        `UPDATE inventory SET quantity = quantity + ? WHERE id = ?`,
-        [item.quantity_issued, inventoryMaterial.id],
+        `UPDATE inventory SET quantity = quantity + ?, quantity_after_approve = quantity_after_approve+? WHERE id = ?`,
+        [item.quantity_issued, item.quantity_issued, inventoryMaterial.id],
       );
     }
 
