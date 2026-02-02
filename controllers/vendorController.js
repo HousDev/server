@@ -59,7 +59,7 @@ exports.getVendorById = async (req, res) => {
 
 exports.createVendor = async (req, res) => {
   const d = req.body;
-
+  console.log(d);
   if (
     !d.name ||
     !d.category_name ||
@@ -67,12 +67,10 @@ exports.createVendor = async (req, res) => {
     !d.contact_person_phone ||
     !d.contact_person_email
   ) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "name, category_name, contact_person_name, contact_person_phone and contact_person_email are required",
-      });
+    return res.status(400).json({
+      message:
+        "name, category_name, contact_person_name, contact_person_phone and contact_person_email are required",
+    });
   }
 
   const query = `
@@ -108,6 +106,48 @@ exports.createVendor = async (req, res) => {
   ];
 
   try {
+    let [existingOne] = await pool.query(
+      "SELECT * FROM vendors where contact_person_phone = ? ",
+      [d.contact_person_phone],
+    );
+
+    if (existingOne.length > 0) {
+      return res
+        .status(400)
+        .json({ message: " Contact person phone number already exists." });
+    }
+
+    [existingOne] = await pool.query(
+      "SELECT * FROM vendors where contact_person_email = ? ",
+      [d.contact_person_email],
+    );
+
+    if (existingOne.length > 0) {
+      return res
+        .status(400)
+        .json({ message: " Contact person email already exists." });
+    }
+
+    [existingOne] = await pool.query(
+      "SELECT * FROM vendors where company_email = ? ",
+      [d.company_email],
+    );
+
+    if (existingOne.length > 0) {
+      return res.status(400).json({ message: "Company email already exists." });
+    }
+
+    [existingOne] = await pool.query(
+      "SELECT * FROM vendors where company_phone = ? ",
+      [d.company_phone],
+    );
+
+    if (existingOne.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "Company phone number already exists." });
+    }
+
     const queryRes = await pool.query(query, values);
     const { rows, raw } = normalizeQueryResult(queryRes);
 
@@ -125,16 +165,17 @@ exports.createVendor = async (req, res) => {
     } else if (queryRes && queryRes.insertId) {
       insertId = queryRes.insertId;
     }
+    // OR contact_person_email = ? OR company_email = ? OR company_phone = ?
 
     if (!insertId) {
       // fallback: try to get affected rows / last insert id via SELECT (less ideal)
       console.warn(
-        "createVendor: could not detect insertId from query result, attempting fallback SELECT"
+        "createVendor: could not detect insertId from query result, attempting fallback SELECT",
       );
       // try selecting by unique combination (name + contact email) — only if provided
       const [maybeRows] = await pool.query(
         "SELECT * FROM vendors WHERE name = ? AND contact_person_email = ? ORDER BY id DESC LIMIT 1",
-        [d.name, d.contact_person_email]
+        [d.name, d.contact_person_email],
       );
       const norm = normalizeQueryResult(maybeRows);
       if (norm.rows && norm.rows.length > 0) {
@@ -147,7 +188,9 @@ exports.createVendor = async (req, res) => {
     const selectRes = await pool.query("SELECT * FROM vendors WHERE id = ?", [
       insertId,
     ]);
+
     const selectNorm = normalizeQueryResult(selectRes);
+
     return res
       .status(201)
       .json(selectNorm.rows ? selectNorm.rows[0] : { id: insertId });
@@ -164,7 +207,7 @@ exports.updateVendor = async (req, res) => {
   try {
     const [existsRows] = await pool.query(
       "SELECT id FROM vendors WHERE id = ?",
-      [id]
+      [id],
     );
     // handle both shapes
     const exists = Array.isArray(existsRows) ? existsRows[0] : existsRows;
