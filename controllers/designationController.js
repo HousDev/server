@@ -196,7 +196,7 @@ class DesignationController {
     }
   }
 
-  // Delete designation
+  // ✅ FIXED: Delete designation with proper FK constraint error handling
   static async deleteDesignation(req, res) {
     try {
       const { id } = req.params;
@@ -209,14 +209,37 @@ class DesignationController {
         });
       }
 
-      await Designation.delete(id);
+      console.log(`Attempting to permanently delete designation: ${designation.name} (${id})`);
+
+      const deleted = await Designation.delete(id);
+
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          error: "Designation not found or already deleted"
+        });
+      }
+
+      console.log(`Designation "${designation.name}" permanently deleted successfully`);
 
       res.json({
         success: true,
-        message: "Designation deleted successfully"
+        message: "Designation permanently deleted successfully"
       });
     } catch (error) {
       console.error("Error deleting designation:", error);
+
+      // ✅ Catch MySQL Foreign Key constraint errors
+      // ER_ROW_IS_REFERENCED_2 (1451) = row is referenced by another table
+      // ER_ROW_IS_REFERENCED (1452) = similar FK error
+      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED' || error.errno === 1451 || error.errno === 1452) {
+        return res.status(409).json({
+          success: false,
+          error: "Cannot delete this designation because it is being used by one or more employees. Please deactivate it instead or remove the employee references first.",
+          code: "FK_CONSTRAINT_ERROR"
+        });
+      }
+
       res.status(500).json({
         success: false,
         error: "Failed to delete designation",
@@ -225,7 +248,7 @@ class DesignationController {
     }
   }
 
-  // Toggle active status - FIXED VERSION
+  // Toggle active status
   static async toggleDesignationActive(req, res) {
     try {
       const { id } = req.params;

@@ -829,13 +829,12 @@
 
 
 /*------------31-1-26------------------------*/
-
-
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
 const UserModel = require("../models/userModel");
 const Role = require("../models/roleModel");
 const fs = require("fs");
+ const { query } = require("../config/db");
 
 // ✅ Password और sensitive data remove करें
 const scrub = (user) => {
@@ -959,6 +958,17 @@ async function createUser(req, res) {
       });
     }
 
+    if (phone && phone.trim() !== '') {
+      const phoneCheck = await UserModel.checkPhoneExists(phone);
+      
+      if (phoneCheck.exists) {
+        const tableName = phoneCheck.table === 'users' ? 'a user' : 'an employee';
+        return res.status(400).json({
+          success: false,
+          error: `This phone number is already in use by ${tableName}`,
+        });
+      }
+    }
     // Check if user already exists
     const existing = await UserModel.findByEmailWithPassword(email);
     if (existing) {
@@ -976,7 +986,7 @@ async function createUser(req, res) {
       email: email.trim(),
       full_name: full_name || null,
       phone: phone || null,
-      role: role.toLowerCase(),
+      role: role.toUpperCase(),
       department: department || null,
       department_id: department_id || null,
       profile_picture: profile_picture || null,
@@ -997,7 +1007,6 @@ async function createUser(req, res) {
           view_service_orders: true,
         };
         await Role.create({
-          // FIXED HERE
           name: role,
           description: `Auto-created role for ${role}`,
           permissions: defaultPermissions,
@@ -1027,6 +1036,7 @@ async function createUser(req, res) {
 }
 
 // ✅ User update करें - SYNC WITH EMPLOYEE (FIXED VERSION)
+// ✅ User update करें - SYNC WITH EMPLOYEE (FIXED VERSION)
 async function updateUser(req, res) {
   try {
     const { id } = req.params;
@@ -1046,9 +1056,10 @@ async function updateUser(req, res) {
       });
     }
 
+    // ✅ FIX: Get phone from req.body only once
     const {
       full_name,
-      phone,
+      phone,  // Get phone from req.body
       role,
       department,
       department_id,
@@ -1070,15 +1081,29 @@ async function updateUser(req, res) {
       permissions,
     });
 
+    // ✅ ADD: Check if phone is being updated to a duplicate
+    if (phone !== undefined && phone !== existing.phone) {
+      if (phone && phone.trim() !== '') {
+        const phoneCheck = await UserModel.checkPhoneExists(phone, id);
+        
+        if (phoneCheck.exists) {
+          const tableName = phoneCheck.table === 'users' ? 'a user' : 'an employee';
+          return res.status(400).json({
+            success: false,
+            error: `This phone number is already in use by ${tableName}`,
+          });
+        }
+      }
+    }
+
     // Prepare update data with safe values
     const updateData = {};
 
     if (full_name !== undefined) updateData.full_name = full_name || null;
     if (phone !== undefined) updateData.phone = phone || null;
-    if (role !== undefined) updateData.role = role.toLowerCase();
+    if (role !== undefined) updateData.role = role.toUpperCase();
     if (department !== undefined) updateData.department = department || null;
-    if (profile_picture !== undefined)
-      updateData.profile_picture = profile_picture || null;
+    if (profile_picture !== undefined) updateData.profile_picture = profile_picture || null;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (permissions !== undefined) updateData.permissions = permissions || {};
 
@@ -1149,33 +1174,32 @@ async function updateUser(req, res) {
         }
         
         // Update role if changed
-       if (role !== undefined) {
-      const roleRows = await query(
-        `SELECT id FROM roles WHERE name = ? LIMIT 1`,
-        [role.toUpperCase()]
-      );
-      if (roleRows && roleRows.length > 0) {
-        employeeUpdateData.role_id = roleRows[0].id;
-        console.log("Found role ID:", roleRows[0].id, "for role:", role);
-      }
-    }
+        if (role !== undefined) {
+          const roleRows = await query(
+            `SELECT id FROM roles WHERE name = ? LIMIT 1`,
+            [role.toUpperCase()]
+          );
+          if (roleRows && roleRows.length > 0) {
+            employeeUpdateData.role_id = roleRows[0].id;
+            console.log("Found role ID:", roleRows[0].id, "for role:", role);
+          }
+        }
         
         // Update department if changed
-          if (department_id !== undefined) {
-      employeeUpdateData.department_id = department_id;
-    } else if (department !== undefined) {
-      // If only department name is provided, lookup department_id
-      const deptRows = await query(
-        `SELECT id FROM departments WHERE name = ? LIMIT 1`,
-        [department]
-      );
-      if (deptRows && deptRows.length > 0) {
-        employeeUpdateData.department_id = deptRows[0].id;
-        console.log("Found department ID:", deptRows[0].id, "for department:", department);
-      }
-    }
+        if (department_id !== undefined) {
+          employeeUpdateData.department_id = department_id;
+        } else if (department !== undefined) {
+          // If only department name is provided, lookup department_id
+          const deptRows = await query(
+            `SELECT id FROM departments WHERE name = ? LIMIT 1`,
+            [department]
+          );
+          if (deptRows && deptRows.length > 0) {
+            employeeUpdateData.department_id = deptRows[0].id;
+            console.log("Found department ID:", deptRows[0].id, "for department:", department);
+          }
+        }
 
-        
         // Build dynamic update query
         const fields = [];
         const values = [];
@@ -1225,10 +1249,10 @@ async function updateUser(req, res) {
 async function uploadProfilePicture(req, res) {
   try {
     const { id } = req.params;
-
+    
     console.log("Upload profile picture request for user:", id);
     console.log("File received:", req.file);
-
+    
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -1257,9 +1281,7 @@ async function uploadProfilePicture(req, res) {
     console.log("Profile picture URL:", profilePictureUrl);
 
     // Update user profile picture
-    const updated = await UserModel.update(id, {
-      profile_picture: profilePictureUrl,
-    });
+    const updated = await UserModel.update(id, { profile_picture: profilePictureUrl });
 
     // ✅ SYNC TO EMPLOYEE
     try {
@@ -1280,7 +1302,7 @@ async function uploadProfilePicture(req, res) {
     });
   } catch (err) {
     console.error("uploadProfilePicture error:", err);
-
+    
     // Clean up file if there was an error
     if (req.file && req.file.path) {
       try {
@@ -1289,7 +1311,7 @@ async function uploadProfilePicture(req, res) {
         console.error("Failed to cleanup file:", cleanupErr);
       }
     }
-
+    
     res.status(500).json({
       success: false,
       error: "Failed to upload profile picture",
@@ -1351,7 +1373,10 @@ async function deleteUser(req, res) {
 async function toggleActive(req, res) {
   try {
     const { id } = req.params;
+
+    console.log("id",id )
     const user = await UserModel.toggleActive(id);
+    console.log(user)
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1361,7 +1386,7 @@ async function toggleActive(req, res) {
 
     // ✅ Also update employee status if user is an employee
     try {
-      const { query } = require("../config/db");
+     
       const newStatus = user.is_active ? 'active' : 'inactive';
       const result = await query(
         `UPDATE hrms_employees SET employee_status = ? WHERE email = ?`,
@@ -1392,7 +1417,7 @@ async function toggleActive(req, res) {
 async function updateUserPermissions(req, res) {
   try {
     const { userId } = req.params;
-    const permissions = req.body;
+    const { permissions } = req.body;
 
     if (!userId || permissions === undefined) {
       return res.status(400).json({
@@ -1428,19 +1453,29 @@ async function updateUserPermissions(req, res) {
 }
 
 // ✅ Login function - UPDATED
+// ✅ Login function - UPDATED WITH EMAIL OR PHONE SUPPORT
 async function login(req, res) {
   try {
-    const { email, password } = req.body;
+    const { identifier, email, password } = req.body;
 
-    if (!email || !password) {
+    // Support both old (email) and new (identifier) parameter names
+    const loginIdentifier = identifier || email;
+
+    if (!loginIdentifier || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Email/Phone and password are required",
       });
     }
 
-    // Find user with password
-    const user = await UserModel.findByEmailWithPassword(email);
+    // Try to find user by email first
+    let user = await UserModel.findByEmailWithPassword(loginIdentifier);
+
+    // If not found by email, try by phone
+    if (!user) {
+      user = await UserModel.findByPhoneWithPassword(loginIdentifier);
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -1515,7 +1550,6 @@ async function login(req, res) {
     });
   }
 }
-
 // ✅ Get user profile
 async function getProfile(req, res) {
   try {

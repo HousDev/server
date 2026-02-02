@@ -30,5 +30,6 @@ router.post("/create-from-user", controller.createEmployeeFromUser);
 router.put("/:id", controller.updateEmployee);
 router.patch("/:id/additional-details", controller.updateAdditionalDetails); // New route for additional details
 router.delete("/:id", controller.deleteEmployee);
+router.patch("/:id/status", controller.updateEmployeeStatus);
 
 module.exports = router;

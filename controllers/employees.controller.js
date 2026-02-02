@@ -2025,6 +2025,74 @@ exports.createEmployee = async (req, res) => {
   }
 };
 
+
+// In employees.controller.js, add:
+// In employees.controller.js - FIXED VERSION
+exports.updateEmployeeStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { employee_status } = req.body; // Changed from 'status' to 'employee_status'
+    
+    console.log(`Updating employee ${id} status to:`, employee_status);
+    
+    if (!employee_status || !['active', 'inactive', 'on_leave', 'terminated'].includes(employee_status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid status value" 
+      });
+    }
+    
+    const employee = await HrmsEmployee.findById(id);
+    if (!employee) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Employee not found" 
+      });
+    }
+
+    // Update ONLY the status field
+    const updateData = { 
+      employee_status: employee_status,
+      updated_at: new Date() 
+    };
+    
+    const updated = await HrmsEmployee.update(id, updateData);
+    console.log("Updated employee:", updated);
+
+    // Sync to user table
+    try {
+      const { query } = require("../config/db");
+      const userRows = await query(
+        `SELECT id FROM users WHERE email = ? LIMIT 1`,
+        [employee.email]
+      );
+      
+      if (userRows && userRows.length > 0) {
+        const userId = userRows[0].id;
+        await query(
+          `UPDATE users SET is_active = ?, updated_at = NOW() WHERE id = ?`,
+          [employee_status === 'active' ? 1 : 0, userId]
+        );
+        console.log(`User ${userId} status synced to ${employee_status}`);
+      }
+    } catch (syncError) {
+      console.warn("Could not sync to user:", syncError.message);
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Employee ${employee_status} successfully`,
+      data: updated 
+    });
+  } catch (error) {
+    console.error("Update employee status error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to update employee status",
+      error: error.message 
+    });
+  }
+};
 /**
  * Update employee with comprehensive data - SYNC TO USER
  */
