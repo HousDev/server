@@ -1,4 +1,3 @@
-
 // const bcrypt = require("bcryptjs");
 // const { validationResult } = require("express-validator");
 // const UserModel = require("../models/userModel");
@@ -338,31 +337,31 @@
 //     // ✅ SYNC TO EMPLOYEE TABLE
 //     try {
 //       const { query } = require("../config/db");
-      
+
 //       // Check if employee exists for this user
 //       const employeeRows = await query(
 //         `SELECT id FROM hrms_employees WHERE email = ? LIMIT 1`,
 //         [existing.email]
 //       );
-      
+
 //       if (employeeRows && employeeRows.length > 0) {
 //         const employeeId = employeeRows[0].id;
-        
+
 //         // Parse full name into first, middle, last
 //         const nameParts = (full_name || existing.full_name || '').trim().split(' ');
 //         const firstName = nameParts[0] || '';
 //         const lastName = nameParts[nameParts.length - 1] || '';
 //         const middleName = nameParts.slice(1, -1).join(' ') || '';
-        
+
 //         // Prepare employee update data
 //         const employeeUpdateData = {};
-        
+
 //         if (full_name !== undefined) {
 //           employeeUpdateData.first_name = firstName;
 //           employeeUpdateData.last_name = lastName || firstName;
 //           employeeUpdateData.middle_name = middleName;
 //         }
-        
+
 //         if (phone !== undefined) employeeUpdateData.phone = phone;
 //          if (profile_picture !== undefined) employeeUpdateData.profile_picture = profile_picture;
 //     if (is_active !== undefined) {
@@ -381,12 +380,12 @@
 //         // Build dynamic update query
 //         const fields = [];
 //         const values = [];
-        
+
 //         Object.entries(employeeUpdateData).forEach(([key, value]) => {
 //           fields.push(`${key} = ?`);
 //           values.push(value);
 //         });
-        
+
 //         if (fields.length > 0) {
 //           values.push(employeeId);
 //           await query(
@@ -421,10 +420,10 @@
 // async function uploadProfilePicture(req, res) {
 //   try {
 //     const { id } = req.params;
-    
+
 //     console.log("Upload profile picture request for user:", id);
 //     console.log("File received:", req.file);
-    
+
 //     if (!req.file) {
 //       return res.status(400).json({
 //         success: false,
@@ -462,7 +461,7 @@
 //     });
 //   } catch (err) {
 //     console.error("uploadProfilePicture error:", err);
-    
+
 //     // Clean up file if there was an error
 //     if (req.file && req.file.path) {
 //       try {
@@ -471,7 +470,7 @@
 //         console.error("Failed to cleanup file:", cleanupErr);
 //       }
 //     }
-    
+
 //     res.status(500).json({
 //       success: false,
 //       error: "Failed to upload profile picture",
@@ -515,7 +514,6 @@
 // //     });
 // //   }
 // // }
-
 
 // // ✅ User delete करें - ALSO DELETE EMPLOYEE
 // async function deleteUser(req, res) {
@@ -719,7 +717,7 @@
 //         `SELECT employee_status FROM hrms_employees WHERE user_id = ? LIMIT 1`,
 //         [user.id]
 //       );
-      
+
 //       if (employeeRows && employeeRows.length > 0) {
 //         const employee = employeeRows[0];
 //         if (employee.employee_status !== 'active') {
@@ -1621,7 +1619,7 @@ const { validationResult } = require("express-validator");
 const UserModel = require("../models/userModel");
 const Role = require("../models/roleModel");
 const fs = require("fs");
- const { query } = require("../config/db");
+const { query } = require("../config/db");
 
 // ✅ Password और sensitive data remove करें
 const scrub = (user) => {
@@ -1748,9 +1746,10 @@ async function createUser(req, res) {
     // ✅ CHECK PHONE DUPLICATE ONLY ON CREATE
     if (phone && phone.trim() !== '') {
       const phoneCheck = await UserModel.checkPhoneExists(phone);
-      
+
       if (phoneCheck.exists) {
-        const tableName = phoneCheck.table === 'users' ? 'a user' : 'an employee';
+        const tableName =
+          phoneCheck.table === "users" ? "a user" : "an employee";
         return res.status(400).json({
           success: false,
           error: `This phone number is already in use by ${tableName}`,
@@ -1828,13 +1827,13 @@ async function createUser(req, res) {
 async function updateUser(req, res) {
   try {
     const { id } = req.params;
-    
+
     console.log("Update user request received:", {
       id,
       body: req.body,
-      params: req.params
+      params: req.params,
     });
-    
+
     const existing = await UserModel.findById(id);
     if (!existing) {
       console.log("User not found with ID:", id);
@@ -1878,7 +1877,8 @@ async function updateUser(req, res) {
     if (phone !== undefined) updateData.phone = phone || null;
     if (role !== undefined) updateData.role = role.toLowerCase();
     if (department !== undefined) updateData.department = department || null;
-    if (profile_picture !== undefined) updateData.profile_picture = profile_picture || null;
+    if (profile_picture !== undefined)
+      updateData.profile_picture = profile_picture || null;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (permissions !== undefined) updateData.permissions = permissions || {};
 
@@ -1903,7 +1903,7 @@ async function updateUser(req, res) {
 
     // Update user
     const updated = await UserModel.update(id, updateData);
-    
+
     if (!updated) {
       throw new Error("Failed to update user in database");
     }
@@ -1913,41 +1913,44 @@ async function updateUser(req, res) {
     // ✅ SYNC TO EMPLOYEE TABLE
     try {
       const { query } = require("../config/db");
-      
+
       // Check if employee exists for this user
       const employeeRows = await query(
         `SELECT id, email FROM hrms_employees WHERE email = ? LIMIT 1`,
-        [existing.email]
+        [existing.email],
       );
-      
+
       console.log("Employee check result:", employeeRows);
-      
+
       if (employeeRows && employeeRows.length > 0) {
         const employeeId = employeeRows[0].id;
         const employeeEmail = employeeRows[0].email;
-        
+
         // Parse full name into first, middle, last
-        const fullName = updateData.full_name || existing.full_name || '';
-        const nameParts = fullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
+        const fullName = updateData.full_name || existing.full_name || "";
+        const nameParts = fullName.trim().split(" ");
+        const firstName = nameParts[0] || "";
         const lastName = nameParts[nameParts.length - 1] || firstName;
-        const middleName = nameParts.slice(1, -1).join(' ') || '';
-        
+        const middleName = nameParts.slice(1, -1).join(" ") || "";
+
         // Prepare employee update data
         const employeeUpdateData = {};
-        
+
         if (full_name !== undefined) {
           employeeUpdateData.first_name = firstName;
           employeeUpdateData.last_name = lastName;
           if (middleName) employeeUpdateData.middle_name = middleName;
         }
-        
+
         if (phone !== undefined) employeeUpdateData.phone = phone;
-        if (profile_picture !== undefined) employeeUpdateData.profile_picture = profile_picture;
+        if (profile_picture !== undefined)
+          employeeUpdateData.profile_picture = profile_picture;
         if (is_active !== undefined) {
-          employeeUpdateData.employee_status = is_active ? 'active' : 'inactive';
+          employeeUpdateData.employee_status = is_active
+            ? "active"
+            : "inactive";
         }
-        
+
         // Update role if changed
         if (role !== undefined) {
           const roleRows = await query(
@@ -1959,7 +1962,7 @@ async function updateUser(req, res) {
             console.log("Found role ID:", roleRows[0].id, "for role:", role);
           }
         }
-        
+
         // Update department if changed
         if (department_id !== undefined) {
           employeeUpdateData.department_id = department_id;
@@ -1967,30 +1970,38 @@ async function updateUser(req, res) {
           // If only department name is provided, lookup department_id
           const deptRows = await query(
             `SELECT id FROM departments WHERE name = ? LIMIT 1`,
-            [department]
+            [department],
           );
           if (deptRows && deptRows.length > 0) {
             employeeUpdateData.department_id = deptRows[0].id;
-            console.log("Found department ID:", deptRows[0].id, "for department:", department);
+            console.log(
+              "Found department ID:",
+              deptRows[0].id,
+              "for department:",
+              department,
+            );
           }
         }
 
         // Build dynamic update query
         const fields = [];
         const values = [];
-        
+
         Object.entries(employeeUpdateData).forEach(([key, value]) => {
           fields.push(`${key} = ?`);
           values.push(value);
         });
-        
+
         if (fields.length > 0) {
           values.push(employeeId);
-          const updateQuery = `UPDATE hrms_employees SET ${fields.join(', ')} WHERE id = ?`;
+          const updateQuery = `UPDATE hrms_employees SET ${fields.join(", ")} WHERE id = ?`;
           console.log("Executing employee sync query:", updateQuery, values);
-          
+
           const result = await query(updateQuery, values);
-          console.log(`Employee ${employeeId} synced successfully. Affected rows:`, result.affectedRows);
+          console.log(
+            `Employee ${employeeId} synced successfully. Affected rows:`,
+            result.affectedRows,
+          );
         } else {
           console.log("No employee fields to update");
         }
@@ -2011,7 +2022,7 @@ async function updateUser(req, res) {
   } catch (err) {
     console.error("updateUser error:", err);
     console.error("Error stack:", err.stack);
-    
+
     res.status(500).json({
       success: false,
       error: "Failed to update user",
@@ -2024,10 +2035,10 @@ async function updateUser(req, res) {
 async function uploadProfilePicture(req, res) {
   try {
     const { id } = req.params;
-    
+
     console.log("Upload profile picture request for user:", id);
     console.log("File received:", req.file);
-    
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -2056,18 +2067,23 @@ async function uploadProfilePicture(req, res) {
     console.log("Profile picture URL:", profilePictureUrl);
 
     // Update user profile picture
-    const updated = await UserModel.update(id, { profile_picture: profilePictureUrl });
+    const updated = await UserModel.update(id, {
+      profile_picture: profilePictureUrl,
+    });
 
     // ✅ SYNC TO EMPLOYEE
     try {
       const { query } = require("../config/db");
       await query(
         `UPDATE hrms_employees SET profile_picture = ? WHERE email = ?`,
-        [profilePictureUrl, user.email]
+        [profilePictureUrl, user.email],
       );
       console.log(`Profile picture synced to employee for user: ${user.email}`);
     } catch (syncError) {
-      console.warn("Could not sync profile picture to employee:", syncError.message);
+      console.warn(
+        "Could not sync profile picture to employee:",
+        syncError.message,
+      );
     }
 
     res.json({
@@ -2077,7 +2093,7 @@ async function uploadProfilePicture(req, res) {
     });
   } catch (err) {
     console.error("uploadProfilePicture error:", err);
-    
+
     // Clean up file if there was an error
     if (req.file && req.file.path) {
       try {
@@ -2086,7 +2102,7 @@ async function uploadProfilePicture(req, res) {
         console.error("Failed to cleanup file:", cleanupErr);
       }
     }
-    
+
     res.status(500).json({
       success: false,
       error: "Failed to upload profile picture",
@@ -2110,11 +2126,13 @@ async function deleteUser(req, res) {
     // ✅ DELETE EMPLOYEE RECORD IF EXISTS
     try {
       const { query } = require("../config/db");
-      const result = await query(
-        `DELETE FROM hrms_employees WHERE email = ?`,
-        [existing.email]
+      const result = await query(`DELETE FROM hrms_employees WHERE email = ?`, [
+        existing.email,
+      ]);
+      console.log(
+        `Employee record deleted for user: ${existing.email}. Affected rows:`,
+        result.affectedRows,
       );
-      console.log(`Employee record deleted for user: ${existing.email}. Affected rows:`, result.affectedRows);
     } catch (empError) {
       console.warn("Could not delete employee record:", empError.message);
       // Continue with user deletion even if employee deletion fails
@@ -2122,7 +2140,7 @@ async function deleteUser(req, res) {
 
     // Delete user
     const deleted = await UserModel.remove(id);
-    
+
     if (!deleted) {
       return res.status(500).json({
         success: false,
@@ -2149,9 +2167,9 @@ async function toggleActive(req, res) {
   try {
     const { id } = req.params;
 
-    console.log("id",id )
+    console.log("id", id);
     const user = await UserModel.toggleActive(id);
-    console.log(user)
+    console.log(user);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -2161,13 +2179,15 @@ async function toggleActive(req, res) {
 
     // ✅ Also update employee status if user is an employee
     try {
-     
-      const newStatus = user.is_active ? 'active' : 'inactive';
+      const newStatus = user.is_active ? "active" : "inactive";
       const result = await query(
         `UPDATE hrms_employees SET employee_status = ? WHERE email = ?`,
-        [newStatus, user.email]
+        [newStatus, user.email],
       );
-      console.log(`Employee status synced to: ${newStatus} for user ${user.email}. Affected rows:`, result.affectedRows);
+      console.log(
+        `Employee status synced to: ${newStatus} for user ${user.email}. Affected rows:`,
+        result.affectedRows,
+      );
     } catch (empError) {
       console.warn("Could not sync employee status:", empError.message);
       // Continue even if employee sync fails
@@ -2261,7 +2281,8 @@ async function login(req, res) {
     if (!user.is_active) {
       return res.status(403).json({
         success: false,
-        message: "Your account has been deactivated. Please contact administrator.",
+        message:
+          "Your account has been deactivated. Please contact administrator.",
       });
     }
 
@@ -2279,12 +2300,12 @@ async function login(req, res) {
       const { query } = require("../config/db");
       const employeeRows = await query(
         `SELECT employee_status FROM hrms_employees WHERE user_id = ? OR email = ? LIMIT 1`,
-        [user.id, user.email]
+        [user.id, user.email],
       );
-      
+
       if (employeeRows && employeeRows.length > 0) {
         const employee = employeeRows[0];
-        if (employee.employee_status !== 'active') {
+        if (employee.employee_status !== "active") {
           return res.status(403).json({
             success: false,
             message: "Your employee account is not active. Please contact HR.",

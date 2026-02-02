@@ -315,7 +315,7 @@ async function createPO(req, res) {
     // dynamic placeholders
     const placeholders = values.map(() => "?").join(", ");
     const insertSQL = `INSERT INTO purchase_orders (${columns.join(
-      ", "
+      ", ",
     )}) VALUES (${placeholders})`;
 
     // sanity check
@@ -369,7 +369,7 @@ async function createPO(req, res) {
 
       // Bulk insert: VALUES ?
       const itemSql = `INSERT INTO purchase_order_items (${itemColumns.join(
-        ", "
+        ", ",
       )}) VALUES ?`;
       await conn.query(itemSql, [itemsValues]);
     }
@@ -442,7 +442,11 @@ async function updatePurchaseOrder(req, res) {
     const poData = await updatePO(poId, payload);
     return res
       .status(200)
-      .json({ message: "PO Updated Successfully.", data: poData });
+      .json({
+        message: "PO Updated Successfully.",
+        data: poData,
+        success: true,
+      });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error." });
   }
@@ -496,7 +500,7 @@ const deletePOItem = async (req, res) => {
     const { poItemId, poMaterialTrackingId } = req.params;
     const responseOfDelete = await deletePOItems(
       poItemId,
-      poMaterialTrackingId
+      poMaterialTrackingId,
     );
     if (
       responseOfDelete.poDeleteMaterialTracking.affectedRows === 1 &&

@@ -7,23 +7,20 @@ class DesignationController {
   // Get all designations
   static async getAllDesignations(req, res) {
     try {
-      console.log("Fetching all designations...");
       const designations = await Designation.findAll();
-      
-      console.log(`Found ${designations.length} designations`);
-      
+
       res.json({
         success: true,
         data: designations,
         message: "Designations fetched successfully",
-        count: designations.length
+        count: designations.length,
       });
     } catch (error) {
       console.error("Error fetching designations:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch designations",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -37,21 +34,21 @@ class DesignationController {
       if (!designation) {
         return res.status(404).json({
           success: false,
-          error: "Designation not found"
+          error: "Designation not found",
         });
       }
 
       res.json({
         success: true,
         data: designation,
-        message: "Designation fetched successfully"
+        message: "Designation fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching designation:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch designation",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -63,7 +60,7 @@ class DesignationController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          errors: errors.array()
+          errors: errors.array(),
         });
       }
 
@@ -72,7 +69,7 @@ class DesignationController {
         department_id,
         role_id,
         hierarchy_level = 0,
-        is_active = true
+        is_active = true,
       } = req.body;
 
       console.log("Creating designation with data:", {
@@ -80,7 +77,7 @@ class DesignationController {
         department_id,
         role_id,
         hierarchy_level,
-        is_active
+        is_active,
       });
 
       // Verify department exists and is active
@@ -88,7 +85,7 @@ class DesignationController {
       if (!department) {
         return res.status(404).json({
           success: false,
-          error: "Department not found or inactive"
+          error: "Department not found or inactive",
         });
       }
 
@@ -97,18 +94,19 @@ class DesignationController {
       if (!role) {
         return res.status(404).json({
           success: false,
-          error: "Role not found or inactive"
+          error: "Role not found or inactive",
         });
       }
 
       // Check if department has this role assigned
-      const departmentRoles = await Department.getRolesByDepartment(department_id);
-      const hasRole = departmentRoles.some(r => r.id === parseInt(role_id));
-      
+      const departmentRoles =
+        await Department.getRolesByDepartment(department_id);
+      const hasRole = departmentRoles.some((r) => r.id === parseInt(role_id));
+
       if (!hasRole) {
         return res.status(400).json({
           success: false,
-          error: "This role is not assigned to the selected department"
+          error: "This role is not assigned to the selected department",
         });
       }
 
@@ -118,7 +116,7 @@ class DesignationController {
         role_id,
         hierarchy_level,
         is_active,
-        created_by: req.user?.id || null
+        created_by: req.user?.id || null,
       });
 
       console.log("Designation created successfully:", designation.id);
@@ -126,14 +124,14 @@ class DesignationController {
       res.status(201).json({
         success: true,
         data: designation,
-        message: "Designation created successfully"
+        message: "Designation created successfully",
       });
     } catch (error) {
       console.error("Error creating designation:", error);
       res.status(500).json({
         success: false,
         error: "Failed to create designation",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -145,7 +143,7 @@ class DesignationController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          errors: errors.array()
+          errors: errors.array(),
         });
       }
 
@@ -155,13 +153,13 @@ class DesignationController {
       if (!designation) {
         return res.status(404).json({
           success: false,
-          error: "Designation not found"
+          error: "Designation not found",
         });
       }
 
       const updateData = {
         ...req.body,
-        updated_by: req.user?.id || null
+        updated_by: req.user?.id || null,
       };
 
       // If name is being updated, check if it exists for same department-role
@@ -169,12 +167,13 @@ class DesignationController {
         const existing = await Designation.existsInDepartmentRole(
           designation.department_id,
           designation.role_id,
-          req.body.name
+          req.body.name,
         );
         if (existing) {
           return res.status(409).json({
             success: false,
-            error: "Designation name already exists for this department-role combination"
+            error:
+              "Designation name already exists for this department-role combination",
           });
         }
       }
@@ -184,14 +183,14 @@ class DesignationController {
       res.json({
         success: true,
         data: updatedDesignation,
-        message: "Designation updated successfully"
+        message: "Designation updated successfully",
       });
     } catch (error) {
       console.error("Error updating designation:", error);
       res.status(500).json({
         success: false,
         error: "Failed to update designation",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -205,26 +204,30 @@ class DesignationController {
       if (!designation) {
         return res.status(404).json({
           success: false,
-          error: "Designation not found"
+          error: "Designation not found",
         });
       }
 
-      console.log(`Attempting to permanently delete designation: ${designation.name} (${id})`);
+      console.log(
+        `Attempting to permanently delete designation: ${designation.name} (${id})`,
+      );
 
       const deleted = await Designation.delete(id);
 
       if (!deleted) {
         return res.status(404).json({
           success: false,
-          error: "Designation not found or already deleted"
+          error: "Designation not found or already deleted",
         });
       }
 
-      console.log(`Designation "${designation.name}" permanently deleted successfully`);
+      console.log(
+        `Designation "${designation.name}" permanently deleted successfully`,
+      );
 
       res.json({
         success: true,
-        message: "Designation permanently deleted successfully"
+        message: "Designation permanently deleted successfully",
       });
     } catch (error) {
       console.error("Error deleting designation:", error);
@@ -232,18 +235,24 @@ class DesignationController {
       // ✅ Catch MySQL Foreign Key constraint errors
       // ER_ROW_IS_REFERENCED_2 (1451) = row is referenced by another table
       // ER_ROW_IS_REFERENCED (1452) = similar FK error
-      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED' || error.errno === 1451 || error.errno === 1452) {
+      if (
+        error.code === "ER_ROW_IS_REFERENCED_2" ||
+        error.code === "ER_ROW_IS_REFERENCED" ||
+        error.errno === 1451 ||
+        error.errno === 1452
+      ) {
         return res.status(409).json({
           success: false,
-          error: "Cannot delete this designation because it is being used by one or more employees. Please deactivate it instead or remove the employee references first.",
-          code: "FK_CONSTRAINT_ERROR"
+          error:
+            "Cannot delete this designation because it is being used by one or more employees. Please deactivate it instead or remove the employee references first.",
+          code: "FK_CONSTRAINT_ERROR",
         });
       }
 
       res.status(500).json({
         success: false,
         error: "Failed to delete designation",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -253,33 +262,37 @@ class DesignationController {
     try {
       const { id } = req.params;
       console.log(`Toggling active status for designation ${id}`);
-      
+
       const designation = await Designation.findById(id);
 
       if (!designation) {
         return res.status(404).json({
           success: false,
-          error: "Designation not found"
+          error: "Designation not found",
         });
       }
 
-      console.log(`Current status: ${designation.is_active ? 'Active' : 'Inactive'}`);
-      
+      console.log(
+        `Current status: ${designation.is_active ? "Active" : "Inactive"}`,
+      );
+
       const updatedDesignation = await Designation.toggleActive(id);
-      
-      console.log(`New status: ${updatedDesignation.is_active ? 'Active' : 'Inactive'}`);
+
+      console.log(
+        `New status: ${updatedDesignation.is_active ? "Active" : "Inactive"}`,
+      );
 
       res.json({
         success: true,
         data: updatedDesignation,
-        message: `Designation ${updatedDesignation.is_active ? "activated" : "deactivated"} successfully`
+        message: `Designation ${updatedDesignation.is_active ? "activated" : "deactivated"} successfully`,
       });
     } catch (error) {
       console.error("Error toggling designation status:", error);
       res.status(500).json({
         success: false,
         error: "Failed to toggle designation status",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -288,12 +301,12 @@ class DesignationController {
   static async getDesignationsByDeptRole(req, res) {
     try {
       const { departmentId, roleId } = req.params;
-      
+
       const department = await Department.findById(departmentId);
       if (!department) {
         return res.status(404).json({
           success: false,
-          error: "Department not found"
+          error: "Department not found",
         });
       }
 
@@ -301,23 +314,26 @@ class DesignationController {
       if (!role) {
         return res.status(404).json({
           success: false,
-          error: "Role not found"
+          error: "Role not found",
         });
       }
 
-      const designations = await Designation.findByDepartmentAndRole(departmentId, roleId);
+      const designations = await Designation.findByDepartmentAndRole(
+        departmentId,
+        roleId,
+      );
 
       res.json({
         success: true,
         data: designations,
-        message: "Designations fetched successfully"
+        message: "Designations fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching designations:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch designations",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -326,12 +342,12 @@ class DesignationController {
   static async getDesignationsByDepartment(req, res) {
     try {
       const { departmentId } = req.params;
-      
+
       const department = await Department.findById(departmentId);
       if (!department) {
         return res.status(404).json({
           success: false,
-          error: "Department not found"
+          error: "Department not found",
         });
       }
 
@@ -340,14 +356,14 @@ class DesignationController {
       res.json({
         success: true,
         data: designations,
-        message: "Designations fetched successfully"
+        message: "Designations fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching designations:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch designations",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -356,12 +372,12 @@ class DesignationController {
   static async getDesignationsByRole(req, res) {
     try {
       const { roleId } = req.params;
-      
+
       const role = await Role.findById(roleId);
       if (!role) {
         return res.status(404).json({
           success: false,
-          error: "Role not found"
+          error: "Role not found",
         });
       }
 
@@ -370,14 +386,14 @@ class DesignationController {
       res.json({
         success: true,
         data: designations,
-        message: "Designations fetched successfully"
+        message: "Designations fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching designations:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch designations",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -389,14 +405,14 @@ class DesignationController {
       res.json({
         success: true,
         data: stats,
-        message: "Designation statistics fetched successfully"
+        message: "Designation statistics fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching designation stats:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch statistics",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -409,7 +425,7 @@ class DesignationController {
       if (!query || query.trim().length < 2) {
         return res.status(400).json({
           success: false,
-          error: "Search query must be at least 2 characters"
+          error: "Search query must be at least 2 characters",
         });
       }
 
@@ -418,14 +434,14 @@ class DesignationController {
       res.json({
         success: true,
         data: designations,
-        message: "Designations search completed"
+        message: "Designations search completed",
       });
     } catch (error) {
       console.error("Error searching designations:", error);
       res.status(500).json({
         success: false,
         error: "Failed to search designations",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -437,14 +453,14 @@ class DesignationController {
       res.json({
         success: true,
         data: Array.isArray(departments) ? departments : [],
-        message: "Departments fetched successfully"
+        message: "Departments fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching departments:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch departments",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -453,12 +469,12 @@ class DesignationController {
   static async getRolesForDepartment(req, res) {
     try {
       const { departmentId } = req.params;
-      
+
       const department = await Department.findById(departmentId);
       if (!department) {
         return res.status(404).json({
           success: false,
-          error: "Department not found"
+          error: "Department not found",
         });
       }
 
@@ -466,14 +482,14 @@ class DesignationController {
       res.json({
         success: true,
         data: Array.isArray(roles) ? roles : [],
-        message: "Roles fetched successfully"
+        message: "Roles fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching roles:", error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch roles",
-        message: error.message
+        message: error.message,
       });
     }
   }
