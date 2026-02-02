@@ -982,7 +982,7 @@ async function createUser(req, res) {
       email: email.trim(),
       full_name: full_name || null,
       phone: phone || null,
-      role: role.toUpperCase(),
+      role: role.toLowerCase(),
       department: department || null,
       department_id: department_id || null,
       profile_picture: profile_picture || null,
@@ -1098,7 +1098,7 @@ async function updateUser(req, res) {
 
     if (full_name !== undefined) updateData.full_name = full_name || null;
     if (phone !== undefined) updateData.phone = phone || null;
-    if (role !== undefined) updateData.role = role.toUpperCase();
+    if (role !== undefined) updateData.role = role.toLowerCase();
     if (department !== undefined) updateData.department = department || null;
     if (profile_picture !== undefined)
       updateData.profile_picture = profile_picture || null;
@@ -1178,7 +1178,7 @@ async function updateUser(req, res) {
         if (role !== undefined) {
           const roleRows = await query(
             `SELECT id FROM roles WHERE name = ? LIMIT 1`,
-            [role.toUpperCase()],
+            [role.toLowerCase()],
           );
           if (roleRows && roleRows.length > 0) {
             employeeUpdateData.role_id = roleRows[0].id;
