@@ -1,7 +1,7 @@
 const { query } = require("../config/db");
 
 class Designation {
-  // Get all designations with department and role info - REMOVED is_active filter
+  // Get all designations with department and role info
   static async findAll() {
     const rows = await query(`
       SELECT 
@@ -21,7 +21,7 @@ class Designation {
     return rows.map(row => this.normalizeRow(row));
   }
 
-  // Get by ID - REMOVED is_active filter
+  // Get by ID
   static async findById(id) {
     const rows = await query(
       `
@@ -40,7 +40,7 @@ class Designation {
     return rows.length ? this.normalizeRow(rows[0]) : null;
   }
 
-  // Get designations by department and role - REMOVED is_active filter
+  // Get designations by department and role
   static async findByDepartmentAndRole(departmentId, roleId) {
     const rows = await query(
       `
@@ -59,7 +59,7 @@ class Designation {
     return rows.map(row => this.normalizeRow(row));
   }
 
-  // Get designations by department - REMOVED is_active filter
+  // Get designations by department
   static async findByDepartment(departmentId) {
     const rows = await query(
       `
@@ -77,7 +77,7 @@ class Designation {
     return rows.map(row => this.normalizeRow(row));
   }
 
-  // Get designations by role - REMOVED is_active filter
+  // Get designations by role
   static async findByRole(roleId) {
     const rows = await query(
       `
@@ -95,7 +95,7 @@ class Designation {
     return rows.map(row => this.normalizeRow(row));
   }
 
-  // Check if designation name exists for same department-role - REMOVED is_active filter
+  // Check if designation name exists for same department-role
   static async existsInDepartmentRole(departmentId, roleId, name) {
     const rows = await query(
       `
@@ -178,13 +178,14 @@ class Designation {
     return await this.findById(id);
   }
 
-  // Delete designation (soft delete)
+  // ✅ FIXED: Permanent (hard) delete - actually removes the row from database
   static async delete(id) {
-    await query("UPDATE designations SET is_active = FALSE WHERE id = ?", [id]);
-    return true;
+    const result = await query("DELETE FROM designations WHERE id = ?", [id]);
+    // result.affectedRows === 0 means row didn't exist
+    return result.affectedRows > 0;
   }
 
-  // Toggle active status - FIXED VERSION
+  // Toggle active status
   static async toggleActive(id) {
     // First get current status
     const current = await this.findById(id);
@@ -203,7 +204,7 @@ class Designation {
     return await this.findById(id);
   }
 
-  // Get statistics - Count all designations
+  // Get statistics
   static async getStats() {
     const stats = await query(`
       SELECT 
@@ -216,7 +217,7 @@ class Designation {
     return stats[0];
   }
 
-  // Search designations - REMOVED is_active filter
+  // Search designations
   static async search(searchTerm) {
     const rows = await query(
       `

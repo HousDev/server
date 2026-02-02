@@ -171,6 +171,34 @@ const findByEmailWithPassword = async (email) => {
   }
 };
 
+const findByPhoneWithPassword = async (phone) => {
+  try {
+    const [rows] = await promisePool.query(
+      "SELECT * FROM users WHERE phone = ?",
+      [phone],
+    );
+
+    if (rows.length === 0) return null;
+
+    const user = rows[0];
+
+    // Parse permissions if they're JSON strings
+    if (user.permissions && typeof user.permissions === "string") {
+      try {
+        user.permissions = JSON.parse(user.permissions);
+      } catch {
+        user.permissions = {};
+      }
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Find by phone with password error:", error);
+    throw error;
+  }
+};
+
+
 /**
  * Create new user - FIXED: Generate UUID for id
  */
@@ -410,6 +438,44 @@ const updateUserPermissions = async (userId, permissions) => {
     throw error;
   }
 };
+const checkPhoneExists = async (phone, excludeUserId = null) => {
+  try {
+    if (!phone || phone.trim() === '') {
+      return { exists: false, table: null };
+    }
+
+    // Check in users table (excluding current user if provided)
+    let userQuery = 'SELECT id FROM users WHERE phone = ?';
+    let userParams = [phone];
+    
+    if (excludeUserId) {
+      userQuery += ' AND id != ?';
+      userParams.push(excludeUserId);
+    }
+
+    const [userRows] = await promisePool.query(userQuery, userParams);
+    
+    if (userRows && userRows.length > 0) {
+      return { exists: true, table: 'users' };
+    }
+
+    // Check in employees table
+    const [employeeRows] = await promisePool.query(
+      'SELECT id FROM hrms_employees WHERE phone = ?',
+      [phone]
+    );
+    
+    if (employeeRows && employeeRows.length > 0) {
+      return { exists: true, table: 'employees' };
+    }
+
+    return { exists: false, table: null };
+  } catch (error) {
+    console.error('Check phone exists error:', error);
+    throw error;
+  }
+};
+
 
 module.exports = {
   findAll,
@@ -417,10 +483,13 @@ module.exports = {
   findById,
   findByEmail,
   findByEmailWithPassword,
+    findByPhoneWithPassword, // ← ADD THIS LINE
+
   create,
   update,
   remove,
   toggleActive,
   updateUserPermissions,
   checkColumnExists,
+  checkPhoneExists,
 };
