@@ -133,6 +133,44 @@ const toggleActive = async (id) => {
   return await findById(id);
 };
 
+const getItemCategories = async () => {
+  try {
+    const [rows] = await promisePool.query(
+      "SELECT DISTINCT item_category FROM items WHERE item_category IS NOT NULL AND item_category != '' ORDER BY item_category"
+    );
+    return rows.map(row => row.item_category).filter(Boolean);
+  } catch (error) {
+    console.error("Error fetching item categories:", error);
+    return [];
+  }
+};
+
+// Get all unique item sub-categories
+const getItemSubCategories = async () => {
+  try {
+    const [rows] = await promisePool.query(
+      "SELECT DISTINCT item_sub_category FROM items WHERE item_sub_category IS NOT NULL AND item_sub_category != '' ORDER BY item_sub_category"
+    );
+    return rows.map(row => row.item_sub_category).filter(Boolean);
+  } catch (error) {
+    console.error("Error fetching item sub-categories:", error);
+    return [];
+  }
+};
+
+// Get items by category
+const findByCategory = async (category) => {
+  try {
+    const [rows] = await promisePool.query(
+      "SELECT * FROM items WHERE item_category = ? ORDER BY item_name",
+      [category]
+    );
+    return rows;
+  } catch (error) {
+    console.error("Error fetching items by category:", error);
+    return [];
+  }
+};
 module.exports = {
   findAll,
   findById,
@@ -141,4 +179,7 @@ module.exports = {
   update,
   remove,
   toggleActive,
+  getItemCategories, // ✅ ADD THIS
+  getItemSubCategories, // ✅ ADD THIS
+  findByCategory, // 
 };
