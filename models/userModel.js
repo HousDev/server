@@ -73,7 +73,7 @@ const findAllByRole = async (role) => {
   try {
     const [rows] = await promisePool.query(
       "SELECT * FROM users WHERE role = ? ORDER BY full_name",
-      [role.toUpperCase()],
+      [role.toLowerCase()],
     );
     return rows;
   } catch (error) {

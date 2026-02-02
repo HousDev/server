@@ -204,3 +204,63 @@ exports.getLastItemCode = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch last item code" });
   }
 };
+
+exports.getItemCategories = async (req, res) => {
+  try {
+    const categories = await Items.getItemCategories();
+    res.json(categories);
+  } catch (err) {
+    console.error("getItemCategories error", err);
+    res.status(500).json({ 
+      message: "Server error", 
+      error: err.message || err 
+    });
+  }
+};
+
+// Get all item sub-categories
+exports.getItemSubCategories = async (req, res) => {
+  try {
+    const subCategories = await Items.getItemSubCategories();
+    res.json(subCategories);
+  } catch (err) {
+    console.error("getItemSubCategories error", err);
+    res.status(500).json({ 
+      message: "Server error", 
+      error: err.message || err 
+    });
+  }
+};
+
+// Get items by category
+exports.getItemsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const items = await Items.findByCategory(category);
+    res.json(items);
+  } catch (err) {
+    console.error("getItemsByCategory error", err);
+    res.status(500).json({ 
+      message: "Server error", 
+      error: err.message || err 
+    });
+  }
+};
+
+// Get items by sub-category (optional)
+exports.getItemsBySubCategory = async (req, res) => {
+  try {
+    const { subCategory } = req.params;
+    const [rows] = await query(
+      "SELECT * FROM items WHERE item_sub_category = ? ORDER BY item_name",
+      [subCategory]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("getItemsBySubCategory error", err);
+    res.status(500).json({ 
+      message: "Server error", 
+      error: err.message || err 
+    });
+  }
+};

@@ -183,6 +183,26 @@ async function getAllInventory(req, res) {
   }
 }
 
+async function getInventoryById(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: "Invalid inventory ID" });
+    }
+
+    const data = await inventoryModel.findInventoryById(id);
+    if (!data) {
+      return res.status(404).json({ message: "Inventory not found" });
+    }
+
+    return res.json(data);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 module.exports = {
   createInventory,
   updateInventory,
