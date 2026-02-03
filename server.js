@@ -40,6 +40,7 @@ const expenseRoutes = require("./routes/expense.routes");
 const ticketRoutes = require("./routes/ticket.routes.js");
 const designationRoutes = require("./routes/designationRoutes");
 const locationRoutes = require('./routes/locationRoutes'); // Make sure this is imported
+const settingsRoutes = require("./routes/settingsRoutes");
 
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes.js");
@@ -65,6 +66,7 @@ app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
 app.use("/api/designations", designationRoutes);
 app.use('/api/locations', locationRoutes);
+app.use("/api/settings", settingsRoutes);
 
 
 // Routes
@@ -76,18 +78,27 @@ app.use("/api/notifications", NotificationRoute);
 app.use("/api/workflow", workflowRoutes);
 // ⭐ REMOVE /api prefix - uploads should be served at root level
 // app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
-app.use(
-  "/api/uploads",
-  express.static(path.join(__dirname, "uploads"), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".pdf")) {
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", "inline");
-      }
-    },
-  }),
-);
-app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use(
+//   "/api/uploads",
+//   express.static(path.join(__dirname, "uploads"), {
+//     setHeaders: (res, filePath) => {
+//       if (filePath.endsWith(".pdf")) {
+//         res.setHeader("Content-Type", "application/pdf");
+//         res.setHeader("Content-Disposition", "inline");
+//       }
+//     },
+//   }),
+// );
+// app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads"), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith(".pdf")) {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "inline");
+    }
+  },
+}));
 app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
