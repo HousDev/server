@@ -5,7 +5,7 @@ const generateRequestNo = async () => {
   try {
     // Get the last inserted ID from request_material
     const rows = await query(
-      `SELECT id FROM request_material ORDER BY id DESC LIMIT 1`
+      `SELECT id FROM request_material ORDER BY id DESC LIMIT 1`,
     );
 
     // rows is an array of objects like [{ id: 5 }]
@@ -70,9 +70,8 @@ async function createRequestMaterial(req, res) {
       }
     }
 
-    const request = await requestMaterialModel.createRequestMaterialModel(
-      payload
-    );
+    const request =
+      await requestMaterialModel.createRequestMaterialModel(payload);
 
     return res.status(201).json({
       success: true,
@@ -143,11 +142,17 @@ async function createPORequestMaterial(req, res) {
     });
   } catch (error) {
     console.error("Create Request Material Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal server error",
-    });
+    if (error.sqlState === "23000") {
+      return res.status(500).json({
+        success: false,
+        message: "You have already created request for this material request.",
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error.",
+      });
+    }
   }
 }
 
