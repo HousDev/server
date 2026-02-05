@@ -43,6 +43,7 @@ const locationRoutes = require("./routes/locationRoutes"); // Make sure this is 
 const settingsRoutes = require("./routes/settingsRoutes");
 const paymentMasterRuter = require("./routes/paymentMaster.router.js");
 
+const integrationsRoute = require("./routes/integrationsRoute");
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes.js");
 dotenv.config();
@@ -68,6 +69,7 @@ app.use("/api/service-orders", serviceOrderRoutes);
 app.use("/api/designations", designationRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/integrations", integrationsRoute); // Register the route
 
 app.use("/api/roles", roleRoutes);
 app.use("/api/terms-conditions", termsConditionsRouter);
@@ -116,7 +118,6 @@ app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
 app.use("/api/employees", employeeRoute);
 app.use("/api/companies", companyRoutes);
-app.use("/api/security-settings", securitySettingsRoutes);
 app.use("/api/security-settings", securitySettingsRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/expenses", expenseRoutes);
