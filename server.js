@@ -39,8 +39,10 @@ const leaveRoutes = require("./routes/leave.routes");
 const expenseRoutes = require("./routes/expense.routes");
 const ticketRoutes = require("./routes/ticket.routes.js");
 const designationRoutes = require("./routes/designationRoutes");
-const locationRoutes = require('./routes/locationRoutes'); // Make sure this is imported
+const locationRoutes = require("./routes/locationRoutes"); // Make sure this is imported
 const settingsRoutes = require("./routes/settingsRoutes");
+const paymentMasterRuter = require("./routes/paymentMaster.router.js");
+
 const integrationsRoute = require("./routes/integrationsRoute");
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes.js");
@@ -65,18 +67,17 @@ app.use("/api/po_types", poTypesRoutes);
 app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
 app.use("/api/designations", designationRoutes);
-app.use('/api/locations', locationRoutes);
+app.use("/api/locations", locationRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/integrations", integrationsRoute); // Register the route
 
-
-// Routes
 app.use("/api/roles", roleRoutes);
 app.use("/api/terms-conditions", termsConditionsRouter);
 app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/workflow", workflowRoutes);
+
 // ⭐ REMOVE /api prefix - uploads should be served at root level
 // app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 // app.use(
@@ -92,14 +93,18 @@ app.use("/api/workflow", workflowRoutes);
 // );
 // app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use("/api/uploads", express.static(path.join(__dirname, "uploads"), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith(".pdf")) {
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "inline");
-    }
-  },
-}));
+app.use(
+  "/api/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".pdf")) {
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "inline");
+      }
+    },
+  }),
+);
+
 app.use("/api/project-details", ProjectDetailsRouter);
 app.use("/api/templates", templateRoutes);
 app.use("/api/requestMaterial", requestMaterialRoute);
@@ -107,6 +112,7 @@ app.use("/api/logs", logsRoutes);
 app.use("/api/pdf", pdfRouter);
 app.use("/api/po-payments", poPaymentRouter);
 app.use("/api/po-payment-reminders", poPaymentReminderRoutes);
+app.use("/api/payment-master", paymentMasterRuter);
 app.use("/api/area-tasks", areaTasksRoutes);
 app.use("/api/area-sub-tasks", areaSubTasksRoutes);
 app.use("/api/area-task-daily-logs", dailyLogsRoutes);
