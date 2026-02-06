@@ -1,4 +1,5 @@
 // controllers/attendanceController.js
+const { query } = require("../config/db");
 const attendanceModel = require("../models/attendanceModel");
 const fs = require("fs").promises;
 
@@ -57,6 +58,7 @@ class AttendanceController {
   punchIn = async (req, res) => {
     try {
       const { user_id, latitude, longitude } = req.body;
+      console.log(user_id);
 
       if (!user_id || !latitude || !longitude)
         return res.status(400).json({
@@ -93,17 +95,24 @@ class AttendanceController {
           .json({ success: false, message: "Already punched in today" });
       }
 
+      const [existingEmployee] = await query(
+        "SELECT * FROM hrms_employees WHERE user_id = ?",
+        [user_id],
+      );
+      console.log("data of emp", existingEmployee);
+      if (!existingEmployee) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Employee not found." });
+      }
       const attendanceId = await attendanceModel.create({
-        user_id: parseInt(user_id),
+        user_id: existingEmployee.id,
         date: new Date().toISOString().split("T")[0],
         punch_in_time: new Date(),
         punch_in_latitude: parseFloat(latitude),
         punch_in_longitude: parseFloat(longitude),
         punch_in_location: `Lat: ${latitude}, Long: ${longitude}`,
         punch_in_selfie: req.file.filename,
-        work_type,
-        project_id: project_id ? parseInt(project_id) : null,
-        project_location,
         status: "present",
       });
 
@@ -113,7 +122,6 @@ class AttendanceController {
         data: {
           id: attendanceId,
           selfie_url: this.getFileUrl(req.file.filename),
-          work_type,
         },
       });
     } catch (error) {
@@ -212,6 +220,17 @@ class AttendanceController {
       data: attendance || [],
     });
   };
+
+  getLastAttendanceOfUser = async (req, res) => {
+    const { user_id } = req.params;
+    const attendance =
+      await attendanceModel.getTodayByUserLastAttendance(user_id);
+    return res.json({
+      success: true,
+      data: attendance,
+    });
+  };
+
   // ---------------- HISTORY ---------------- //
   getHistory = async (req, res) => {
     const { user_id } = req.params;
