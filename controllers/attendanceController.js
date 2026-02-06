@@ -57,8 +57,15 @@ class AttendanceController {
   // ---------------- PUNCH IN ---------------- //
   punchIn = async (req, res) => {
     try {
-      const { user_id, latitude, longitude } = req.body;
-      console.log(user_id);
+      const {
+        user_id,
+        latitude,
+        longitude,
+        punch_in_address,
+        punch_out_address,
+      } = req.body;
+      console.log(user_id, req.body);
+      console.log(punch_in_address, punch_out_address);
 
       if (!user_id || !latitude || !longitude)
         return res.status(400).json({
@@ -114,6 +121,8 @@ class AttendanceController {
         punch_in_location: `Lat: ${latitude}, Long: ${longitude}`,
         punch_in_selfie: req.file.filename,
         status: "present",
+        punch_in_address,
+        punch_out_address,
       });
 
       return res.json({
@@ -136,12 +145,17 @@ class AttendanceController {
 
   // ---------------- PUNCH OUT ---------------- //
   punchOut = async (req, res) => {
-    console.log("🔵 PUNCH OUT API CALLED");
     console.log("Body:", req.body);
     console.log("File:", req.file);
 
     try {
-      const { user_id, latitude, longitude, work_notes = "" } = req.body;
+      const {
+        user_id,
+        latitude,
+        longitude,
+        work_notes = "",
+        punch_out_address,
+      } = req.body;
 
       if (!user_id || !latitude || !longitude)
         return res.status(400).json({
@@ -153,8 +167,13 @@ class AttendanceController {
         return res
           .status(400)
           .json({ success: false, message: "Selfie image is required" });
+      const [employeeData] = await query(
+        "SELECT * FROM hrms_employees WHERE user_id = ?",
+        [user_id],
+      );
+      const attendance = await attendanceModel.getTodayByUser(employeeData.id);
 
-      const attendance = await attendanceModel.getTodayByUser(user_id);
+      console.log("today last attendance", attendance);
       if (!attendance)
         return res
           .status(400)
@@ -180,6 +199,7 @@ class AttendanceController {
         punch_out_selfie: req.file.filename,
         total_hours: hoursWorked,
         work_notes,
+        punch_out_address,
       });
 
       return res.json({
@@ -229,6 +249,31 @@ class AttendanceController {
       success: true,
       data: attendance,
     });
+  };
+
+  // ---------------- CURRENT MONTH ATTENDANCE ---------------- //
+  getCurrentMonthAttendance = async (req, res) => {
+    try {
+      const { user_id } = req.params;
+
+      const attendance =
+        await attendanceModel.getUserAttendanceOfCurrentMonth(user_id);
+
+      return res.json({
+        success: true,
+        data: attendance || [],
+      });
+    } catch (error) {
+      console.error(
+        "❌ Error in getCurrentMonthAttendance controller:",
+        error.message,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch current month attendance",
+      });
+    }
   };
 
   // ---------------- HISTORY ---------------- //
