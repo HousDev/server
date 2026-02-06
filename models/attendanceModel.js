@@ -2,6 +2,25 @@
 const db = require("../config/db");
 
 class AttendanceModel {
+  async getTodayByUserLastAttendance(user_id) {
+    try {
+      const [emp] = await db.query(
+        "SELECT * FROM hrms_employees WHERE user_id = ?",
+        [user_id],
+      );
+      const rows = await db.query(
+        `SELECT * FROM attendance 
+         WHERE user_id = ? AND DATE(date) = CURDATE() `,
+        [emp.id],
+      );
+
+      return rows.length > 0 ? rows[0] : null;
+    } catch (error) {
+      console.error("❌ Error in getTodayByUser:", error.message);
+      return null;
+    }
+  }
+
   // Get today's attendance for all users
   async getTodayAll() {
     try {
@@ -10,7 +29,9 @@ class AttendanceModel {
       const rows = await db.query(
         `SELECT 
   a.*,
-  CONCAT(u.first_name, ' ', u.last_name) AS user_name
+  CONCAT(u.first_name, ' ', u.last_name) AS user_name,
+  u.employee_code as employee_code,
+  
 FROM attendance a
 LEFT JOIN hrms_employees u ON u.id = a.user_id
 WHERE a.date = CURDATE()
@@ -113,6 +134,7 @@ ORDER BY a.punch_in_time ASC`,
         punch_in_location,
         punch_in_latitude,
         punch_in_longitude,
+        punch_in_selfie,
         status,
       } = data;
 
@@ -120,7 +142,7 @@ ORDER BY a.punch_in_time ASC`,
         `INSERT INTO attendance (
           user_id, date, punch_in_time, punch_in_location,
           punch_in_latitude, punch_in_longitude, punch_in_selfie, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           user_id,
           date,

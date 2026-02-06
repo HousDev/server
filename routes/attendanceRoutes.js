@@ -11,6 +11,7 @@ router.post(
 );
 
 router.get("/today/:user_id", attendanceController.getTodayStatus);
+router.get("/todayLast/:user_id", attendanceController.getLastAttendanceOfUser);
 router.get("/today", attendanceController.getTodayAll);
 router.get("/history/:user_id", attendanceController.getHistory);
 router.get("/statistics", attendanceController.getStatistics);
