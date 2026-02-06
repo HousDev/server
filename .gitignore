@@ -1,71 +1,36 @@
-# ===========================
-# Node Modules
-# ===========================
+# Dependencies
 node_modules/
 
-# ===========================
-# Environment Files
-# ===========================
+# Environment / Secrets
 .env
-uploads
-.env.local
-.env.development
-.env.production
-.env.test
+.env.*
+!.env.example
 
-# ===========================
+# Uploads / Temp
+uploads/
+temp/
+tmp/
+
 # Logs
-# ===========================
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# ===========================
-# OS Files
-# ===========================
-.DS_Store
-Thumbs.db
-
-# ===========================
-# Editor Files
-# ===========================
-.vscode/
-.idea/
-*.swp
-
-# ===========================
-# Build Outputs
-# ===========================
+# Build / Coverage
 dist/
 build/
 coverage/
 
-# ===========================
-# Cache Files
-# ===========================
+# Cache
 .cache/
-*.cache
 
-# ===========================
-# Database Dumps
-# ===========================
+# DB / Backup
 dump/
 backup/
 *.sql
 *.bson
 
-# ===========================
-# Temporary Files
-# ===========================
-temp/
-tmp/
-*.tmp
-
-# ===========================
-# Other
-# ===========================
-*.orig
-*.rej
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
