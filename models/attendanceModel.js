@@ -10,7 +10,7 @@ class AttendanceModel {
       );
       const rows = await db.query(
         `SELECT * FROM attendance 
-         WHERE user_id = ? AND DATE(date) = CURDATE() `,
+         WHERE user_id = ? AND DATE(date) = CURDATE() ORDER BY created_at DESC LIMIT 1`,
         [emp.id],
       );
 
@@ -46,6 +46,33 @@ ORDER BY a.punch_in_time ASC`,
     }
   }
 
+  async getUserAttendanceOfCurrentMonth(user_id) {
+    try {
+      const [employeeData] = await db.query(
+        "SELECT * from hrms_employees WHERE user_id = ?",
+        [user_id],
+      );
+      const rows = await db.query(
+        `SELECT a.*, CONCAT(u.first_name, ' ', u.last_name) as user_name, u.employee_code as employee_code
+         FROM attendance a
+         LEFT JOIN hrms_employees u ON u.id = a.user_id
+         WHERE a.user_id = ?
+         AND a.date BETWEEN
+           DATE_FORMAT(CURDATE(), '%Y-%m-01')
+           AND LAST_DAY(CURDATE())`,
+        [employeeData.id],
+      );
+
+      return rows;
+    } catch (error) {
+      console.error(
+        "❌ Error in getUserAttendanceOfCurrentMonth:",
+        error.message,
+      );
+      return [];
+    }
+  }
+
   // Get today's attendance by user
   async getTodayByUser(user_id) {
     try {
@@ -53,9 +80,10 @@ ORDER BY a.punch_in_time ASC`,
 
       const rows = await db.query(
         `SELECT * FROM attendance 
-         WHERE user_id = ? AND DATE(date) = CURDATE()`,
+         WHERE user_id = ? AND DATE(date) = CURDATE() ORDER BY punch_in_time DESC LIMIT 1`,
         [user_id],
       );
+      console.log("today att", rows);
 
       console.log("✅ Found:", rows.length, "records");
       return rows.length > 0 ? rows[0] : null;
@@ -136,13 +164,14 @@ ORDER BY a.punch_in_time ASC`,
         punch_in_longitude,
         punch_in_selfie,
         status,
+        punch_in_address,
       } = data;
 
       const result = await db.query(
         `INSERT INTO attendance (
           user_id, date, punch_in_time, punch_in_location,
-          punch_in_latitude, punch_in_longitude, punch_in_selfie, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          punch_in_latitude, punch_in_longitude, punch_in_selfie, status, punch_in_address
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           user_id,
           date,
@@ -152,6 +181,7 @@ ORDER BY a.punch_in_time ASC`,
           punch_in_longitude,
           punch_in_selfie,
           status || "present",
+          punch_in_address || null,
         ],
       );
 
@@ -173,7 +203,10 @@ ORDER BY a.punch_in_time ASC`,
         punch_out_longitude,
         punch_out_selfie,
         total_hours,
+        punch_out_address,
       } = data;
+
+      console.log("punch in stoock", punch_out_address);
 
       const result = await db.query(
         `UPDATE attendance 
@@ -183,7 +216,8 @@ ORDER BY a.punch_in_time ASC`,
              punch_out_longitude = ?,
              punch_out_selfie = ?,
              total_hours = ?,
-             updated_at = NOW()
+             updated_at = NOW(),
+             punch_out_address = ?
          WHERE id = ?`,
         [
           punch_out_time,
@@ -192,6 +226,7 @@ ORDER BY a.punch_in_time ASC`,
           punch_out_longitude,
           punch_out_selfie,
           total_hours,
+          punch_out_address || null,
           id,
         ],
       );

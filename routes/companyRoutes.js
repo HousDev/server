@@ -20,6 +20,8 @@ router.delete("/:id", controller.deleteCompany);
 // Get company office locations
 router.get("/:id/locations", controller.getCompanyLocations);
 
+router.get("/office-location/:id", controller.getCompanyLocationById);
+
 // Create office location
 router.post("/:id/locations", controller.createOfficeLocation);
 

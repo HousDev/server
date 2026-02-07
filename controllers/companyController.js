@@ -33,7 +33,7 @@ exports.getCompanyById = async (req, res) => {
   try {
     const queryRes = await pool.query(
       "SELECT * FROM companies WHERE id = ? AND is_active = 1",
-      [req.params.id]
+      [req.params.id],
     );
     const { rows } = normalizeQueryResult(queryRes);
     if (!rows || rows.length === 0) {
@@ -62,8 +62,8 @@ exports.createCompany = async (req, res) => {
   } = req.body;
 
   if (!name || !code) {
-    return res.status(400).json({ 
-      message: "Company name and code are required" 
+    return res.status(400).json({
+      message: "Company name and code are required",
     });
   }
 
@@ -90,7 +90,7 @@ exports.createCompany = async (req, res) => {
   try {
     const queryRes = await pool.query(sql, values);
     const { raw } = normalizeQueryResult(queryRes);
-    
+
     let insertId;
     if (Array.isArray(raw) && raw[0] && raw[0].insertId) {
       insertId = raw[0].insertId;
@@ -99,7 +99,7 @@ exports.createCompany = async (req, res) => {
     if (!insertId) {
       const [created] = await pool.query(
         "SELECT * FROM companies WHERE name = ? AND code = ? ORDER BY id DESC LIMIT 1",
-        [name, code]
+        [name, code],
       );
       const norm = normalizeQueryResult(created);
       if (norm.rows && norm.rows.length > 0) {
@@ -108,16 +108,22 @@ exports.createCompany = async (req, res) => {
       return res.status(201).json({ message: "Company created successfully" });
     }
 
-    const selectRes = await pool.query("SELECT * FROM companies WHERE id = ?", [insertId]);
+    const selectRes = await pool.query("SELECT * FROM companies WHERE id = ?", [
+      insertId,
+    ]);
     const selectNorm = normalizeQueryResult(selectRes);
-    return res.status(201).json(selectNorm.rows ? selectNorm.rows[0] : { id: insertId });
+    return res
+      .status(201)
+      .json(selectNorm.rows ? selectNorm.rows[0] : { id: insertId });
   } catch (err) {
     console.error("createCompany error", err);
-    
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ message: "Company with this code already exists" });
+
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(400)
+        .json({ message: "Company with this code already exists" });
     }
-    
+
     return res.status(500).json({ message: "Server error creating company" });
   }
 };
@@ -140,7 +146,9 @@ exports.updateCompany = async (req, res) => {
   } = req.body;
 
   try {
-    const [exists] = await pool.query("SELECT id FROM companies WHERE id = ?", [id]);
+    const [exists] = await pool.query("SELECT id FROM companies WHERE id = ?", [
+      id,
+    ]);
     if (!exists || exists.length === 0) {
       return res.status(404).json({ message: "Company not found" });
     }
@@ -170,7 +178,9 @@ exports.updateCompany = async (req, res) => {
 
     await pool.query(sql, values);
 
-    const [updated] = await pool.query("SELECT * FROM companies WHERE id = ?", [id]);
+    const [updated] = await pool.query("SELECT * FROM companies WHERE id = ?", [
+      id,
+    ]);
     return res.json(updated[0]);
   } catch (err) {
     console.error("updateCompany error", err);
@@ -183,7 +193,9 @@ exports.deleteCompany = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [exists] = await pool.query("SELECT id FROM companies WHERE id = ?", [id]);
+    const [exists] = await pool.query("SELECT id FROM companies WHERE id = ?", [
+      id,
+    ]);
     if (!exists || exists.length === 0) {
       return res.status(404).json({ message: "Company not found" });
     }
@@ -191,7 +203,7 @@ exports.deleteCompany = async (req, res) => {
     // Soft delete - set is_active = 0
     await pool.query(
       "UPDATE companies SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [id]
+      [id],
     );
 
     return res.json({ message: "Company deleted successfully" });
@@ -223,6 +235,24 @@ exports.getCompanyLocations = async (req, res) => {
   }
 };
 
+exports.getCompanyLocationById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Remove the "AND is_active = 1" filter to get ALL branches
+    const sql = `
+      SELECT * FROM office_locations 
+      WHERE id = ?
+    `;
+    const [rows] = await pool.query(sql, [id]);
+
+    return res.json(rows || []);
+  } catch (err) {
+    console.error("getCompanyLocations error", err);
+    return res.status(500).json({ message: "Server error fetching locations" });
+  }
+};
+
 // POST /api/companies/:id/locations
 exports.createOfficeLocation = async (req, res) => {
   const { id } = req.params;
@@ -241,14 +271,18 @@ exports.createOfficeLocation = async (req, res) => {
   } = req.body;
 
   if (!name || !address) {
-    return res.status(400).json({ 
-      message: "Office name and address are required" 
+    return res.status(400).json({
+      message: "Office name and address are required",
     });
   }
 
   // Check if company exists
   try {
-    const [company] = await pool.query("SELECT id FROM companies WHERE id = ? AND is_active = 1", [id]);
+    const [company] = await pool.query(
+      "SELECT id FROM companies WHERE id = ? AND is_active = 1",
+      [id],
+    );
+
     if (!company || company.length === 0) {
       return res.status(404).json({ message: "Company not found" });
     }
@@ -278,7 +312,7 @@ exports.createOfficeLocation = async (req, res) => {
 
     const queryRes = await pool.query(sql, values);
     const { raw } = normalizeQueryResult(queryRes);
-    
+
     let insertId;
     if (Array.isArray(raw) && raw[0] && raw[0].insertId) {
       insertId = raw[0].insertId;
@@ -287,26 +321,38 @@ exports.createOfficeLocation = async (req, res) => {
     if (!insertId) {
       const [created] = await pool.query(
         "SELECT * FROM office_locations WHERE company_id = ? AND name = ? ORDER BY id DESC LIMIT 1",
-        [id, name]
+        [id, name],
       );
       const norm = normalizeQueryResult(created);
       if (norm.rows && norm.rows.length > 0) {
         return res.status(201).json(norm.rows[0]);
       }
-      return res.status(201).json({ message: "Office location created successfully" });
+      return res
+        .status(201)
+        .json({ message: "Office location created successfully" });
     }
 
-    const selectRes = await pool.query("SELECT * FROM office_locations WHERE id = ?", [insertId]);
+    const selectRes = await pool.query(
+      "SELECT * FROM office_locations WHERE id = ?",
+      [insertId],
+    );
     const selectNorm = normalizeQueryResult(selectRes);
-    return res.status(201).json(selectNorm.rows ? selectNorm.rows[0] : { id: insertId });
+    return res
+      .status(201)
+      .json(selectNorm.rows ? selectNorm.rows[0] : { id: insertId });
   } catch (err) {
     console.error("createOfficeLocation error", err);
-    
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ message: "Office location with this name already exists for this company" });
+
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({
+        message:
+          "Office location with this name already exists for this company",
+      });
     }
-    
-    return res.status(500).json({ message: "Server error creating office location" });
+
+    return res
+      .status(500)
+      .json({ message: "Server error creating office location" });
   }
 };
 
@@ -330,7 +376,10 @@ exports.updateOfficeLocation = async (req, res) => {
   } = req.body;
 
   try {
-    const [exists] = await pool.query("SELECT id FROM office_locations WHERE id = ?", [id]);
+    const [exists] = await pool.query(
+      "SELECT id FROM office_locations WHERE id = ?",
+      [id],
+    );
     if (!exists || exists.length === 0) {
       return res.status(404).json({ message: "Office location not found" });
     }
@@ -362,11 +411,16 @@ exports.updateOfficeLocation = async (req, res) => {
 
     await pool.query(sql, values);
 
-    const [updated] = await pool.query("SELECT * FROM office_locations WHERE id = ?", [id]);
+    const [updated] = await pool.query(
+      "SELECT * FROM office_locations WHERE id = ?",
+      [id],
+    );
     return res.json(updated[0]);
   } catch (err) {
     console.error("updateOfficeLocation error", err);
-    return res.status(500).json({ message: "Server error updating office location" });
+    return res
+      .status(500)
+      .json({ message: "Server error updating office location" });
   }
 };
 
@@ -377,7 +431,10 @@ exports.deleteOfficeLocation = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [exists] = await pool.query("SELECT id FROM office_locations WHERE id = ?", [id]);
+    const [exists] = await pool.query(
+      "SELECT id FROM office_locations WHERE id = ?",
+      [id],
+    );
     if (!exists || exists.length === 0) {
       return res.status(404).json({ message: "Office location not found" });
     }
@@ -388,6 +445,8 @@ exports.deleteOfficeLocation = async (req, res) => {
     return res.json({ message: "Office location deleted permanently" });
   } catch (err) {
     console.error("deleteOfficeLocation error", err);
-    return res.status(500).json({ message: "Server error deleting office location" });
+    return res
+      .status(500)
+      .json({ message: "Server error deleting office location" });
   }
 };
