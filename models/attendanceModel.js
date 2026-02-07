@@ -8,11 +8,18 @@ class AttendanceModel {
         "SELECT * FROM hrms_employees WHERE user_id = ?",
         [user_id],
       );
+
       const rows = await db.query(
-        `SELECT * FROM attendance 
-         WHERE user_id = ? AND DATE(date) = CURDATE() ORDER BY created_at DESC LIMIT 1`,
+        `SELECT *
+         FROM attendance
+         WHERE user_id = ?
+         AND date = CURRENT_DATE
+         ORDER BY created_at DESC
+         LIMIT 1;`,
         [emp.id],
       );
+
+      console.log(rows);
 
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
