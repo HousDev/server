@@ -44,7 +44,30 @@ const downloadItemsExcelTemplate = (req, res) => {
   }
 };
 
+/**
+ * Download Project Import Excel Template
+ */
+const downloadServicesExcelTemplate = (req, res) => {
+  try {
+    const filePath = path.join(
+      __dirname,
+      "../dataTemplate/serviceExcelSample.xlsx",
+    );
+
+    res.download(filePath, "serviceExcelSample.xlsx", (err) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to download template" });
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 module.exports = {
   downloadProjectTemplate,
   downloadItemsExcelTemplate,
+  downloadServicesExcelTemplate,
 };
