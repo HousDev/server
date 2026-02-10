@@ -1,16 +1,41 @@
-// backend/routes/serviceOrders.routes.js
 const express = require("express");
-const router = express.Router();
-const controller = require("../controllers/serviceOrderController");
+const {
+  getAllServiceOrders,
+  getServiceOrderById,
+  getServiceOrdersByVendor,
+  createServiceOrderController,
+  updateServiceOrderController,
+  updateServiceOrderStatusController,
+  deleteServiceOrderController,
+} = require("../controllers/serviceOrderController");
 
-router.get("/", controller.list);
-router.get("/:id", controller.get);
-router.post("/", controller.create);
-router.put("/:id", controller.update);
-router.delete("/:id", controller.delete);
+const { next } = require("../controllers/soSequenceController");
 
-// bulk actions
-router.post("/bulk/status", controller.bulkStatus);
-router.post("/bulk/delete", controller.bulkDelete);
+const serviceOrdersRouter = express.Router();
 
-module.exports = router;
+serviceOrdersRouter.get("/next", next);
+
+/**
+ * GET
+ */
+serviceOrdersRouter.get("/", getAllServiceOrders);
+serviceOrdersRouter.get("/:id", getServiceOrderById);
+serviceOrdersRouter.get("/vendor/:vendor_id", getServiceOrdersByVendor);
+
+/**
+ * POST
+ */
+serviceOrdersRouter.post("/", createServiceOrderController);
+
+/**
+ * PUT
+ */
+serviceOrdersRouter.put("/:id", updateServiceOrderController);
+serviceOrdersRouter.put("/status/:id", updateServiceOrderStatusController);
+
+/**
+ * DELETE
+ */
+serviceOrdersRouter.delete("/:id", deleteServiceOrderController);
+
+module.exports = serviceOrdersRouter;
