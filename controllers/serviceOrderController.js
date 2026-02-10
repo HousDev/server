@@ -8,7 +8,6 @@ const {
   deleteServiceOrder,
 } = require("../models/serviceOrderModel");
 
-
 const { findByIdVendor } = require("../models/vendorModel");
 
 /**
@@ -68,12 +67,13 @@ const getServiceOrdersByVendor = async (req, res) => {
 const createServiceOrderController = async (req, res) => {
   try {
     const payload = req.body;
-
     if (
       !payload.so_number ||
       !payload.vendor_id ||
       !payload.project_id ||
+      !payload.building_id ||
       !payload.service_type_id ||
+      !payload.so_date ||
       !payload.delivery_date ||
       !payload.created_by
     ) {
@@ -82,6 +82,7 @@ const createServiceOrderController = async (req, res) => {
 
     // Validate Vendor
     const existingVendor = await findByIdVendor(payload.vendor_id);
+
     if (!existingVendor || !existingVendor.length) {
       return res.status(400).json({ message: "Invalid Vendor" });
     }
@@ -91,6 +92,8 @@ const createServiceOrderController = async (req, res) => {
     return res.status(201).json({
       message: "Service Order created successfully",
       status: "completed",
+      success: true,
+      // payload: payload,
       id: result.insertId,
     });
   } catch (err) {
@@ -170,6 +173,7 @@ const deleteServiceOrderController = async (req, res) => {
     return res.status(200).json({
       message: "Service Order deleted successfully",
       status: "completed",
+      success: true,
     });
   } catch (err) {
     console.error(err);
