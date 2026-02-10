@@ -630,10 +630,16 @@ class SettingsController {
     }
   }
 
-  // ─── HELPER: Get base URL dynamically ───────────────────────────────────
-  _getBaseUrl(req) {
-    return `${req.protocol}://${req.get("host")}`;
-  }
+ // settingsController.js — replace _getBaseUrl:
+
+_getBaseUrl(req) {
+  // ✅ Respect X-Forwarded-Proto for servers behind nginx/proxy
+  const protocol = req.headers['x-forwarded-proto'] || 
+                   req.headers['x-forwarded-protocol'] || 
+                   req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  return `${protocol}://${host}`;
+}
 
   // ─── GET PROFILE ──────────────────────────────────────────────────────────
   getProfile = async (req, res) => {
