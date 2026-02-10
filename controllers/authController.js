@@ -69,6 +69,8 @@ function safeUser(u) {
 async function login(req, res) {
   try {
     const { identifier, email, password } = req.body;
+
+    console.log("identifier, email, password : ", identifier, email, password);
     
     // Support both old (email) and new (identifier) parameter names
     const loginIdentifier = identifier || email;
