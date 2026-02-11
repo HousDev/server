@@ -95,7 +95,7 @@ async function initPOTables() {
     if (Array.isArray(rows) && rows[0] && rows[0].cnt === 0) {
       await conn.query(
         "INSERT INTO po_sequences (prefix, last_number, year) VALUES (?, ?, ?)",
-        ["PO", 0, new Date().getFullYear()]
+        ["PO", 0, new Date().getFullYear()],
       );
     }
   } finally {
@@ -110,7 +110,7 @@ async function findById(id) {
 
 async function updatePO(id, payload) {
   const updatePOSQL =
-    "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?,po_date = ?,delivery_date = ?, due_date=?, is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms_id = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?,status = ?,material_status = ?,payment_status = ?,created_by = ?,updated_at = NOW() WHERE id = ?";
+    "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?, po_date = ?,delivery_date = ?, due_date=?, is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms_id = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?, status = ?, material_status = ?, payment_status = ?, created_by = ?, updated_at = NOW() WHERE id = ?";
 
   const updatePOValues = [
     payload.vendor_id,
@@ -248,7 +248,7 @@ async function updatePO(id, payload) {
       ];
       await query(
         createColsForMaterialTracking,
-        createValuesForMaterialTracking
+        createValuesForMaterialTracking,
       );
     } else {
       await query(updatePOItemsSql, updatePOItemsValues);
@@ -265,7 +265,7 @@ async function updatePO(id, payload) {
       ];
       await query(
         updateColsForMaterialTracking,
-        updateValuesForMaterialTracking
+        updateValuesForMaterialTracking,
       );
     }
   }
@@ -283,13 +283,13 @@ async function deletePOItems(poItemId, poMaterialTrackingId) {
 
   const poDeleteMaterialTracking = await query(
     `DELETE FROM po_material_tracking WHERE id = ?`,
-    [id]
+    [id],
   );
 
   id = poItemId;
   const poDeleteItem = await query(
     `DELETE FROM purchase_order_items WHERE id = ?`,
-    [id]
+    [id],
   );
 
   return { poDeleteMaterialTracking, poDeleteItem };

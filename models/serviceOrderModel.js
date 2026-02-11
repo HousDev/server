@@ -10,10 +10,30 @@ async function findAllServiceOrders() {
 }
 
 /**
+ * Get all Service Orders Tracking
+ */
+async function findAllServiceOrdersTrackings() {
+  return await query(`SELECT * FROM so_service_tracking`);
+}
+
+/**
+ * Get all Service Orders Services
+ */
+async function findAllServiceOrderServices(id) {
+  return await query(
+    `SELECT sos.* FROM service_order_services as sos WHERE so_id = ?`,
+    [id],
+  );
+}
+
+/**
  * Get Service Order by ID
  */
 async function findServiceOrderById(id) {
-  return await query(`SELECT * FROM service_orders WHERE id = ?`, [id]);
+  return await query(
+    `SELECT so.*, v.name as vendor, p.name as project, b.building_name as building, u.full_name as created_by_user, pot.name as service_type FROM service_orders as so LEFT JOIN vendors as v ON v.id=so.vendor_id LEFT JOIN projects as p ON p.id=so.project_id LEFT JOIN buildings as b ON b.id = so.building_id LEFT JOIN users as u ON u.id = so.created_by LEFT JOIN po_types as pot ON pot.id = so.service_type_id WHERE so.id = ?`,
+    [id],
+  );
 }
 
 /**
@@ -139,6 +159,9 @@ async function createServiceOrder(payload) {
       ", ",
     )}) VALUES ?`;
 
+    const [services] = await conn.query(itemSql, [itemsValues]);
+    console.log(services);
+
     if (Array.isArray(payload.items) && payload.items.length) {
       const cols = [
         "so_id",
@@ -174,7 +197,9 @@ async function createServiceOrder(payload) {
       const sql = `INSERT INTO so_service_tracking (${cols.join(
         ", ",
       )}) VALUES ?`;
-      await conn.query(sql, [values]);
+      const [serviceTrack] = await conn.query(sql, [values]);
+
+      console.log("serviceTrack : ", serviceTrack);
     }
   }
   await conn.commit();
@@ -185,7 +210,9 @@ async function createServiceOrder(payload) {
  * Update Service Order
  */
 async function updateServiceOrder(id, payload) {
-  return await query(
+  console.log("data : ", id, payload);
+  const conn = await pool.getConnection();
+  const updatedService = await conn.query(
     `UPDATE service_orders SET
       vendor_id = ?,
       project_id = ?,
@@ -246,16 +273,136 @@ async function updateServiceOrder(id, payload) {
       id,
     ],
   );
+
+  for (const it of payload.services) {
+    const updateSOServiceSql = `
+      UPDATE service_order_services
+      SET
+        service_id = ?,
+        service_code = ?,
+        service_name = ?,
+        description = ?,
+        sac_code = ?,
+        quantity = ?,
+        unit = ?,
+        rate = ?,
+        amount = ?,
+        igst_rate=?,
+        cgst_rate=?,
+        sgst_rate=?,
+        gst_amount = ?
+      WHERE id = ? AND so_id = ?
+    `;
+    const createSOServiceSql = `
+      INSERT INTO service_order_services(
+        so_id,
+        service_id,
+        service_code,
+        service_name,
+        description,
+        sac_code,
+        quantity,
+        unit,
+        rate,
+        amount,
+        igst_rate,
+        cgst_rate,
+        sgst_rate,
+        gst_amount
+        )
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `;
+
+    const createSOServiceValues = [
+      id, // po_id
+      it.service_id || null,
+      it.service_code || null,
+      it.service_name || null,
+      it.description || null,
+      it.sac_code || null,
+      parseFloat(it.quantity || 0),
+      it.unit || null,
+      parseFloat(it.rate || 0),
+      parseFloat(it.amount || 0),
+      parseFloat(it.igst_rate || 0),
+      parseFloat(it.cgst_rate || 0),
+      parseFloat(it.sgst_rate || 0),
+      parseFloat(it.gst_amount || 0),
+    ];
+    const updateSOServiceValues = [
+      it.service_id || null,
+      it.service_code || null,
+      it.service_name || null,
+      it.description || null,
+      it.sac_code || null,
+      parseFloat(it.quantity || 0),
+      it.unit || null,
+      parseFloat(it.rate || 0),
+      parseFloat(it.amount || 0),
+      parseFloat(it.igst_rate || 0),
+      parseFloat(it.cgst_rate || 0),
+      parseFloat(it.sgst_rate || 0),
+      parseFloat(it.gst_amount || 0),
+      it.id,
+      id,
+    ];
+    if (typeof it.id === "string") {
+      await conn.query(createSOServiceSql, createSOServiceValues);
+
+      const createColsForServiceTracking = `INSERT INTO so_service_tracking (
+    so_id,
+    service_id,
+    service_description,
+    quantity_ordered,
+    quantity_received,
+    quantity_pending,
+    status
+  ) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+      const createValuesForServiceTracking = [
+        id,
+        it.service_id,
+        it.description,
+        it.quantity,
+        0,
+        it.quantity,
+        "pending",
+      ];
+      await conn.query(
+        createColsForServiceTracking,
+        createValuesForServiceTracking,
+      );
+    } else {
+      await conn.query(updateSOServiceSql, updateSOServiceValues);
+
+      const updateColsForServiceTracking = `UPDATE  so_service_tracking  SET
+    quantity_ordered = ?, quantity_pending = ?
+   WHERE so_id = ? AND service_id = ?`;
+
+      const updateValuesForServiceTracking = [
+        it.quantity,
+        it.quantity,
+        id,
+        it.item_id,
+      ];
+      await conn.query(
+        updateColsForServiceTracking,
+        updateValuesForServiceTracking,
+      );
+    }
+  }
+  await conn.commit();
+  return updatedService;
 }
 
 /**
  * Update Status only
  */
-async function updateServiceOrderStatus(id, status) {
-  return await query(`UPDATE service_orders SET status = ? WHERE id = ?`, [
-    status,
-    id,
-  ]);
+async function updateServiceOrderStatus(id, status, note) {
+  return await query(
+    `UPDATE service_orders SET status = ?, note = ? WHERE id = ?`,
+    [status, note, id],
+  );
 }
 
 /**
@@ -265,12 +412,29 @@ async function deleteServiceOrder(id) {
   return await query(`DELETE FROM service_orders WHERE id = ?`, [id]);
 }
 
+async function deleteServiceOrderService(soId, service_id) {
+  await query(
+    `DELETE FROM service_order_services WHERE so_id = ? AND service_id = ?`,
+    [soId, service_id],
+  );
+
+  const dataRes = await query(
+    `DELETE FROM service_order_services WHERE so_id = ? AND service_id = ?`,
+    [soId, service_id],
+  );
+
+  return dataRes;
+}
+
 module.exports = {
   findAllServiceOrders,
   findServiceOrderById,
+  findAllServiceOrderServices,
+  findAllServiceOrdersTrackings,
   findServiceOrdersByVendor,
   createServiceOrder,
   updateServiceOrder,
   updateServiceOrderStatus,
   deleteServiceOrder,
+  deleteServiceOrderService,
 };
