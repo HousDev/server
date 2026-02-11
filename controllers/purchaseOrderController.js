@@ -440,13 +440,11 @@ async function updatePurchaseOrder(req, res) {
     const { poId } = req.params;
 
     const poData = await updatePO(poId, payload);
-    return res
-      .status(200)
-      .json({
-        message: "PO Updated Successfully.",
-        data: poData,
-        success: true,
-      });
+    return res.status(200).json({
+      message: "PO Updated Successfully.",
+      data: poData,
+      success: true,
+    });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error." });
   }

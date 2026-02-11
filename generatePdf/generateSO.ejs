@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Service Order</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        padding: 30px;
+        padding-bottom: 35mm;
+        color: #000;
+      }
+
+      /* HEADER */
+      .top-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+
+      .logo {
+        height: 60px;
+      }
+
+      .so-title {
+        text-align: right;
+      }
+
+      .so-title h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      /* DETAILS */
+      .details {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .box {
+        width: 48%;
+      }
+
+      .box strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      /* SUBJECT */
+      .subject {
+        margin-bottom: 15px;
+      }
+
+      /* TABLE */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+
+      th,
+      td {
+        border: 1px solid #333;
+        padding: 8px;
+      }
+
+      th {
+        background: #f2f2f2;
+      }
+
+      tbody tr {
+        page-break-inside: avoid;
+      }
+
+      /* TOTALS */
+      .totals-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 15px;
+        page-break-inside: avoid;
+      }
+
+      .totals {
+        width: 40%;
+        border-collapse: collapse;
+      }
+
+      .totals td {
+        padding: 6px;
+        border: 1px solid #333;
+      }
+
+      .label {
+        text-align: right;
+      }
+
+      .value {
+        text-align: right;
+      }
+
+      .grand {
+        font-weight: bold;
+      }
+
+      /* TERMS */
+      .terms {
+        margin-top: 25px;
+      }
+
+      .term-category {
+        page-break-inside: avoid;
+        margin-bottom: 12px;
+      }
+
+      .term-category h4 {
+        margin-bottom: 4px;
+      }
+
+      .term-category ul {
+        padding-left: 18px;
+        margin: 0;
+      }
+
+      .term-category li {
+        margin-bottom: 3px;
+      }
+
+      @media print {
+        thead {
+          display: table-header-group;
+        }
+
+        .page-break {
+          page-break-before: always;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- HEADER -->
+    <div class="top-header">
+      <img src="<%= logoBase64 %>" class="logo" />
+      <div class="so-title">
+        <h1>SERVICE ORDER</h1>
+        <p><strong>SO No:</strong> <%= soNumber %></p>
+        <p><strong>Date:</strong> <%= date %></p>
+      </div>
+    </div>
+
+    <!-- DETAILS -->
+    <div class="details">
+      <div class="box">
+        <strong>Our Details</strong>
+        <p><%= company.name %></p>
+        <p><%= company.address %></p>
+        <p>GST: <%= company.gst %></p>
+      </div>
+
+      <div class="box">
+        <strong>Service Provider Details</strong>
+        <p><%= vendor.name %></p>
+        <p><%= vendor.address %></p>
+        <p>GST: <%= vendor.gst %></p>
+      </div>
+    </div>
+
+    <!-- SUBJECT -->
+    <div class="subject">
+      <p><strong>Subject:</strong> <%= subject %></p>
+      <p><%= description %></p>
+    </div>
+
+    <div class="subject">
+      <p>
+        We are pleased to issue this Service Order for execution of the services
+        mentioned below. Kindly complete the services as per agreed terms and
+        project timelines.
+      </p>
+    </div>
+
+    <!-- SERVICES TABLE -->
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Service Description</th>
+          <th>Qty</th>
+          <th>Rate</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach((item, index) => { %>
+        <tr>
+          <td><%= index + 1 %></td>
+          <td><%= item.name %></td>
+          <td><%= item.qty %> <%= item.unit %></td>
+          <td>₹ <%= Number(item.rate).toFixed(2) %></td>
+          <td>
+            ₹ <%= (Number(item.qty) * Number(item.rate)).toFixed(2) %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <div class="totals-wrapper">
+      <table class="totals">
+        <tr>
+          <td class="label">Subtotal</td>
+          <td class="value">₹ <%= Number(totals.subtotal).toFixed(2) %></td>
+        </tr>
+        <tr>
+          <td class="label">Discount</td>
+          <td class="value">₹ <%= Number(totals.discount).toFixed(2) %></td>
+        </tr>
+        <tr>
+          <td class="label">GST</td>
+          <td class="value">₹ <%= Number(totals.gst).toFixed(2) %></td>
+        </tr>
+        <tr class="grand">
+          <td class="label">Grand Total</td>
+          <td class="value">
+            ₹ <%= Number(totals.grandTotal).toFixed(2) %>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- TERMS -->
+    <div class="terms">
+      <h3>Terms & Conditions</h3>
+
+      <% terms.forEach((section, i) => { %>
+      <div class="term-category">
+        <h4><%= i + 1 %>. <%= section.title %></h4>
+        <ul>
+          <% section.points.forEach(point => { %>
+          <li><%= point %></li>
+          <% }) %>
+        </ul>
+      </div>
+      <% }) %>
+    </div>
+  </body>
+</html>

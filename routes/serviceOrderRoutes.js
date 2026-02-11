@@ -7,6 +7,9 @@ const {
   updateServiceOrderController,
   updateServiceOrderStatusController,
   deleteServiceOrderController,
+  getServiceOrderServicesById,
+  deleteServiceOrderServiceController,
+  getAllServiceOrderTracking,
 } = require("../controllers/serviceOrderController");
 
 const { next } = require("../controllers/soSequenceController");
@@ -19,7 +22,13 @@ serviceOrdersRouter.get("/next", next);
  * GET
  */
 serviceOrdersRouter.get("/", getAllServiceOrders);
-serviceOrdersRouter.get("/:id", getServiceOrderById);
+serviceOrdersRouter.get("/service-order-tracking", getAllServiceOrderTracking);
+
+serviceOrdersRouter.get(
+  "/service-order-services/:id",
+  getServiceOrderServicesById,
+);
+
 serviceOrdersRouter.get("/vendor/:vendor_id", getServiceOrdersByVendor);
 
 /**
@@ -32,6 +41,14 @@ serviceOrdersRouter.post("/", createServiceOrderController);
  */
 serviceOrdersRouter.put("/:id", updateServiceOrderController);
 serviceOrdersRouter.put("/status/:id", updateServiceOrderStatusController);
+
+/**
+ * DELETE SERVICE
+ */
+serviceOrdersRouter.delete(
+  "/serviceOrderService/:soId/:service_id",
+  deleteServiceOrderServiceController,
+);
 
 /**
  * DELETE

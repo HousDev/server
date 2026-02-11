@@ -3,6 +3,7 @@ const generatePoPdf = require("./generatePoPDF.js");
 const { query } = require("../config/db.js");
 const { findByIdVendorsTC } = require("../models/termsConditionsModel.js");
 const e = require("express");
+const generateSoPdf = require("./generateSoPDF.js");
 
 const pdfRouter = express.Router();
 
@@ -35,7 +36,7 @@ pdfRouter.get("/po/:id", async (req, res) => {
         LEFT JOIN po_types pt ON pt.id = po.po_type_id
         WHERE po.id = ?
         `,
-      [id]
+      [id],
     );
 
     if (!poRows) {
@@ -58,7 +59,7 @@ pdfRouter.get("/po/:id", async (req, res) => {
         FROM purchase_order_items
         WHERE po_id = ?
         `,
-      [id]
+      [id],
     );
 
     const selected_terms_idsData = JSON.parse(po.selected_terms_ids);
@@ -88,7 +89,7 @@ pdfRouter.get("/po/:id", async (req, res) => {
         acc[categoryKey].points.push(item.content);
 
         return acc;
-      }, {})
+      }, {}),
     );
 
     /* =======================
@@ -149,6 +150,167 @@ pdfRouter.get("/po/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to generate PO PDF" });
+  }
+});
+
+pdfRouter.get("/so/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(id);
+
+    /* =======================
+       1️⃣ Fetch SO Header
+    ======================= */
+
+    const [soRows] = await query(
+      `
+      SELECT
+        so.*,
+
+        v.name AS vendor_name,
+        v.gst_number AS vendor_gst,
+        v.office_street,
+        v.office_city,
+        v.office_pincode,
+
+        p.name AS project_name,
+        b.building_name as building_name,
+        p.location AS project_location,
+
+        pt.name AS service_type_name
+
+      FROM service_orders so
+      LEFT JOIN vendors v ON v.id = so.vendor_id
+      LEFT JOIN projects p ON p.id = so.project_id
+      LEFT JOIN buildings b ON p.id=b.project_id
+      LEFT JOIN po_types pt ON pt.id = so.service_type_id
+      WHERE so.id = ?
+      `,
+      [id],
+    );
+
+    if (!soRows || soRows.length === 0) {
+      return res.status(404).json({ message: "Service Order not found" });
+    }
+    const so = soRows;
+
+    /* =======================
+       2️⃣ Fetch SO Services
+    ======================= */
+
+    const serviceRows = await query(
+      `
+      SELECT
+        service_name,
+        description,
+        quantity,
+        unit,
+        rate
+      FROM service_order_services
+      WHERE so_id = ?
+      `,
+      [id],
+    );
+    /* =======================
+       3️⃣ Terms & Conditions
+    ======================= */
+
+    const selected_terms_idsData = so.selected_terms_ids
+      ? JSON.parse(so.selected_terms_ids)
+      : [];
+
+    const terms_and_conditionsData = so.terms_and_conditions
+      ? JSON.parse(so.terms_and_conditions)
+      : [];
+
+    const termsData = await findByIdVendorsTC(so.vendor_id);
+
+    const terms =
+      termsData.filter((term) => selected_terms_idsData.includes(term.id)) ||
+      [];
+
+    terms_and_conditionsData.forEach((element) => {
+      terms.push(element);
+    });
+
+    const formattedTerms = Object.values(
+      terms.reduce((acc, item) => {
+        const categoryKey = item.category.toLowerCase();
+
+        if (!acc[categoryKey]) {
+          acc[categoryKey] = {
+            title: categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1),
+            points: [],
+          };
+        }
+
+        acc[categoryKey].points.push(item.content);
+
+        return acc;
+      }, {}),
+    );
+
+    /* =======================
+       4️⃣ Build Final SO Data
+    ======================= */
+
+    const soData = {
+      id: so.so_number,
+
+      logoUrl: "https://dummyimage.com/160x60/000/fff.png&text=NoteVault",
+
+      soNumber: so.so_number,
+      date: so.so_date ? new Date(so.so_date).toLocaleDateString() : "",
+
+      subject: "Service Order",
+      description: so.note || "",
+
+      company: {
+        name: "Nayash Group",
+        address: `First Floor, Tamara Uprise,
+Pune, 411017`,
+        gst: "27ABCDE1234F1Z5",
+      },
+
+      vendor: {
+        name: so.vendor_name,
+        address: `${so.office_street}, ${so.office_city} - ${so.office_pincode}`,
+        gst: so.vendor_gst,
+      },
+
+      items: serviceRows.map((item) => ({
+        name: item.service_name,
+        description: item.description,
+        qty: item.quantity,
+        unit: item.unit,
+        rate: item.rate,
+      })),
+
+      totals: {
+        subtotal: so.sub_total,
+        discount: so.discount_amount,
+        gst: so.total_gst_amount,
+        grandTotal: so.grand_total,
+      },
+
+      terms: formattedTerms,
+    };
+
+    /* =======================
+       5️⃣ Generate PDF
+    ======================= */
+
+    const pdf = await generateSoPdf(soData);
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename=${so.so_number}.pdf`,
+    });
+
+    res.send(pdf);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to generate SO PDF" });
   }
 });
 
