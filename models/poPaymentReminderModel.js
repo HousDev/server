@@ -7,7 +7,7 @@ async function findAllReminders() {
   return await query(
     `SELECT *
      FROM po_payment_reminder
-     ORDER BY created_at DESC`
+     ORDER BY created_at DESC`,
   );
 }
 
@@ -19,7 +19,7 @@ async function findReminderById(id) {
     `SELECT *
      FROM po_payment_reminder
      WHERE id = ?`,
-    [id]
+    [id],
   );
 
   return reminder;
@@ -31,6 +31,7 @@ async function findReminderById(id) {
 async function createReminder(payload) {
   const {
     po_id,
+    po_payment_id,
     po_number,
     vendor,
     total_amount,
@@ -44,6 +45,7 @@ async function createReminder(payload) {
   const result = await query(
     `INSERT INTO po_payment_reminder (
       po_id,
+      po_payment_id,
       po_number,
       vendor,
       total_amount,
@@ -52,9 +54,10 @@ async function createReminder(payload) {
       due_date,
       status,
       seen_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       po_id,
+      po_payment_id,
       po_number,
       vendor,
       total_amount,
@@ -63,7 +66,7 @@ async function createReminder(payload) {
       due_date,
       status,
       seen_by,
-    ]
+    ],
   );
 
   // return newly created reminder
@@ -71,7 +74,7 @@ async function createReminder(payload) {
     `SELECT *
      FROM po_payment_reminder
      WHERE id = ?`,
-    [result.insertId]
+    [result.insertId],
   );
 
   return reminder;
@@ -86,7 +89,7 @@ async function markReminderAsSeen(id, seen_by) {
      SET status = 'seen',
          seen_by = ?
      WHERE id = ?`,
-    [seen_by, id]
+    [seen_by, id],
   );
 }
 
@@ -99,7 +102,7 @@ async function markAllRemindersAsSeen(userId) {
      SET status = 'seen',
          seen_by = ?
      WHERE status = 'unseen'`,
-    [userId]
+    [userId],
   );
 }
 
@@ -110,7 +113,7 @@ async function deleteReminder(id) {
   return await query(
     `DELETE FROM po_payment_reminder
      WHERE id = ?`,
-    [id]
+    [id],
   );
 }
 

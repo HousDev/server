@@ -232,9 +232,8 @@ class AttendanceController {
   };
 
   getTodayAll = async (req, res) => {
-    const { user_id } = req.params;
-    const attendance = await attendanceModel.getTodayAll(user_id);
-    console.log(attendance);
+    const attendance = await attendanceModel.getTodayAll();
+
     return res.json({
       success: true,
       data: attendance || [],

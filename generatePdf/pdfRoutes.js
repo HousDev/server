@@ -64,12 +64,22 @@ pdfRouter.get("/po/:id", async (req, res) => {
 
     const selected_terms_idsData = JSON.parse(po.selected_terms_ids);
     const terms_and_conditionsData = JSON.parse(po.terms_and_conditions) || [];
+    const payment_terms = po.payment_terms || [];
 
     const termsData = await findByIdVendorsTC(po.vendor_id);
 
-    const terms =
+    const terms = [];
+    payment_terms.forEach((t) => {
+      let termNew = t.percentPayment + " " + t.firstText + " ";
+      termNew += t.gracePeriod ? t.gracePeriod + " " : "";
+      termNew += t.gracePeriod ? t.secondText : "";
+      terms.push({ category: "Payment", content: termNew });
+    });
+    const tempTerm =
       termsData.filter((term) => selected_terms_idsData.includes(term.id)) ||
       [];
+
+    tempTerm.forEach((t) => terms.push(t));
 
     terms_and_conditionsData.forEach((element) => {
       terms.push(element);

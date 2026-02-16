@@ -18,31 +18,22 @@ async function findPaymentMasterById(id) {
 
 /* ---------------- CREATE ---------------- */
 async function createPaymentMaster(payload) {
-  const {
-    event_trigger,
-    percentPayment,
-    firstText,
-    materialPercent,
-    secondText,
-    gracePeriod,
-    thirdText,
-  } = payload;
+  const { event_trigger, percentPayment, firstText, gracePeriod, secondText } =
+    payload;
 
   const result = await query(
     `
     INSERT INTO payment_master
-      (event_trigger, percentPayment, firstText, materialPercent, secondText, gracePeriod, thirdText)
+      (event_trigger, percentPayment, firstText, gracePeriod, secondText)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?)
+      (?, ?, ?, ?, ?)
     `,
     [
       event_trigger,
       percentPayment,
       firstText,
-      materialPercent || null,
-      secondText || null,
       gracePeriod || null,
-      thirdText || null,
+      secondText || null,
     ],
   );
 
@@ -61,10 +52,8 @@ async function updatePaymentMaster(id, payload) {
     event_trigger,
     percentPayment,
     firstText,
-    materialPercent,
-    secondText,
     gracePeriod,
-    thirdText,
+    secondText,
     is_active,
   } = payload;
 
@@ -75,10 +64,8 @@ async function updatePaymentMaster(id, payload) {
       event_trigger = ?,
       percentPayment = ?,
       firstText = ?,
-      materialPercent = ?,
-      secondText = ?,
       gracePeriod = ?,
-      thirdText = ?,
+      secondText = ?,
       is_active = ?
     WHERE id = ?
     `,
@@ -86,10 +73,8 @@ async function updatePaymentMaster(id, payload) {
       event_trigger,
       percentPayment,
       firstText,
-      materialPercent || null,
-      secondText || null,
       gracePeriod || null,
-      thirdText || null,
+      secondText || null,
       is_active ?? true,
       id,
     ],

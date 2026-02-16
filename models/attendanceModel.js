@@ -19,8 +19,6 @@ class AttendanceModel {
         [emp.id],
       );
 
-      console.log(rows);
-
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
       console.error("❌ Error in getTodayByUser:", error.message);
@@ -31,20 +29,16 @@ class AttendanceModel {
   // Get today's attendance for all users
   async getTodayAll() {
     try {
-      console.log("🔵 Getting today's attendance for all users");
-
       const rows = await db.query(
         `SELECT 
-  a.*,
-  CONCAT(u.first_name, ' ', u.last_name) AS user_name,
-  u.employee_code as employee_code,
-  
-FROM attendance a
-LEFT JOIN hrms_employees u ON u.id = a.user_id
-WHERE a.date = CURDATE()
-ORDER BY a.punch_in_time ASC`,
+         a.*,
+         CONCAT(u.first_name, ' ', u.last_name) AS user_name,
+         u.employee_code AS employee_code
+       FROM attendance a
+       LEFT JOIN hrms_employees u ON u.id = a.user_id
+       WHERE a.date = CURDATE()
+       ORDER BY a.punch_in_time ASC`,
       );
-      console.log("this is rows", rows);
 
       return rows;
     } catch (error) {
@@ -66,7 +60,7 @@ ORDER BY a.punch_in_time ASC`,
          WHERE a.user_id = ?
          AND a.date BETWEEN
            DATE_FORMAT(CURDATE(), '%Y-%m-01')
-           AND LAST_DAY(CURDATE())`,
+           AND LAST_DAY(CURDATE()) ORDER BY date DESC`,
         [employeeData.id],
       );
 
@@ -83,16 +77,11 @@ ORDER BY a.punch_in_time ASC`,
   // Get today's attendance by user
   async getTodayByUser(user_id) {
     try {
-      console.log("🔵 Getting today attendance for user:", user_id);
-
       const rows = await db.query(
         `SELECT * FROM attendance 
          WHERE user_id = ? AND DATE(date) = CURDATE() ORDER BY punch_in_time DESC LIMIT 1`,
         [user_id],
       );
-      console.log("today att", rows);
-
-      console.log("✅ Found:", rows.length, "records");
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
       console.error("❌ Error in getTodayByUser:", error.message);
@@ -103,8 +92,6 @@ ORDER BY a.punch_in_time ASC`,
   // Check if user has active punch in
   async hasActivePunchIn(user_id) {
     try {
-      console.log("🔵 Checking active punch in for user:", user_id);
-
       const rows = await db.query(
         `SELECT id FROM attendance 
          WHERE user_id = ? 
@@ -113,7 +100,6 @@ ORDER BY a.punch_in_time ASC`,
         [user_id],
       );
 
-      console.log("✅ Has active:", rows.length > 0);
       return rows.length > 0;
     } catch (error) {
       console.error("❌ Error in hasActivePunchIn:", error.message);
@@ -124,8 +110,6 @@ ORDER BY a.punch_in_time ASC`,
   // Check attendance status
   async checkAttendanceStatus(user_id) {
     try {
-      console.log("🔵 Checking attendance status for user:", user_id);
-
       const attendance = await this.getTodayByUser(user_id);
 
       if (!attendance) {
@@ -160,8 +144,6 @@ ORDER BY a.punch_in_time ASC`,
   // Create attendance
   async create(data) {
     try {
-      console.log("🔵 Creating attendance:", data);
-
       const {
         user_id,
         date,
@@ -191,8 +173,6 @@ ORDER BY a.punch_in_time ASC`,
           punch_in_address || null,
         ],
       );
-
-      console.log("✅ Created attendance ID:", result.insertId);
       return result.insertId;
     } catch (error) {
       console.error("❌ Error in create:", error.message);
@@ -212,8 +192,6 @@ ORDER BY a.punch_in_time ASC`,
         total_hours,
         punch_out_address,
       } = data;
-
-      console.log("punch in stoock", punch_out_address);
 
       const result = await db.query(
         `UPDATE attendance 
@@ -248,8 +226,6 @@ ORDER BY a.punch_in_time ASC`,
   // ADD THIS METHOD - Get statistics
   async getStatistics(start_date, end_date) {
     try {
-      console.log("🔵 Getting statistics from:", start_date, "to", end_date);
-
       const rows = await db.query(
         `SELECT 
           COUNT(DISTINCT user_id) as total_employees,
@@ -261,7 +237,6 @@ ORDER BY a.punch_in_time ASC`,
         [start_date, end_date],
       );
 
-      console.log("✅ Statistics result:", rows[0]);
       return rows.length > 0
         ? rows[0]
         : {

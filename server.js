@@ -40,14 +40,21 @@ const leaveRoutes = require("./routes/leave.routes");
 const expenseRoutes = require("./routes/expense.routes");
 const ticketRoutes = require("./routes/ticket.routes.js");
 const designationRoutes = require("./routes/designationRoutes");
-const locationRoutes = require("./routes/locationRoutes"); // Make sure this is imported
+const locationRoutes = require("./routes/locationRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
 const paymentMasterRuter = require("./routes/paymentMaster.router.js");
 
 const integrationsRoute = require("./routes/integrationsRoute");
 const departmentRoutes = require("./routes/departmentRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes.js");
+const ctcTemplate = require("./routes/ctcTemplate.router.js");
+const employeeCtcAssign = require("./routes/employeeCtcAssignment.route.js");
+const employeeAdvance = require("./routes/employeeAdvance.router.js");
+const employeeIncentive = require("./routes/employeeIncentive.router.js");
+const employeeReimbursement = require("./routes/employeeReimbursement.router.js");
+
 dotenv.config();
+
 const app = express();
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
@@ -55,7 +62,6 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
-// public
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/items", itemsRoutes);
@@ -71,7 +77,7 @@ app.use("/api/service-orders", serviceOrderRoutes);
 app.use("/api/designations", designationRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/settings", settingsRoutes);
-app.use("/api/integrations", integrationsRoute); // Register the route
+app.use("/api/integrations", integrationsRoute);
 
 app.use("/api/roles", roleRoutes);
 app.use("/api/terms-conditions", termsConditionsRouter);
@@ -79,21 +85,6 @@ app.use("/api/inventory", InventoryRouter);
 app.use("/api/inventory-transaction", InventoryTransactionRouter);
 app.use("/api/notifications", NotificationRoute);
 app.use("/api/workflow", workflowRoutes);
-
-// ⭐ REMOVE /api prefix - uploads should be served at root level
-// app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
-// app.use(
-//   "/api/uploads",
-//   express.static(path.join(__dirname, "uploads"), {
-//     setHeaders: (res, filePath) => {
-//       if (filePath.endsWith(".pdf")) {
-//         res.setHeader("Content-Type", "application/pdf");
-//         res.setHeader("Content-Disposition", "inline");
-//       }
-//     },
-//   }),
-// );
-// app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(
   "/api/uploads",
@@ -124,9 +115,13 @@ app.use("/api/security-settings", securitySettingsRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/tickets", ticketRoutes);
-
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/ctc-template", ctcTemplate);
+app.use("/api/employee-ctc-assign", employeeCtcAssign);
+app.use("/api/employee-advance", employeeAdvance);
+app.use("/api/employee-incentive", employeeIncentive);
+app.use("/api/employee-reimbursement", employeeReimbursement);
 
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;

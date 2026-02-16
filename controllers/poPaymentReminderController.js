@@ -40,6 +40,7 @@ exports.createReminder = async (req, res) => {
   try {
     const {
       po_id,
+      po_payment_id,
       po_number,
       vendor,
       total_amount,
@@ -49,7 +50,14 @@ exports.createReminder = async (req, res) => {
     } = req.body;
 
     // basic validation
-    if (!po_id || !po_number || !vendor || !balance_amount || !due_date) {
+    if (
+      !po_id ||
+      !po_payment_id ||
+      !po_number ||
+      !vendor ||
+      !balance_amount ||
+      !due_date
+    ) {
       return res.status(400).json({
         message: "Required fields are missing",
       });
@@ -57,6 +65,7 @@ exports.createReminder = async (req, res) => {
 
     const reminder = await poPaymentReminderModel.createReminder({
       po_id,
+      po_payment_id,
       po_number,
       vendor,
       total_amount,

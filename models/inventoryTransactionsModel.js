@@ -41,11 +41,16 @@ const createInventoryTransaction = async (transactionData) => {
     );
 
     const transactionId = trxResult.insertId;
-
+    let receivedMaterialAmount = 0;
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
       const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
         item.id,
+      );
+
+      const [[itemDetails]] = await connection.query(
+        "SELECT * FROM purchase_order_items WHERE item_id = ? AND po_id = ?",
+        [item.id, po_id],
       );
 
       await connection.execute(
@@ -114,6 +119,13 @@ const createInventoryTransaction = async (transactionData) => {
         `UPDATE inventory SET quantity = quantity + ?, quantity_after_approve = quantity_after_approve+? WHERE id = ?`,
         [item.quantity_issued, item.quantity_issued, inventoryMaterial.id],
       );
+
+      receivedMaterialAmount +=
+        Number(itemDetails.rate) * Number(item.quantity_issued);
+
+      receivedMaterialAmount +=
+        (Number(itemDetails.gst_amount) / Number(itemDetails.quantity)) *
+        item.quantity_issued;
     }
 
     // 3️⃣ Fetch created transaction
@@ -131,6 +143,39 @@ const createInventoryTransaction = async (transactionData) => {
       [transactionId],
     );
 
+    const [[po]] = await connection.query(
+      "SELECT * FROM purchase_orders WHERE id = ?",
+      [po_id],
+    );
+
+    const terms = po.payment_terms;
+    if (terms) {
+      for (let t of terms) {
+        const date = new Date();
+        date.setDate(
+          date.getDate() + (t.gracePeriod ? Number(t.gracePeriod) : 0),
+        );
+        if (
+          t.event_trigger === "On Delivery" ||
+          t.event_trigger === "After Delivery"
+        ) {
+          const balance =
+            (Number(receivedMaterialAmount) * Number(t.percentPayment)) / 100;
+
+          await connection.query(
+            `INSERT INTO po_payments (
+        po_id,
+        total_amount,
+        amount_paid,
+        balance_amount,
+        payment_due_date,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+            [po_id, balance, 0, balance, date, "PENDING"],
+          );
+        }
+      }
+    }
     await connection.commit();
 
     return {

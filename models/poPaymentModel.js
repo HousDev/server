@@ -1,17 +1,19 @@
 const db = require("..//config/db");
+const { connect } = require("../routes/userRoutes");
 
 /**
  * Create PO Payment
  */
 const createPayment = async (data) => {
   const connection = await db.pool.getConnection();
-  console.log(data);
+
   try {
     await connection.beginTransaction();
 
     const {
       po_id,
-      transaction_type = "PAYMENT",
+      po_payment_id,
+      transaction_type,
       amount_paid,
       payment_method,
       payment_reference_no,
@@ -28,7 +30,7 @@ const createPayment = async (data) => {
        FROM purchase_orders 
        WHERE id = ? 
        FOR UPDATE`,
-      [po_id]
+      [po_id],
     );
 
     if (!po) {
@@ -39,38 +41,32 @@ const createPayment = async (data) => {
     let totalPaid = Number(po.total_paid);
 
     if (status === "SUCCESS") {
-      if (transaction_type === "PAYMENT") {
-        if (Number(amount_paid) > Number(po.balance_amount)) {
-          throw new Error("Payment exceeds PO balance");
-        }
-        newBalance -= Number(amount_paid);
-        totalPaid += Number(amount_paid);
+      if (Number(amount_paid) > Number(po.balance_amount)) {
+        throw new Error("Payment exceeds PO balance");
       }
-
-      if (transaction_type === "REFUND") {
-        newBalance += Number(amount_paid);
-        totalPaid -= Number(amount_paid);
-      }
+      newBalance -= Number(amount_paid);
+      totalPaid += Number(amount_paid);
 
       const status =
         newBalance === 0
           ? "completed"
           : newBalance === Number(po.grand_total)
-          ? "pending"
-          : "partial";
+            ? "pending"
+            : "partial";
 
       await connection.query(
         `UPDATE purchase_orders 
          SET balance_amount = ?, total_paid = ?, payment_status = ?
          WHERE id = ?`,
-        [newBalance, totalPaid, status, po_id]
+        [newBalance, totalPaid, status, po_id],
       );
     }
 
     // ➕ Insert payment record
     const [result] = await connection.query(
-      `INSERT INTO po_payments (
+      `INSERT INTO po_payments_history (
         po_id,
+        po_payment_id,
         transaction_type,
         amount_paid,
         payment_method,
@@ -80,9 +76,10 @@ const createPayment = async (data) => {
         status,
         remarks,
         created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         po_id,
+        po_payment_id,
         transaction_type,
         amount_paid,
         payment_method,
@@ -92,9 +89,33 @@ const createPayment = async (data) => {
         status,
         remarks,
         created_by,
-      ]
+      ],
     );
 
+    const [[poPayment]] = await connection.query(
+      "SELECT * FROM po_payments WHERE id = ?",
+      [po_payment_id],
+    );
+
+    let poPyamentBalance = Number(poPayment.balance_amount);
+    let poPaymentTotalPaid = Number(poPayment.amount_paid);
+
+    poPyamentBalance -= Number(amount_paid);
+    poPaymentTotalPaid += Number(amount_paid);
+
+    const statusPoPayment =
+      poPyamentBalance === 0
+        ? "completed"
+        : newBalance === Number(poPayment.total_amount)
+          ? "pending"
+          : "partial";
+
+    await connection.query(
+      `UPDATE po_payments 
+         SET balance_amount = ?, amount_paid = ?, status = ?
+         WHERE id = ?`,
+      [poPyamentBalance, poPaymentTotalPaid, statusPoPayment, po_payment_id],
+    );
     await connection.commit();
 
     return {
@@ -114,11 +135,21 @@ const createPayment = async (data) => {
  */
 const getPayments = async () => {
   const rows = await db.query(
-    `SELECT *
-     FROM po_payments
-     ORDER BY created_at DESC`
+    `SELECT 
+    pop.*, po.po_number, po.po_date, v.name
+     FROM po_payments as pop LEFT JOIN purchase_orders as po ON pop.po_id = po.id LEFT JOIN vendors as v ON v.id=po.vendor_id
+      ORDER BY pop.created_at DESC`,
   );
+  return rows;
+};
 
+const getPaymentsHistory = async () => {
+  const rows = await db.query(
+    `SELECT 
+    pph.*, po.po_number, po.po_date,v.name as vendor
+     FROM po_payments_history as pph LEFT JOIN purchase_orders as po ON po.id = pph.po_id LEFT JOIN vendors as v ON v.id=po.vendor_id
+      ORDER BY pph.created_at DESC`,
+  );
   return rows;
 };
 
@@ -158,7 +189,7 @@ const updatePayment = async (id, data) => {
       status,
       remarks,
       id,
-    ]
+    ],
   );
 
   return result.affectedRows;
@@ -176,6 +207,7 @@ const deletePayment = async (id) => {
 
 module.exports = {
   createPayment,
+  getPaymentsHistory,
   getPayments,
   updatePayment,
   deletePayment,

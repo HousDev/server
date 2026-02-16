@@ -1,79 +1,85 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const LeaveModel = require('../models/leave.model');
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const LeaveModel = require("../models/leave.model");
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'uploads/leaves/';
+    const uploadDir = "uploads/leaves/";
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+  const allowedTypes = [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+  ];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only PDF, JPEG, and PNG files are allowed'), false);
+    cb(new Error("Only PDF, JPEG, and PNG files are allowed"), false);
   }
 };
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
 
 class LeaveController {
   // Upload middleware
-  static upload = upload.single('attachment');
+  static upload = upload.single("attachment");
 
   // Apply for leave with half day support
   static async applyLeave(req, res) {
     try {
-      const { 
-        employee_id, 
-        leave_type, 
-        from_date, 
-        to_date, 
+      const {
+        employee_id,
+        leave_type,
+        from_date,
+        to_date,
         reason,
         is_half_day = false,
-        half_day_period = null
+        half_day_period = null,
       } = req.body;
-      
+
       // Validate required fields
       if (!employee_id || !leave_type || !from_date || !reason) {
         return res.status(400).json({
           success: false,
-          message: 'Please fill all required fields'
+          message: "Please fill all required fields",
         });
       }
 
       // Validate dates
       const fromDate = new Date(from_date);
       const toDate = new Date(to_date || from_date); // Use from_date if to_date not provided for half day
-      
+
       // Handle half day logic
-      const isHalfDay = is_half_day === 'true' || is_half_day === true;
-      
+      const isHalfDay = is_half_day === "true" || is_half_day === true;
+
       if (isHalfDay) {
         // For half day, validate that dates are the same
         if (from_date !== to_date && to_date) {
           return res.status(400).json({
             success: false,
-            message: 'For half day leave, from date and to date must be the same'
+            message:
+              "For half day leave, from date and to date must be the same",
           });
         }
-        
+
         // Ensure to_date is same as from_date
         req.body.to_date = from_date;
       } else {
@@ -81,14 +87,14 @@ class LeaveController {
         if (!to_date) {
           return res.status(400).json({
             success: false,
-            message: 'Please select to date for full day leave'
+            message: "Please select to date for full day leave",
           });
         }
-        
+
         if (fromDate > toDate) {
           return res.status(400).json({
             success: false,
-            message: 'From date cannot be after to date'
+            message: "From date cannot be after to date",
           });
         }
       }
@@ -105,7 +111,7 @@ class LeaveController {
       if (totalDays <= 0) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid date range'
+          message: "Invalid date range",
         });
       }
 
@@ -113,7 +119,8 @@ class LeaveController {
       if (!isHalfDay && totalDays > 30) {
         return res.status(400).json({
           success: false,
-          message: 'Leave cannot exceed 30 days. Please contact HR for longer leaves.'
+          message:
+            "Leave cannot exceed 30 days. Please contact HR for longer leaves.",
         });
       }
 
@@ -123,7 +130,7 @@ class LeaveController {
       if (fromDate < today) {
         return res.status(400).json({
           success: false,
-          message: 'From date cannot be in the past'
+          message: "From date cannot be in the past",
         });
       }
 
@@ -135,17 +142,14 @@ class LeaveController {
         to_date: isHalfDay ? from_date : to_date, // Ensure same date for half day
         total_days: totalDays,
         reason,
-        status: 'pending',
+        status: "pending",
         is_half_day: isHalfDay,
-        half_day_period: isHalfDay ? half_day_period : null
+        half_day_period: isHalfDay ? half_day_period : null,
       };
 
       // Add file data if uploaded
       if (req.file) {
-        leaveData.attachment_path = req.file.path.replace(/\\/g, '/');
-        leaveData.attachment_name = req.file.originalname;
-        leaveData.attachment_type = req.file.mimetype;
-        leaveData.attachment_size = req.file.size;
+        leaveData.attachment_path = req.file.path.replace(/\\/g, "/");
       }
 
       // Create leave application
@@ -153,20 +157,19 @@ class LeaveController {
 
       return res.status(201).json({
         success: true,
-        message: 'Leave application submitted successfully',
+        message: "Leave application submitted successfully",
         data: {
           id: result.id,
           application_number: result.application_number,
           is_half_day: isHalfDay,
-          total_days: totalDays
-        }
+          total_days: totalDays,
+        },
       });
-
     } catch (error) {
-      console.error('Apply leave error:', error);
+      console.error("Apply leave error:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || 'Failed to submit leave application'
+        message: error.message || "Failed to submit leave application",
       });
     }
   }
@@ -174,16 +177,18 @@ class LeaveController {
   // Get all leaves
   static async getLeaves(req, res) {
     try {
-      const { 
-        status, 
-        leave_type, 
-        start_date, 
-        end_date, 
+      const {
+        status,
+        leave_type,
+        start_date,
+        end_date,
         search,
         is_half_day,
         page = 1,
-        limit = 20
+        limit = 20,
+        employee_id,
       } = req.query;
+      console.log("query : ", req.query);
 
       const filters = {};
 
@@ -193,6 +198,7 @@ class LeaveController {
       if (start_date) filters.start_date = start_date;
       if (end_date) filters.end_date = end_date;
       if (search) filters.search = search;
+      if (employee_id) filters.employee_id = employee_id;
       if (is_half_day !== undefined) filters.is_half_day = is_half_day;
 
       // Add pagination
@@ -210,15 +216,14 @@ class LeaveController {
           total,
           page: parseInt(page),
           limit: parseInt(limit),
-          pages: Math.ceil(total / parseInt(limit))
-        }
+          pages: Math.ceil(total / parseInt(limit)),
+        },
       });
-
     } catch (error) {
-      console.error('Get leaves error:', error);
+      console.error("Get leaves error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to fetch leaves'
+        message: "Failed to fetch leaves",
       });
     }
   }
@@ -229,24 +234,23 @@ class LeaveController {
       const { id } = req.params;
 
       const leave = await LeaveModel.getLeaveById(id);
-      
+
       if (!leave) {
         return res.status(404).json({
           success: false,
-          message: 'Leave not found'
+          message: "Leave not found",
         });
       }
 
       return res.status(200).json({
         success: true,
-        data: leave
+        data: leave,
       });
-
     } catch (error) {
-      console.error('Get leave by ID error:', error);
+      console.error("Get leave by ID error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to fetch leave'
+        message: "Failed to fetch leave",
       });
     }
   }
@@ -268,15 +272,14 @@ class LeaveController {
           half_day_total: stats.half_day_total || 0,
           half_day_pending: stats.half_day_pending || 0,
           half_day_approved: stats.half_day_approved || 0,
-          half_day_rejected: stats.half_day_rejected || 0
-        }
+          half_day_rejected: stats.half_day_rejected || 0,
+        },
       });
-
     } catch (error) {
-      console.error('Get leave stats error:', error);
+      console.error("Get leave stats error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to fetch leave statistics'
+        message: "Failed to fetch leave statistics",
       });
     }
   }
@@ -285,61 +288,62 @@ class LeaveController {
   static async approveLeave(req, res) {
     try {
       const { id } = req.params;
-      const { user_id, username, name } = req.body;
-      
-      console.log('Approve request data:', { id, user_id, username, name });
-      
+      const { user_id } = req.body;
+
+      console.log("Approve request data:", id, user_id);
+
       // Prepare user data object with both ID and username
       const userData = {
         user_id: user_id,
-        username: username || user_id,
-        name: name || 'Admin User'
       };
-      
+
       // Check if leave exists
       const leave = await LeaveModel.getLeaveById(id);
       if (!leave) {
         return res.status(404).json({
           success: false,
-          message: 'Leave not found'
+          message: "Leave not found",
         });
       }
 
       // Check if already approved/rejected
-      if (leave.status === 'approved') {
+      if (leave.status === "approved") {
         return res.status(400).json({
           success: false,
-          message: 'Leave is already approved'
+          message: "Leave is already approved",
         });
       }
 
-      if (leave.status === 'rejected') {
+      if (leave.status === "rejected") {
         return res.status(400).json({
           success: false,
-          message: 'Cannot approve a rejected leave'
+          message: "Cannot approve a rejected leave",
         });
       }
 
       // Approve the leave
-      const success = await LeaveModel.updateLeaveStatus(id, 'approved', userData);
+      const success = await LeaveModel.updateLeaveStatus(
+        id,
+        "approved",
+        userData,
+      );
 
       if (success) {
         return res.status(200).json({
           success: true,
-          message: 'Leave approved successfully'
+          message: "Leave approved successfully",
         });
       } else {
         return res.status(500).json({
           success: false,
-          message: 'Failed to approve leave'
+          message: "Failed to approve leave",
         });
       }
-
     } catch (error) {
-      console.error('Approve leave error:', error);
+      console.error("Approve leave error:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || 'Failed to approve leave'
+        message: error.message || "Failed to approve leave",
       });
     }
   }
@@ -350,20 +354,26 @@ class LeaveController {
       const { id } = req.params;
       const { user_id, username, name, rejection_reason } = req.body;
 
-      if (!rejection_reason || rejection_reason.trim() === '') {
+      if (!rejection_reason || rejection_reason.trim() === "") {
         return res.status(400).json({
           success: false,
-          message: 'Rejection reason is required'
+          message: "Rejection reason is required",
         });
       }
 
-      console.log('Reject request data:', { id, user_id, username, name, rejection_reason });
+      console.log("Reject request data:", {
+        id,
+        user_id,
+        username,
+        name,
+        rejection_reason,
+      });
 
       // Prepare user data object with both ID and username
       const userData = {
         user_id: user_id,
         username: username || user_id,
-        name: name || 'Admin User'
+        name: name || "Admin User",
       };
 
       // Check if leave exists
@@ -371,45 +381,49 @@ class LeaveController {
       if (!leave) {
         return res.status(404).json({
           success: false,
-          message: 'Leave not found'
+          message: "Leave not found",
         });
       }
 
       // Check if already approved/rejected
-      if (leave.status === 'rejected') {
+      if (leave.status === "rejected") {
         return res.status(400).json({
           success: false,
-          message: 'Leave is already rejected'
+          message: "Leave is already rejected",
         });
       }
 
-      if (leave.status === 'approved') {
+      if (leave.status === "approved") {
         return res.status(400).json({
           success: false,
-          message: 'Cannot reject an approved leave'
+          message: "Cannot reject an approved leave",
         });
       }
 
       // Reject the leave
-      const success = await LeaveModel.updateLeaveStatus(id, 'rejected', userData, rejection_reason);
+      const success = await LeaveModel.updateLeaveStatus(
+        id,
+        "rejected",
+        userData,
+        rejection_reason,
+      );
 
       if (success) {
         return res.status(200).json({
           success: true,
-          message: 'Leave rejected successfully'
+          message: "Leave rejected successfully",
         });
       } else {
         return res.status(500).json({
           success: false,
-          message: 'Failed to reject leave'
+          message: "Failed to reject leave",
         });
       }
-
     } catch (error) {
-      console.error('Reject leave error:', error);
+      console.error("Reject leave error:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || 'Failed to reject leave'
+        message: error.message || "Failed to reject leave",
       });
     }
   }
@@ -420,18 +434,18 @@ class LeaveController {
       const { id } = req.params;
 
       const leave = await LeaveModel.getLeaveById(id);
-      
+
       if (!leave) {
         return res.status(404).json({
           success: false,
-          message: 'Leave not found'
+          message: "Leave not found",
         });
       }
 
       if (!leave.attachment_path) {
         return res.status(404).json({
           success: false,
-          message: 'No attachment found for this leave'
+          message: "No attachment found for this leave",
         });
       }
 
@@ -439,49 +453,51 @@ class LeaveController {
       if (!fs.existsSync(leave.attachment_path)) {
         return res.status(404).json({
           success: false,
-          message: 'Attachment file not found on server'
+          message: "Attachment file not found on server",
         });
       }
 
       // Set headers for download
-      const fileName = leave.attachment_name || 'leave_document';
+      const fileName = leave.attachment_name || "leave_document";
       const fileExtension = path.extname(leave.attachment_path);
       const fullFileName = fileName + fileExtension;
 
       // Determine content type
-      let contentType = 'application/octet-stream';
+      let contentType = "application/octet-stream";
       if (leave.attachment_type) {
         contentType = leave.attachment_type;
-      } else if (fileExtension === '.pdf') {
-        contentType = 'application/pdf';
-      } else if (fileExtension === '.jpg' || fileExtension === '.jpeg') {
-        contentType = 'image/jpeg';
-      } else if (fileExtension === '.png') {
-        contentType = 'image/png';
+      } else if (fileExtension === ".pdf") {
+        contentType = "application/pdf";
+      } else if (fileExtension === ".jpg" || fileExtension === ".jpeg") {
+        contentType = "image/jpeg";
+      } else if (fileExtension === ".png") {
+        contentType = "image/png";
       }
 
       // Set headers
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `attachment; filename="${fullFileName}"`);
-      
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fullFileName}"`,
+      );
+
       // Send the file
       res.download(leave.attachment_path, fullFileName, (err) => {
         if (err) {
-          console.error('Download error:', err);
+          console.error("Download error:", err);
           if (!res.headersSent) {
             return res.status(500).json({
               success: false,
-              message: 'Failed to download file'
+              message: "Failed to download file",
             });
           }
         }
       });
-
     } catch (error) {
-      console.error('Download attachment error:', error);
+      console.error("Download attachment error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to download attachment'
+        message: "Failed to download attachment",
       });
     }
   }
@@ -496,7 +512,7 @@ class LeaveController {
       if (!leave) {
         return res.status(404).json({
           success: false,
-          message: 'Leave not found'
+          message: "Leave not found",
         });
       }
 
@@ -505,7 +521,7 @@ class LeaveController {
         try {
           fs.unlinkSync(leave.attachment_path);
         } catch (fileError) {
-          console.error('Error deleting attachment file:', fileError);
+          console.error("Error deleting attachment file:", fileError);
           // Continue with database deletion even if file deletion fails
         }
       }
@@ -516,20 +532,19 @@ class LeaveController {
       if (success) {
         return res.status(200).json({
           success: true,
-          message: 'Leave deleted successfully'
+          message: "Leave deleted successfully",
         });
       } else {
         return res.status(500).json({
           success: false,
-          message: 'Failed to delete leave from database'
+          message: "Failed to delete leave from database",
         });
       }
-
     } catch (error) {
-      console.error('Delete leave error:', error);
+      console.error("Delete leave error:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || 'Failed to delete leave'
+        message: error.message || "Failed to delete leave",
       });
     }
   }

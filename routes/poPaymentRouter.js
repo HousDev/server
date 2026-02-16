@@ -17,11 +17,13 @@ poPaymentRouter.post(
     }
     next();
   },
-  poPaymentController.createPayment
+  poPaymentController.createPayment,
 );
 
 // Get all payments (ADMIN only)
 poPaymentRouter.get("/", poPaymentController.getPayments);
+
+poPaymentRouter.get("/history", poPaymentController.getPaymentsHistory);
 
 // Update payment (ADMIN only)
 poPaymentRouter.put(
@@ -33,7 +35,7 @@ poPaymentRouter.put(
     }
     next();
   },
-  poPaymentController.updatePayment
+  poPaymentController.updatePayment,
 );
 
 // Delete payment (ADMIN only)
