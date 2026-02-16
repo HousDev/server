@@ -8,6 +8,7 @@ exports.createPayment = async (req, res) => {
   try {
     const {
       po_id,
+      po_payment_id,
       transaction_type,
       amount_paid,
       payment_method,
@@ -18,10 +19,14 @@ exports.createPayment = async (req, res) => {
       remarks,
       created_by,
     } = req.body;
-    console.log(req.body);
+
     // 🔍 Inline validation
     if (!po_id) {
       return res.status(400).json({ message: "po_id is required" });
+    }
+
+    if (!po_payment_id) {
+      return res.status(400).json({ message: "po_payment_id is required" });
     }
 
     if (!amount_paid || Number(amount_paid) <= 0) {
@@ -55,6 +60,7 @@ exports.createPayment = async (req, res) => {
 
     const paymentId = await poPaymentModel.createPayment({
       po_id,
+      po_payment_id,
       transaction_type,
       amount_paid,
       payment_method,
@@ -84,6 +90,26 @@ exports.createPayment = async (req, res) => {
 exports.getPayments = async (req, res) => {
   try {
     const payments = await poPaymentModel.getPayments();
+    res.json(payments);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch payments" });
+  }
+};
+
+exports.getPayments = async (req, res) => {
+  try {
+    const payments = await poPaymentModel.getPayments();
+    res.json(payments);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch payments" });
+  }
+};
+
+exports.getPaymentsHistory = async (req, res) => {
+  try {
+    const payments = await poPaymentModel.getPaymentsHistory();
     res.json(payments);
   } catch (err) {
     console.error(err);

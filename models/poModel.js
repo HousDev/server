@@ -110,7 +110,7 @@ async function findById(id) {
 
 async function updatePO(id, payload) {
   const updatePOSQL =
-    "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?, po_date = ?,delivery_date = ?, due_date=?, is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms_id = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?, status = ?, material_status = ?, payment_status = ?, created_by = ?, updated_at = NOW() WHERE id = ?";
+    "UPDATE purchase_orders SET vendor_id = ?, project_id = ?,po_type_id = ?, po_date = ?,delivery_date = ?,  is_interstate = ?,subtotal = ?,discount_percentage = ?,discount_amount = ?,taxable_amount = ?,cgst_amount = ?,sgst_amount = ?,igst_amount = ?,total_gst_amount = ?,grand_total = ?,payment_terms = ?,advance_amount = ?,total_paid = ?,balance_amount = ?,selected_terms_ids = ?,terms_and_conditions = ?,notes = ?, status = ?, material_status = ?, payment_status = ?, created_by = ?, updated_at = NOW() WHERE id = ?";
 
   const updatePOValues = [
     payload.vendor_id,
@@ -118,7 +118,6 @@ async function updatePO(id, payload) {
     String(payload.po_type_id) || null,
     payload.po_date || null,
     payload.delivery_date || null,
-    payload.due_date,
     payload.is_interstate ? 1 : 0,
 
     parseFloat(payload.subtotal || 0),
@@ -132,7 +131,7 @@ async function updatePO(id, payload) {
     parseFloat(payload.total_gst_amount || 0),
     parseFloat(payload.grand_total || 0),
 
-    payload.payment_terms_id || null,
+    payload.payment_terms || null,
     parseFloat(payload.advance_amount || 0),
     parseFloat(payload.total_paid || 0),
     parseFloat(payload.balance_amount || 0),
@@ -296,11 +295,57 @@ async function deletePOItems(poItemId, poMaterialTrackingId) {
 }
 
 async function updatePO_Status(id, status) {
-  await query("UPDATE purchase_orders SET status = ? WHERE id = ?", [
-    status,
-    id,
-  ]);
-  return await findById(id);
+  try {
+    const conn = await pool.getConnection();
+    await conn.beginTransaction();
+    await conn.query("UPDATE purchase_orders SET status = ? WHERE id = ?", [
+      status,
+      id,
+    ]);
+
+    if (status === "authorize") {
+      const [[po]] = await conn.query(
+        "SELECT * FROM purchase_orders WHERE id = ?",
+        [id],
+      );
+
+      const terms = po.payment_terms;
+
+      if (terms) {
+        for (let t of terms) {
+          const date = new Date();
+          date.setDate(
+            date.getDate() + (t.gracePeriod ? Number(t.gracePeriod) : 0),
+          );
+          if (
+            t.event_trigger === "Order Confirmation" ||
+            t.event_trigger === "Before Delivery"
+          ) {
+            const balance =
+              (Number(po.grand_total) * Number(t.percentPayment)) / 100;
+
+            await conn.query(
+              `INSERT INTO po_payments (
+        po_id,
+        total_amount,
+        amount_paid,
+        balance_amount,
+        payment_due_date,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+              [id, balance, 0, balance, date, "PENDING"],
+            );
+          }
+        }
+      }
+    }
+
+    await conn.commit();
+    return await findById(id);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 }
 
 module.exports = {

@@ -47,7 +47,7 @@ async function nextNumber() {
       [newNumber, row.id],
     );
 
-    const soNumber = `SO/${year}/${String(newNumber).padStart(4, "0")}`;
+    const soNumber = `WO/${year}/${String(newNumber).padStart(4, "0")}`;
     await conn.commit();
 
     return {

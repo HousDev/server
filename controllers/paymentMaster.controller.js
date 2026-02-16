@@ -76,10 +76,8 @@ async function createPaymentMaster(req, res) {
       event_trigger,
       percentPayment,
       firstText,
-      materialPercent,
-      secondText,
       gracePeriod,
-      thirdText,
+      secondText,
     } = req.body;
 
     // basic validation
@@ -90,22 +88,12 @@ async function createPaymentMaster(req, res) {
       });
     }
 
-    // material trigger validation
-    if (event_trigger === "Material" && materialPercent == null) {
-      return res.status(400).json({
-        success: false,
-        message: "materialPercent is required for Material trigger",
-      });
-    }
-
     const paymentMaster = await PaymentMasterModel.createPaymentMaster({
       event_trigger,
       percentPayment,
       firstText,
-      materialPercent,
-      secondText,
       gracePeriod,
-      thirdText,
+      secondText,
     });
 
     res.status(201).json({

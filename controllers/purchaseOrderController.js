@@ -241,7 +241,6 @@ async function createPO(req, res) {
       "po_type_id",
       "po_date",
       "delivery_date",
-      "due_date",
       "is_interstate",
 
       "subtotal",
@@ -255,7 +254,7 @@ async function createPO(req, res) {
       "total_gst_amount",
       "grand_total",
 
-      "payment_terms_id",
+      "payment_terms",
       "advance_amount",
       "total_paid",
       "balance_amount",
@@ -281,7 +280,6 @@ async function createPO(req, res) {
       payload.po_type_id || null,
       payload.po_date || null,
       payload.delivery_date || null,
-      payload.due_date || null,
       payload.is_interstate ? 1 : 0,
 
       parseFloat(payload.subtotal || 0),
@@ -294,8 +292,9 @@ async function createPO(req, res) {
       parseFloat(payload.igst_amount || 0),
       parseFloat(payload.total_gst_amount || 0),
       parseFloat(payload.grand_total || 0),
-
-      payload.payment_terms_id || null,
+      payload.payment_terms
+        ? JSON.stringify(payload.payment_terms)
+        : JSON.stringify([]),
       parseFloat(payload.advance_amount || 0),
       parseFloat(payload.total_paid || 0),
       parseFloat(payload.balance_amount || 0),

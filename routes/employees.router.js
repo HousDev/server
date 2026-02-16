@@ -14,8 +14,6 @@
 
 // module.exports = router;
 
-
-
 // backend/routes/hrmsEmployees.routes.js
 const express = require("express");
 const router = express.Router();
@@ -23,8 +21,8 @@ const controller = require("../controllers/employees.controller");
 
 // CRUD Routes
 router.get("/", controller.getAllEmployees);
-router.get("/:id", controller.getEmployeeById);
 router.get("/email/:email", controller.getEmployeeByEmail);
+router.get("/:id", controller.getEmployeeById);
 router.post("/", controller.createEmployee);
 router.post("/create-from-user", controller.createEmployeeFromUser);
 router.put("/:id", controller.updateEmployee);
