@@ -1,4 +1,4 @@
-const db = require("../config/db");
+const { query } = require("../config/db");
 
 const EmployeeAdvanceModel = {
   // =====================================================
@@ -8,12 +8,11 @@ const EmployeeAdvanceModel = {
     employee_id,
     advance_amount,
     installments,
-    monthly_deduction,
     required_by,
     reason_for_advance,
     supporting_doc,
   }) => {
-    const query = `
+    const sql = `
       INSERT INTO employee_advances (
         employee_id,
         advance_amount,
@@ -21,18 +20,21 @@ const EmployeeAdvanceModel = {
         monthly_deduction,
         required_by,
         reason_for_advance,
+        balance_amount,
         supporting_doc
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
+    const monthly_deduction = Number(advance_amount) / Number(installments);
 
-    const [result] = await db.execute(query, [
+    const result = await query(sql, [
       employee_id,
       advance_amount,
       installments,
       monthly_deduction,
       required_by,
       reason_for_advance,
+      advance_amount,
       supporting_doc,
     ]);
 
@@ -42,30 +44,42 @@ const EmployeeAdvanceModel = {
   // =====================================================
   // APPROVE ADVANCE
   // =====================================================
-  approveAdvance: async (id, { approved_by }) => {
-    const query = `
+  approveAdvance: async (id, { remark, approved_by }) => {
+    const sql = `
       UPDATE employee_advances
-      SET status = 'approved',
+      SET status = 'approved',remark = ?,
           approved_by = ?,
           approved_at = NOW()
       WHERE id = ?
     `;
 
-    const [result] = await db.execute(query, [approved_by, id]);
+    const result = await query(sql, [remark, approved_by, id]);
     return result.affectedRows > 0;
+  },
+
+  // =====================================================
+  // get all
+  // =====================================================
+  getAllAdvance: async () => {
+    const sql = `
+      SELECT ea.id, ea.employee_id as employee_id, CONCAT(he.first_name ," ",he.last_name) as employee_name, he.employee_code as employee_code, he.salary as salary, he.email as employee_email, he.phone as employee_phone, d.name as employee_department, he.designation as employee_designation, ea.advance_amount as amount,ea.reason_for_advance as reason,ea.required_by as request_date, ea.installments as installments, ea.status as status, ea.approved_by as approved_by, ea.disbursed_at as disbursement_date, ea.total_recovered as total_recovered, ea.balance_amount as balance_amount, ea.monthly_deduction as monthly_deduction, he.salary_type as salary_type  FROM employee_advances as ea LEFT JOIN hrms_employees as he ON he.id=ea.employee_id LEFT JOIN departments as d ON d.id=he.department_id  ORDER BY ea.created_at DESC
+    `;
+
+    const result = await query(sql);
+    return result;
   },
 
   // =====================================================
   // REJECT ADVANCE
   // =====================================================
   rejectAdvance: async (id, emp_id) => {
-    const query = `
+    const sql = `
       UPDATE employee_advances
       SET status = 'rejected',approved_by=?
       WHERE id = ?
     `;
 
-    const [result] = await db.execute(query, [emp_id, id]);
+    const [result] = await query(sql, [emp_id, id]);
     return result.affectedRows > 0;
   },
 
@@ -73,14 +87,14 @@ const EmployeeAdvanceModel = {
   // MARK AS DISBURSED (START RECOVERY)
   // =====================================================
   markDisbursed: async (id) => {
-    const query = `
+    const sql = `
       UPDATE employee_advances
       SET status = 'recovering',
           disbursed_at = NOW()
       WHERE id = ?
     `;
 
-    const [result] = await db.execute(query, [id]);
+    const [result] = await query(sql, [id]);
     return result.affectedRows > 0;
   },
 
@@ -88,13 +102,13 @@ const EmployeeAdvanceModel = {
   // GET SINGLE ADVANCE
   // =====================================================
   getById: async (id) => {
-    const query = `
+    const sql = `
       SELECT *
       FROM employee_advances
       WHERE id = ?
     `;
 
-    const [rows] = await db.execute(query, [id]);
+    const [rows] = await query(sql, [id]);
     return rows[0] || null;
   },
 
@@ -102,14 +116,14 @@ const EmployeeAdvanceModel = {
   // GET EMPLOYEE ADVANCES
   // =====================================================
   getByEmployee: async (employee_id) => {
-    const query = `
+    const sql = `
       SELECT *
       FROM employee_advances
       WHERE employee_id = ?
       ORDER BY created_at DESC
     `;
 
-    const [rows] = await db.execute(query, [employee_id]);
+    const [rows] = await query(sql, [employee_id]);
     return rows;
   },
 
@@ -117,13 +131,22 @@ const EmployeeAdvanceModel = {
   // CLOSE ADVANCE
   // =====================================================
   closeAdvance: async (id) => {
-    const query = `
+    const sql = `
       UPDATE employee_advances
       SET status = 'closed'
       WHERE id = ?
     `;
 
-    const [result] = await db.execute(query, [id]);
+    const [result] = await query(sql, [id]);
+    return result.affectedRows > 0;
+  },
+
+  deleteAdvance: async (id) => {
+    const sql = `
+      DELETE FROM employee_advances WHERE id = ?
+    `;
+
+    const result = await query(sql, [id]);
     return result.affectedRows > 0;
   },
 };

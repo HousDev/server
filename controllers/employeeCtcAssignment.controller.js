@@ -1,3 +1,4 @@
+const { query } = require("../config/db");
 const EmployeeCTCAssignmentModel = require("../models/employeeCtcAssignment.model");
 
 const EmployeeCTCAssignmentController = {
@@ -5,6 +6,7 @@ const EmployeeCTCAssignmentController = {
   // ASSIGN TEMPLATE TO EMPLOYEE
   // =====================================================
   assignTemplate: async (req, res) => {
+    console.log(req.body);
     try {
       const { employee_id, template_id, ctc_amount, effective_from } = req.body;
 
@@ -42,6 +44,7 @@ const EmployeeCTCAssignmentController = {
       return res.status(201).json({
         message: "CTC assigned successfully",
         assignment_id: id,
+        success: true,
       });
     } catch (error) {
       console.error("Assign CTC Error:", error);
@@ -103,6 +106,18 @@ const EmployeeCTCAssignmentController = {
       return res.status(500).json({
         message: "Failed to update assignment",
       });
+    }
+  },
+
+  getAllAsiignUserTemplate: async (req, res) => {
+    try {
+      const allAssignUserTemplate = await query(
+        "SELECT * FROM employee_ctc_assignments",
+      );
+      return res.status(200).json({ data: allAssignUserTemplate });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Internal Server Error." });
     }
   },
 
@@ -171,7 +186,7 @@ const EmployeeCTCAssignmentController = {
   deleteAssignment: async (req, res) => {
     try {
       const { id } = req.params;
-
+      console.log(id);
       if (!id) {
         return res.status(400).json({
           message: "Assignment ID is required",
@@ -188,6 +203,7 @@ const EmployeeCTCAssignmentController = {
 
       return res.status(200).json({
         message: "Assignment deleted successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Delete Assignment Error:", error);

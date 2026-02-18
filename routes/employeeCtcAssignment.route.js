@@ -5,6 +5,9 @@ const controller = require("../controllers/employeeCtcAssignment.controller");
 // Assign template to employee
 router.post("/", controller.assignTemplate);
 
+// Assign template to employee
+router.get("/", controller.getAllAsiignUserTemplate);
+
 // Update assignment
 router.put("/:id", controller.updateAssignment);
 
