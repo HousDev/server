@@ -1,4 +1,6 @@
+const { query } = require("../config/db");
 const EmployeeAdvanceModel = require("../models/employeeAdvance.model");
+const { getAll } = require("./poTypesController");
 
 const EmployeeAdvanceController = {
   // =====================================================
@@ -13,9 +15,11 @@ const EmployeeAdvanceController = {
         monthly_deduction,
         required_by,
         reason_for_advance,
-        supporting_doc,
       } = req.body;
 
+      // =========================
+      // Basic Validation
+      // =========================
       if (!employee_id) {
         return res.status(400).json({ message: "Employee ID is required" });
       }
@@ -28,30 +32,52 @@ const EmployeeAdvanceController = {
         return res.status(400).json({ message: "Installments are required" });
       }
 
-      if (!monthly_deduction) {
-        return res
-          .status(400)
-          .json({ message: "Monthly deduction is required" });
+      // =========================
+      // Handle Uploaded File
+      // =========================
+      let supporting_doc = null;
+
+      if (req.file) {
+        supporting_doc = req.file.filename;
+        // or req.file.path if you want full path
       }
 
+      // =========================
+      // Save to Database
+      // =========================
       const id = await EmployeeAdvanceModel.createRequest({
         employee_id,
         advance_amount,
         installments,
-        monthly_deduction,
         required_by,
         reason_for_advance,
         supporting_doc,
       });
-
       return res.status(201).json({
         message: "Advance request created successfully",
         advance_id: id,
+        supporting_doc,
+        success: true,
       });
     } catch (error) {
       console.error("Create Advance Error:", error);
+
+      // File type error
+      if (error.message?.includes("Only JPG")) {
+        return res.status(400).json({
+          message: error.message,
+        });
+      }
+
+      // File size error
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({
+          message: "File size must be less than 5MB",
+        });
+      }
+
       return res.status(500).json({
-        message: "Failed to create advance request",
+        message: "Failed to create advance requests",
       });
     }
   },
@@ -62,7 +88,7 @@ const EmployeeAdvanceController = {
   approveAdvance: async (req, res) => {
     try {
       const { id } = req.params;
-      const { approved_by } = req.body;
+      const { approved_by, remark } = req.body;
 
       if (!id) {
         return res.status(400).json({ message: "Advance ID is required" });
@@ -74,6 +100,7 @@ const EmployeeAdvanceController = {
 
       const updated = await EmployeeAdvanceModel.approveAdvance(id, {
         approved_by,
+        remark,
       });
 
       if (!updated) {
@@ -117,6 +144,20 @@ const EmployeeAdvanceController = {
       return res.status(500).json({
         message: "Failed to reject advance",
       });
+    }
+  },
+
+  // =====================================================
+  // get all
+  // =====================================================
+  getAll: async (req, res) => {
+    try {
+      const data = await EmployeeAdvanceModel.getAllAdvance();
+
+      return res.status(200).json({ message: "Data Loaded", data: data });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Internal Server Error." });
     }
   },
 
@@ -170,6 +211,31 @@ const EmployeeAdvanceController = {
       console.error("Get Advance Error:", error);
       return res.status(500).json({
         message: "Failed to fetch advance",
+      });
+    }
+  },
+
+  deleteAdvance: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({ message: "Advance ID is required" });
+      }
+
+      const data = await EmployeeAdvanceModel.deleteAdvance(id);
+
+      if (!data) {
+        return res.status(404).json({ message: "Advance not found" });
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Advance deleted.", success: true });
+    } catch (error) {
+      console.error("Get Advance Error:", error);
+      return res.status(500).json({
+        message: "Failed to delete advance",
       });
     }
   },

@@ -1,11 +1,11 @@
-const db = require("../config/db");
+const { pool, query } = require("../config/db");
 
 const CTCTemplateModel = {
   // =====================================================
   // CREATE TEMPLATE WITH COMPONENTS
   // =====================================================
   createTemplate: async ({ name, description, is_default, components }) => {
-    const connection = await db.getConnection();
+    const connection = await pool.getConnection();
 
     try {
       await connection.beginTransaction();
@@ -26,18 +26,16 @@ const CTCTemplateModel = {
             template_id,
             component_name,
             component_type,
-            value_type,
-            value,
-            calculation_base
+            is_taxable,
+            value
           )
-          VALUES (?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?)`,
           [
             templateId,
-            item.component_name,
-            item.component_type,
-            item.value_type,
-            item.value || null,
-            item.calculation_base || null,
+            item.name,
+            item.type,
+            item.is_taxable,
+            item.percentage || null,
           ],
         );
       }
@@ -59,7 +57,7 @@ const CTCTemplateModel = {
     template_id,
     { name, description, is_active, components },
   ) => {
-    const connection = await db.getConnection();
+    const connection = await pool.getConnection();
 
     try {
       await connection.beginTransaction();
@@ -102,6 +100,7 @@ const CTCTemplateModel = {
            SET component_name = ?,
                component_type = ?,
                value_type = ?,
+               is_taxable = ?,
                value = ?,
                calculation_base = ?
            WHERE id = ?`,
@@ -109,6 +108,7 @@ const CTCTemplateModel = {
               item.component_name,
               item.component_type,
               item.value_type,
+              item.is_taxable,
               item.value || null,
               item.calculation_base || null,
               item.id,
@@ -122,6 +122,7 @@ const CTCTemplateModel = {
             component_name,
             component_type,
             value_type,
+            is_taxable,
             value,
             calculation_base
           )
@@ -131,6 +132,7 @@ const CTCTemplateModel = {
               item.component_name,
               item.component_type,
               item.value_type,
+              item.is_taxable,
               item.value || null,
               item.calculation_base || null,
             ],
@@ -152,7 +154,7 @@ const CTCTemplateModel = {
   // GET FULL TEMPLATE
   // =====================================================
   getTemplate: async (template_id) => {
-    const [templates] = await db.execute(
+    const [templates] = await query(
       `SELECT *
        FROM ctc_templates
        WHERE id = ?`,
@@ -161,7 +163,7 @@ const CTCTemplateModel = {
 
     if (templates.length === 0) return null;
 
-    const [components] = await db.execute(
+    const [components] = await query(
       `SELECT *
        FROM ctc_template_components
        WHERE template_id = ?
@@ -180,19 +182,57 @@ const CTCTemplateModel = {
   // GET ALL TEMPLATES
   // =====================================================
   getAllTemplates: async () => {
-    const [rows] = await db.execute(
-      `SELECT *
-       FROM ctc_templates
-       ORDER BY id DESC`,
-    );
-    return rows;
+    const rows = await query(`
+    SELECT 
+      ctct.*,
+      ctctc.id as template_component_id,
+      ctctc.component_name,
+      ctctc.component_type,
+      ctctc.value,
+      ctctc.is_taxable
+    FROM ctc_templates AS ctct
+    LEFT JOIN ctc_template_components AS ctctc
+      ON ctct.id = ctctc.template_id
+    ORDER BY ctct.id DESC
+  `);
+
+    const grouped = rows.reduce((acc, row) => {
+      // if template not added yet
+      if (!acc[row.id]) {
+        acc[row.id] = {
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          is_active: row.is_active,
+          is_default: row.is_default,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          components: [],
+        };
+      }
+
+      // push component if exists
+      if (row.template_component_id) {
+        acc[row.id].components.push({
+          id: row.template_component_id,
+          name: row.component_name,
+          type: row.component_type,
+          value: row.value,
+          is_taxable: row.is_taxable,
+        });
+      }
+
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
   },
 
   // =====================================================
   // DELETE TEMPLATE
   // =====================================================
   deleteTemplate: async (template_id) => {
-    const connection = await db.getConnection();
+    const connection = await pool.getConnection();
 
     try {
       await connection.beginTransaction();

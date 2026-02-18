@@ -1,3 +1,4 @@
+const { query } = require("../config/db");
 const CTCTemplateModel = require("../models/ctcTemplate.model");
 
 const CTCTemplateController = {
@@ -5,6 +6,7 @@ const CTCTemplateController = {
   // CREATE TEMPLATE
   // =====================================================
   createTemplate: async (req, res) => {
+    console.log(req.body);
     try {
       const { name, description, is_default, components } = req.body;
 
@@ -34,6 +36,7 @@ const CTCTemplateController = {
       return res.status(201).json({
         message: "CTC template created successfully",
         template_id: templateId,
+        success: true,
       });
     } catch (error) {
       console.error("Create Template Error:", error);
@@ -138,6 +141,54 @@ const CTCTemplateController = {
     }
   },
 
+  setDefaultTemplate: async (req, res) => {
+    try {
+      const { template_id } = req.params;
+
+      await query(
+        "UPDATE ctc_templates SET is_default = 0 WHERE is_default = 1",
+      );
+
+      const updateTemplate = await query(
+        "UPDATE ctc_templates SET is_default = 1 WHERE id = ?",
+        [template_id],
+      );
+
+      return res.status(200).json({
+        message: "Template set to default.",
+        success: true,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        message: "Internal Server Error.",
+      });
+    }
+  },
+
+  toggleActiveTemplate: async (req, res) => {
+    try {
+      const { template_id } = req.params;
+
+      const updateTemplate = await query(
+        `UPDATE ctc_templates 
+SET is_active = NOT is_active 
+WHERE id = ?`,
+        [template_id],
+      );
+
+      return res.status(200).json({
+        message: "Template updated successfully.",
+        success: true,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        message: "Internal Server Error.",
+      });
+    }
+  },
+
   // =====================================================
   // DELETE TEMPLATE
   // =====================================================
@@ -155,6 +206,7 @@ const CTCTemplateController = {
 
       return res.status(200).json({
         message: "Template deleted successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Delete Template Error:", error);

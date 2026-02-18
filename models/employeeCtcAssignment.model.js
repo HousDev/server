@@ -1,4 +1,4 @@
-const db = require("../config/db");
+const { query } = require("../config/db");
 
 const EmployeeCTCAssignmentModel = {
   // =====================================================
@@ -10,7 +10,7 @@ const EmployeeCTCAssignmentModel = {
     ctc_amount,
     effective_from,
   }) => {
-    const query = `
+    const sql = `
       INSERT INTO employee_ctc_assignments (
         employee_id,
         template_id,
@@ -20,7 +20,7 @@ const EmployeeCTCAssignmentModel = {
       VALUES (?, ?, ?, ?)
     `;
 
-    const [result] = await db.execute(query, [
+    const result = await query(sql, [
       employee_id,
       template_id,
       ctc_amount,
@@ -34,7 +34,7 @@ const EmployeeCTCAssignmentModel = {
   // UPDATE ASSIGNMENT
   // =====================================================
   updateAssignment: async (id, { template_id, ctc_amount, effective_from }) => {
-    const query = `
+    const sql = `
       UPDATE employee_ctc_assignments
       SET template_id = ?,
           ctc_amount = ?,
@@ -42,7 +42,7 @@ const EmployeeCTCAssignmentModel = {
       WHERE id = ?
     `;
 
-    const [result] = await db.execute(query, [
+    const [result] = await query(sql, [
       template_id,
       ctc_amount,
       effective_from,
@@ -56,7 +56,7 @@ const EmployeeCTCAssignmentModel = {
   // GET CURRENT ASSIGNMENT OF EMPLOYEE
   // =====================================================
   getByEmployee: async (employee_id) => {
-    const query = `
+    const sql = `
       SELECT *
       FROM employee_ctc_assignments
       WHERE employee_id = ?
@@ -64,7 +64,7 @@ const EmployeeCTCAssignmentModel = {
       LIMIT 1
     `;
 
-    const [rows] = await db.execute(query, [employee_id]);
+    const [rows] = await query(sql, [employee_id]);
     return rows[0] || null;
   },
 
@@ -72,14 +72,14 @@ const EmployeeCTCAssignmentModel = {
   // GET FULL HISTORY
   // =====================================================
   getHistoryByEmployee: async (employee_id) => {
-    const query = `
+    const sql = `
       SELECT *
       FROM employee_ctc_assignments
       WHERE employee_id = ?
       ORDER BY effective_from DESC
     `;
 
-    const [rows] = await db.execute(query, [employee_id]);
+    const [rows] = await query(sql, [employee_id]);
     return rows;
   },
 
@@ -87,12 +87,12 @@ const EmployeeCTCAssignmentModel = {
   // DELETE ASSIGNMENT
   // =====================================================
   deleteAssignment: async (id) => {
-    const query = `
+    const sql = `
       DELETE FROM employee_ctc_assignments
       WHERE id = ?
     `;
 
-    const [result] = await db.execute(query, [id]);
+    const result = await query(sql, [id]);
     return result.affectedRows > 0;
   },
 };
