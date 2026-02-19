@@ -6,7 +6,11 @@ const EmployeeReimbursementController = {
   // =====================================================
   createRequest: async (req, res) => {
     try {
-      const { employee_id, category, amount, description, doc } = req.body;
+      console.log(req.body);
+      const { employee_id, category, amount, description } = req.body;
+
+      // File comes from multer
+      const doc = req.file ? req.file.filename : null;
 
       if (!employee_id) {
         return res.status(400).json({ message: "Employee ID is required" });
@@ -25,7 +29,7 @@ const EmployeeReimbursementController = {
         category,
         amount,
         description,
-        doc,
+        doc, // now correct file value
       });
 
       return res.status(201).json({

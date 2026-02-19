@@ -108,6 +108,7 @@ const EmployeeAdvanceController = {
       }
 
       return res.status(200).json({
+        success: true,
         message: "Advance approved successfully",
       });
     } catch (error) {
@@ -124,13 +125,17 @@ const EmployeeAdvanceController = {
   rejectAdvance: async (req, res) => {
     try {
       const { id } = req.params;
-      const { rejected_by } = req.body;
+      const { rejected_by, remark } = req.body;
 
       if (!id) {
         return res.status(400).json({ message: "Advance ID is required" });
       }
 
-      const updated = await EmployeeAdvanceModel.rejectAdvance(id, rejected_by);
+      const updated = await EmployeeAdvanceModel.rejectAdvance(
+        id,
+        rejected_by,
+        remark,
+      );
 
       if (!updated) {
         return res.status(404).json({ message: "Advance not found" });
@@ -138,6 +143,7 @@ const EmployeeAdvanceController = {
 
       return res.status(200).json({
         message: "Advance rejected successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Reject Advance Error:", error);
@@ -180,6 +186,7 @@ const EmployeeAdvanceController = {
 
       return res.status(200).json({
         message: "Advance marked as disbursed",
+        success: true,
       });
     } catch (error) {
       console.error("Disburse Error:", error);
