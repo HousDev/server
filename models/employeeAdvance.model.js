@@ -62,7 +62,7 @@ const EmployeeAdvanceModel = {
   // =====================================================
   getAllAdvance: async () => {
     const sql = `
-      SELECT ea.id, ea.employee_id as employee_id, CONCAT(he.first_name ," ",he.last_name) as employee_name, he.employee_code as employee_code, he.salary as salary, he.email as employee_email, he.phone as employee_phone, d.name as employee_department, he.designation as employee_designation, ea.advance_amount as amount,ea.reason_for_advance as reason,ea.required_by as request_date, ea.installments as installments, ea.status as status, ea.approved_by as approved_by, ea.disbursed_at as disbursement_date, ea.total_recovered as total_recovered, ea.balance_amount as balance_amount, ea.monthly_deduction as monthly_deduction, he.salary_type as salary_type  FROM employee_advances as ea LEFT JOIN hrms_employees as he ON he.id=ea.employee_id LEFT JOIN departments as d ON d.id=he.department_id  ORDER BY ea.created_at DESC
+      SELECT ea.id, ea.employee_id as employee_id, CONCAT(he.first_name ," ",he.last_name) as employee_name, he.employee_code as employee_code, he.salary as salary, he.email as employee_email, he.phone as employee_phone, d.name as employee_department, he.designation as employee_designation, ea.advance_amount as amount,ea.reason_for_advance as reason,ea.required_by as request_date, ea.installments as installments, ea.status as status, ea.approved_by as approved_by, ea.disbursed_at as disbursement_date, ea.total_recovered as total_recovered, ea.balance_amount as balance_amount, ea.monthly_deduction as monthly_deduction, he.salary_type as salary_type, ea.remark as remark  FROM employee_advances as ea LEFT JOIN hrms_employees as he ON he.id=ea.employee_id LEFT JOIN departments as d ON d.id=he.department_id  ORDER BY ea.created_at DESC
     `;
 
     const result = await query(sql);
@@ -72,14 +72,14 @@ const EmployeeAdvanceModel = {
   // =====================================================
   // REJECT ADVANCE
   // =====================================================
-  rejectAdvance: async (id, emp_id) => {
+  rejectAdvance: async (id, emp_id, remark) => {
     const sql = `
       UPDATE employee_advances
-      SET status = 'rejected',approved_by=?
+      SET status = 'rejected', approved_by=?, remark = ?
       WHERE id = ?
     `;
 
-    const [result] = await query(sql, [emp_id, id]);
+    const result = await query(sql, [emp_id, remark, id]);
     return result.affectedRows > 0;
   },
 
@@ -94,7 +94,7 @@ const EmployeeAdvanceModel = {
       WHERE id = ?
     `;
 
-    const [result] = await query(sql, [id]);
+    const result = await query(sql, [id]);
     return result.affectedRows > 0;
   },
 

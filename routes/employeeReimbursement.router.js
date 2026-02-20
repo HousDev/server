@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/employeeReimbursement.controller");
+const upload = require("../middleware/upload");
 
 // Create reimbursement
-router.post("/", controller.createRequest);
+router.post("/", upload.single("doc"), controller.createRequest);
 
 // Update (only if pending)
 router.put("/:id", controller.updateRequest);

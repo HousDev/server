@@ -21,6 +21,9 @@ router.get("/employee/:employee_id", controller.getByEmployee);
 router.get("/month/:month/year/:year", controller.getByMonthYear);
 
 // Get single incentive
+router.get("/", controller.getAll);
 router.get("/:id", controller.getById);
+
+router.delete("/:id", controller.deleteIncentive);
 
 module.exports = router;
