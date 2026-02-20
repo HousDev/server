@@ -79,9 +79,9 @@ async function findAllInventory() {
       it.item_sub_category,
       it.unit,
       it.standard_rate,
-      it.location,
       it.description,
-      p.*
+      CONCAT(p.name ," ",
+      p.location ) as location
     FROM inventory inv
     LEFT JOIN items it ON inv.item_id = it.id LEFT JOIN projects as p ON p.id = inv.project_id
     ORDER BY inv.id DESC
