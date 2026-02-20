@@ -38,7 +38,7 @@ const createRequestMaterialModel = async (data) => {
         work,
         start_date,
         remark || null,
-      ]
+      ],
     );
 
     const requestMaterialId = requestResult.insertId;
@@ -55,14 +55,14 @@ const createRequestMaterialModel = async (data) => {
             item.itemId,
             item.required_quantity,
             item.approved_quantity,
-          ]
+          ],
         );
       } else {
         await connection.execute(
           `INSERT INTO request_material_items
          (requestMaterialId, itemId, required_quantity)
          VALUES (?, ?, ?)`,
-          [requestMaterialId, item.itemId, item.required_quantity]
+          [requestMaterialId, item.itemId, item.required_quantity],
         );
       }
     }
@@ -76,7 +76,7 @@ const createRequestMaterialModel = async (data) => {
         "New Material Request.",
         "New Material Request From User" + user[0].full_name,
         "Requirement",
-      ]
+      ],
     );
 
     if (notifyRes.affectedRows === 1)
@@ -85,7 +85,7 @@ const createRequestMaterialModel = async (data) => {
         requestMaterialId,
         "Material Request Created",
         `Material Request Created Request ID: ${requestMaterialId}, By User Id: ${userId}`,
-        userId
+        userId,
       );
 
     await connection.commit();
@@ -111,7 +111,6 @@ const createRequestMaterialModel = async (data) => {
     connection.release();
   }
 };
-
 
 const createPORequestMaterialModel = async (data) => {
   const connection = await pool.getConnection();
@@ -357,7 +356,7 @@ const updateRequestMaterialItemsAndStatusModel = async (
     // 2️⃣ Check if ALL items are approved
     const [rows] = await connection.execute(
       `SELECT COUNT(*) AS total,
-              SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved_count
+              SUM(CASE WHEN status = 'approved' OR status = 'partial'  THEN 1 ELSE 0 END) AS approved_count
        FROM request_material_items
        WHERE requestMaterialId = ?`,
       [materialRequestId],
@@ -367,7 +366,7 @@ const updateRequestMaterialItemsAndStatusModel = async (
 
     // 3️⃣ Update request_material status ONLY if all items approved
 
-    if (Number(total) === Number(approved_count) && total > 0) {
+    if (Number(approved_count) > 0 && total > 0) {
       const [updatedMaterialRequest] = await connection.execute(
         `UPDATE request_material
          SET status = 'approved', updated_at = CURRENT_TIMESTAMP

@@ -150,7 +150,7 @@ async function createInventoryTransactionIssueMaterial(req, res) {
 
     const transaction =
       await inventoryTransactionModel.createInventoryTransactionIssueMaterial(
-        payload
+        payload,
       );
 
     return res.status(201).json({
