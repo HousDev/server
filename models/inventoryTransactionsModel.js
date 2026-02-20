@@ -348,8 +348,12 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
       );
 
       await connection.execute(
-        `UPDATE inventory SET quantity = quantity - ? WHERE id = ?`,
-        [item.quantity, inventoryMaterial.id],
+        `UPDATE inventory SET quantity = quantity - ?, quantity_after_approve = quantity_after_approve + ? WHERE id = ?`,
+        [
+          item.quantity,
+          Number(item.approved_qauntity) - Number(item.quantity),
+          inventoryMaterial.id,
+        ],
       );
     }
 
@@ -367,6 +371,13 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
        WHERE it.id = ?`,
       [transactionId],
     );
+
+    if (transactionData.materialRequest) {
+      await connection.execute(
+        `UPDATE request_material SET status = "completed" WHERE id = ?`,
+        [transactionData.materialRequest],
+      );
+    }
 
     await connection.commit();
 

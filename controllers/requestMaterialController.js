@@ -262,7 +262,7 @@ const updateRequestMaterialStatus = async (req, res) => {
 const updateRequestMaterialItemsAndStatusController = async (req, res) => {
   try {
     const { materialRequestId, items, userId } = req.body; // assuming auth middleware sets req.user
-    console.log(materialRequestId, items, userId);
+
     if (!materialRequestId || !Array.isArray(items)) {
       return res.status(400).json({
         success: false,
