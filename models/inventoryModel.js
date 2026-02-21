@@ -65,6 +65,14 @@ async function findInventoryByItem_id(id) {
   return data[0];
 }
 
+async function findInventoryByItem_idAndProject_id(id, project_id) {
+  const data = await query(
+    "SELECT * FROM inventory WHERE item_id = ? AND project_id = ?",
+    [id, project_id],
+  );
+  return data[0];
+}
+
 /**
  * Find all inventory items - UPDATED WITH JOIN
  */
@@ -94,6 +102,7 @@ module.exports = {
   deleteInventory,
   findInventoryById,
   findAllInventory,
+  findInventoryByItem_idAndProject_id,
   findInventoryByItem_id,
   updateInventoryItemQuantity,
 };
