@@ -49,19 +49,6 @@ exports.createItem = async (req, res) => {
 
     const created = await Items.create(payload);
 
-    if (created.id && payload.category === "material") {
-      const data = {
-        item_id: created.id,
-        name: payload.item_name,
-        description: payload.description,
-        category: payload.category,
-        quantity: 0,
-        reorder_qty: 10,
-        unit: payload.unit,
-        location: payload.location,
-      };
-      const createInventoryRes = await createInventory(data);
-    }
     res.status(201).json(created);
   } catch (err) {
     console.error("createItem error", err);
@@ -144,7 +131,6 @@ exports.importItems = async (req, res) => {
       item.sgst_rate ?? 9,
       item.standard_rate ?? 0,
       item.is_active ?? 1,
-      item.location ?? "",
     ]);
 
     const sql = `
@@ -161,16 +147,12 @@ exports.importItems = async (req, res) => {
         cgst_rate,
         sgst_rate,
         standard_rate,
-        is_active, location
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     values.forEach(async (element) => {
-      const item = await query(sql, element);
-      query(
-        `INSERT INTO inventory(item_id,quantity,quantity_after_approve,reorder_qty) VALUES(?,?,?,?)`,
-        [item.insertId, 0, 0, 10],
-      );
+      await query(sql, element);
     });
 
     res.json({
@@ -211,9 +193,9 @@ exports.getItemCategories = async (req, res) => {
     res.json(categories);
   } catch (err) {
     console.error("getItemCategories error", err);
-    res.status(500).json({ 
-      message: "Server error", 
-      error: err.message || err 
+    res.status(500).json({
+      message: "Server error",
+      error: err.message || err,
     });
   }
 };
@@ -225,9 +207,9 @@ exports.getItemSubCategories = async (req, res) => {
     res.json(subCategories);
   } catch (err) {
     console.error("getItemSubCategories error", err);
-    res.status(500).json({ 
-      message: "Server error", 
-      error: err.message || err 
+    res.status(500).json({
+      message: "Server error",
+      error: err.message || err,
     });
   }
 };
@@ -240,9 +222,9 @@ exports.getItemsByCategory = async (req, res) => {
     res.json(items);
   } catch (err) {
     console.error("getItemsByCategory error", err);
-    res.status(500).json({ 
-      message: "Server error", 
-      error: err.message || err 
+    res.status(500).json({
+      message: "Server error",
+      error: err.message || err,
     });
   }
 };
@@ -253,14 +235,14 @@ exports.getItemsBySubCategory = async (req, res) => {
     const { subCategory } = req.params;
     const [rows] = await query(
       "SELECT * FROM items WHERE item_sub_category = ? ORDER BY item_name",
-      [subCategory]
+      [subCategory],
     );
     res.json(rows);
   } catch (err) {
     console.error("getItemsBySubCategory error", err);
-    res.status(500).json({ 
-      message: "Server error", 
-      error: err.message || err 
+    res.status(500).json({
+      message: "Server error",
+      error: err.message || err,
     });
   }
 };

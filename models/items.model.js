@@ -41,8 +41,8 @@ const create = async (data) => {
 
   const [result] = await promisePool.query(
     `INSERT INTO items
-      (item_code, item_name, category, description, unit, hsn_code, igst_rate, cgst_rate, sgst_rate, standard_rate, is_active,location)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (item_code, item_name, category, description, unit, hsn_code, igst_rate, cgst_rate, sgst_rate, standard_rate, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item_code,
       item_name,
@@ -55,7 +55,6 @@ const create = async (data) => {
       sgst_rate,
       standard_rate,
       is_active ? 1 : 0,
-      location,
     ],
   );
 
@@ -136,9 +135,9 @@ const toggleActive = async (id) => {
 const getItemCategories = async () => {
   try {
     const [rows] = await promisePool.query(
-      "SELECT DISTINCT item_category FROM items WHERE item_category IS NOT NULL AND item_category != '' ORDER BY item_category"
+      "SELECT DISTINCT item_category FROM items WHERE item_category IS NOT NULL AND item_category != '' ORDER BY item_category",
     );
-    return rows.map(row => row.item_category).filter(Boolean);
+    return rows.map((row) => row.item_category).filter(Boolean);
   } catch (error) {
     console.error("Error fetching item categories:", error);
     return [];
@@ -149,9 +148,9 @@ const getItemCategories = async () => {
 const getItemSubCategories = async () => {
   try {
     const [rows] = await promisePool.query(
-      "SELECT DISTINCT item_sub_category FROM items WHERE item_sub_category IS NOT NULL AND item_sub_category != '' ORDER BY item_sub_category"
+      "SELECT DISTINCT item_sub_category FROM items WHERE item_sub_category IS NOT NULL AND item_sub_category != '' ORDER BY item_sub_category",
     );
-    return rows.map(row => row.item_sub_category).filter(Boolean);
+    return rows.map((row) => row.item_sub_category).filter(Boolean);
   } catch (error) {
     console.error("Error fetching item sub-categories:", error);
     return [];
@@ -163,7 +162,7 @@ const findByCategory = async (category) => {
   try {
     const [rows] = await promisePool.query(
       "SELECT * FROM items WHERE item_category = ? ORDER BY item_name",
-      [category]
+      [category],
     );
     return rows;
   } catch (error) {
@@ -181,5 +180,5 @@ module.exports = {
   toggleActive,
   getItemCategories, // ✅ ADD THIS
   getItemSubCategories, // ✅ ADD THIS
-  findByCategory, // 
+  findByCategory, //
 };

@@ -72,7 +72,7 @@ async function createInventoryTransactionOut(req, res) {
       ...req.body,
       items,
     };
-
+    console.log(payload);
     // 🔴 Required field validation
     if (
       !payload.receiving_date ||
@@ -117,7 +117,6 @@ async function createInventoryTransactionIssueMaterial(req, res) {
   try {
     // 🔹 Parse items JSON
     let items = req.body.materials;
-
     const payload = {
       ...req.body,
       items,

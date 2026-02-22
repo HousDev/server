@@ -40,14 +40,40 @@ const createInventoryTransaction = async (transactionData) => {
       ],
     );
 
+    const [poDetails] = await query(
+      `SELECT po.project_id AS project_id FROM purchase_orders as po LEFT JOIN projects AS p ON p.id = po.project_id WHERE po.id = ?`,
+      [po_id],
+    );
+    console.log(poDetails);
+
     const transactionId = trxResult.insertId;
     let receivedMaterialAmount = 0;
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
-      const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
-        item.id,
-      );
+      const inventoryMaterial =
+        await inventoryModel.findInventoryByItem_idAndProject_id(
+          item.id,
+          poDetails.project_id,
+        );
+      let newInventory;
 
+      if (inventoryMaterial) {
+        await connection.execute(
+          `UPDATE inventory SET quantity = quantity + ?, quantity_after_approve = quantity_after_approve+? WHERE id = ?`,
+          [item.quantity_issued, item.quantity_issued, inventoryMaterial.id],
+        );
+      } else {
+        [newInventory] = await connection.execute(
+          `INSERT INTO inventory (item_id,quantity,quantity_after_approve,reorder_qty,project_id) VALUES(?, ?, ?, ?, ?)`,
+          [
+            item.id,
+            item.quantity_issued,
+            item.quantity_issued,
+            10,
+            poDetails.project_id,
+          ],
+        );
+      }
       const [[itemDetails]] = await connection.query(
         "SELECT * FROM purchase_order_items WHERE item_id = ? AND po_id = ?",
         [item.id, po_id],
@@ -61,7 +87,9 @@ const createInventoryTransaction = async (transactionData) => {
           transactionId,
           item.id,
           item.quantity_issued,
-          inventoryMaterial.quantity,
+          inventoryMaterial
+            ? inventoryMaterial.quantity
+            : newInventory.insertId,
         ],
       );
 
@@ -91,14 +119,13 @@ const createInventoryTransaction = async (transactionData) => {
       );
 
       const [[findPoStatus]] = await connection.execute(
-        `
-  SELECT
-    SUM(status = 'pending')   AS pending_count,
-    SUM(status = 'partial')   AS partial_count,
-    SUM(status = 'completed') AS completed_count
-  FROM po_material_tracking
-  WHERE po_id = ?
-  `,
+        `SELECT
+         SUM(status = 'pending')   AS pending_count,
+         SUM(status = 'partial')   AS partial_count,
+         SUM(status = 'completed') AS completed_count
+         FROM po_material_tracking
+         WHERE po_id = ?
+        `,
         [po_id],
       );
 
@@ -113,11 +140,6 @@ const createInventoryTransaction = async (transactionData) => {
       await connection.execute(
         `UPDATE purchase_orders SET material_status = ? WHERE id = ?`,
         [po_material_status, po_id],
-      );
-
-      await connection.execute(
-        `UPDATE inventory SET quantity = quantity + ?, quantity_after_approve = quantity_after_approve+? WHERE id = ?`,
-        [item.quantity_issued, item.quantity_issued, inventoryMaterial.id],
       );
 
       receivedMaterialAmount +=
@@ -230,9 +252,11 @@ const createInventoryTransactionOut = async (transactionData) => {
 
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
-      const inventoryMaterial = await inventoryModel.findInventoryByItem_id(
-        item.materialId,
-      );
+      const inventoryMaterial =
+        await inventoryModel.findInventoryByItem_idAndProject_id(
+          item.materialId,
+          item.project_id,
+        );
 
       await connection.execute(
         `INSERT INTO inventory_transactions_items
@@ -247,8 +271,8 @@ const createInventoryTransactionOut = async (transactionData) => {
       );
 
       await connection.execute(
-        `UPDATE inventory SET quantity = quantity - ? WHERE id = ?`,
-        [item.quantity, inventoryMaterial.id],
+        `UPDATE inventory SET quantity = quantity - ?, quantity_after_approve = quantity_after_approve - ? WHERE id = ?`,
+        [item.quantity, item.quantity, inventoryMaterial.id],
       );
     }
 
@@ -331,9 +355,11 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
 
     // 2️⃣ Items + inventory + PO tracking
     for (const item of items) {
-      const inventoryMaterial = await inventoryModel.findInventoryById(
-        item.materialId,
-      );
+      const inventoryMaterial =
+        await inventoryModel.findInventoryByItem_idAndProject_id(
+          item.item_id,
+          projectId,
+        );
 
       await connection.execute(
         `INSERT INTO issue_material_transactions_items
