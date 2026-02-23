@@ -7,7 +7,7 @@ const upload = require("../middleware/upload"); // Adjust path as needed
 // GET /api/area-sub-tasks?area_task_id=12
 router.get("/", controller.findAll);
 router.get("/subTasks/:areaId", controller.findAllByAreaId);
-router.get("/engineer/:engId", controller.findAllByEngineerId);
+router.get("/engineer/:engId/:projectId", controller.findAllByEngineerId);
 
 router.get("/tasks/:projectId", controller.findTaskByProjects);
 
