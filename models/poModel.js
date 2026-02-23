@@ -328,12 +328,13 @@ async function updatePO_Status(id, status) {
               `INSERT INTO po_payments (
         po_id,
         total_amount,
+        payment_type,
         amount_paid,
         balance_amount,
         payment_due_date,
         status
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-              [id, balance, 0, balance, date, "PENDING"],
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [id, balance, t.event_trigger, 0, balance, date, "PENDING"],
             );
           }
         }

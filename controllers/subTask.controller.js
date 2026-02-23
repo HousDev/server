@@ -5,7 +5,7 @@ const dailyLogModel = require("../models/subTaskLog.model");
  * Helper: recalculate progress from daily logs
  */
 const recalculateProgress = async (area_sub_task_id) => {
-  console.log(" calculate");
+ 
   const subTask = await subTaskModel.findById(area_sub_task_id);
   if (!subTask) return;
 
@@ -38,6 +38,20 @@ exports.findAll = async (req, res) => {
   }
 };
 
+exports.findAllByEngineerId = async (req, res) => {
+  try {
+    const { engId } = req.params;
+    if (!engId) {
+      return res.status(400).json({ message: "Engineer Id not found." });
+    }
+
+    const subTasks = await subTaskModel.findAllByEngineer(engId);
+    res.json(subTasks);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.findAllByAreaId = async (req, res) => {
   try {
     const areaId = req.params.areaId;
@@ -54,7 +68,6 @@ exports.findAllByAreaId = async (req, res) => {
 exports.findTaskByProjects = async (req, res) => {
   try {
     const projectId = req.params.projectId;
-    console.log("asdflkjsd", projectId);
     if (!projectId) {
       return res.status(400).json({ message: "areaId required." });
     }
@@ -108,6 +121,78 @@ exports.create = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.engineerUpdateTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payload = req.body;
+    // Required fields validation
+    if (
+      !payload.engineer_id ||
+      !payload.unit ||
+      !payload.total_work ||
+      !payload.start_date ||
+      !payload.end_date
+    ) {
+      return res.status(404).json({ message: "Fill all required fields" });
+    }
+    // Handle uploaded files if any
+    if (req.files && req.files.length > 0) {
+      // Add photos information to payload
+      payload.work_proof_photos = req.files.map(
+        (file) => "/uploads/" + file.filename,
+      );
+    }
+
+    // Parse numeric fields if they exist
+    if (payload.today_work_completed) {
+      payload.today_work_completed = parseFloat(payload.today_work_completed);
+    }
+
+    // Add timestamps for work update
+    payload.last_updated_at = new Date();
+    if (payload.today_work_completed) {
+      payload.last_work_update = new Date();
+    }
+
+    const subTask = await subTaskModel.updateEngineerTask(
+      req.params.id,
+      payload,
+    );
+
+    if (!subTask) {
+      // If update fails, you might want to delete uploaded files
+      if (req.files && req.files.length > 0) {
+        const fs = require("fs");
+        req.files.forEach((file) => {
+          fs.unlink(file.path, (err) => {
+            if (err) console.error("Error deleting file:", err);
+          });
+        });
+      }
+      return res.status(404).json({ message: "Sub-task not found" });
+    }
+
+    res.json({
+      message: "Sub-task updated successfully",
+      subTask,
+      success: true,
+    });
+  } catch (err) {
+    console.log(err);
+    // Clean up uploaded files on error
+    if (req.files && req.files.length > 0) {
+      const fs = require("fs");
+      req.files.forEach((file) => {
+        fs.unlink(file.path, (err) => {
+          if (err) console.error("Error deleting file:", err);
+        });
+      });
+    }
+    res.status(500).json({ message: err.message });
+  }
+};
+
 
 /**
  * Update sub-task

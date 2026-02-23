@@ -1,26 +1,36 @@
 // backend/models/subTask.model.js
-const { promisePool } = require("../config/db");
+const { promisePool, pool } = require("../config/db");
 
 /**
  * Get all sub-tasks (optionally by main task)
  */
 const findAll = async (filters = {}) => {
-  let sql = "SELECT * FROM area_sub_tasks WHERE 1=1";
-  const values = [];
+  let sql = `SELECT ast.*,atwl.id AS log_id,atwl.work_done AS log_work_done, atwl.work_unit AS log_work_unit, 
+  atwl.photos, atwl.issue, atwl.created_by AS log_created_by 
+  FROM area_sub_tasks AS ast LEFT JOIN area_task_work_logs AS atwl ON atwl.area_sub_task_id = ast.id 
+  ORDER BY ast.created_at DESC`;
 
-  if (filters.area_task_id) {
-    sql += " AND area_task_id = ?";
-    values.push(filters.area_task_id);
-  }
+  const [rows] = await promisePool.query(sql);
+  return rows;
+};
 
-  sql += " ORDER BY created_at ASC";
+const findAllByEngineer = async (engId) => {
+  let sql = `SELECT ast.*,atwl.id AS log_id,atwl.work_done AS log_work_done, atwl.work_unit AS log_work_unit, 
+  atwl.photos, atwl.issue, u.full_name AS log_created_by 
+  FROM area_sub_tasks AS ast LEFT JOIN area_task_work_logs AS atwl ON atwl.area_sub_task_id = ast.id LEFT JOIN users AS u
+  ON u.id=atwl.created_by  where ast.engineer_id = ?
+  ORDER BY ast.created_at DESC`;
 
-  const [rows] = await promisePool.query(sql, values);
+  const [rows] = await promisePool.query(sql, [engId]);
   return rows;
 };
 
 const findAllTaskByProjectId = async (projectId) => {
-  const sql = "SELECT * FROM area_sub_tasks WHERE project_id=?";
+  const sql = `SELECT ast.*,atwl.id AS log_id,atwl.work_done AS log_work_done, atwl.work_unit AS log_work_unit, 
+  atwl.photos, atwl.issue, u.full_name AS log_created_by 
+  FROM area_sub_tasks AS ast LEFT JOIN area_task_work_logs AS atwl ON atwl.area_sub_task_id = ast.id LEFT JOIN users AS u
+  ON u.id=atwl.created_by  where ast.project_id = ?
+  ORDER BY ast.created_at DESC`;
 
   const [rows] = await promisePool.query(sql, [projectId]);
   return rows;
@@ -85,6 +95,7 @@ const create = async (data) => {
     common_area_id || null,
     area_id || null,
     engineer_id,
+    findAllByEngineer,
     name,
     unit,
     total_work,
@@ -121,6 +132,61 @@ const update = async (id, data) => {
   return await findById(id);
 };
 
+const updateEngineerTask = async (id, data) => {
+  // Use destructuring and provide default fallbacks
+  try {
+    const {
+      today_work_completed,
+      today_work_unit,
+      issue,
+      engineer_id,
+      work_proof_photos,
+      total_work,
+    } = data;
+
+    const conn = await pool.getConnection();
+    await conn.beginTransaction();
+    const work_done =
+      today_work_unit === "sqm"
+        ? Number(today_work_completed) * 10.7639
+        : today_work_completed;
+    const progress = (Number(today_work_completed) * 100) / Number(total_work);
+    const sql = `
+    UPDATE area_sub_tasks
+    SET work_done=work_done + ?, progress=?, status=?
+    WHERE id = ?
+  `;
+
+    await conn.query(sql, [
+      work_done,
+      progress,
+      Number(progress) > 0 || Number(progress) < 100
+        ? "in progress"
+        : Number(progress) >= 100
+          ? "completed"
+          : "pending",
+      id,
+    ]);
+
+    await conn.query(
+      `INSERT INTO area_task_work_logs(area_sub_task_id, work_done, work_unit, photos, issue, created_by) VALUES(?,?,?,?,?,?)`,
+      [
+        id,
+        today_work_completed,
+        today_work_unit,
+        JSON.stringify(work_proof_photos),
+        issue,
+        engineer_id,
+      ],
+    );
+
+    await conn.commit();
+    return await findById(id);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 /**
  * Delete sub-task
  */
@@ -148,9 +214,11 @@ module.exports = {
   findAll,
   findById,
   findAllTaskByProjectId,
+  findAllByEngineer,
   create,
   findAllByAreaId,
   update,
   remove,
   updateProgress,
+  updateEngineerTask,
 };

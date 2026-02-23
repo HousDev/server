@@ -188,12 +188,13 @@ const createInventoryTransaction = async (transactionData) => {
             `INSERT INTO po_payments (
         po_id,
         total_amount,
+        payment_type,
         amount_paid,
         balance_amount,
         payment_due_date,
         status
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-            [po_id, balance, 0, balance, date, "PENDING"],
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [po_id, balance, t.event_trigger, 0, balance, date, "PENDING"],
           );
         }
       }
