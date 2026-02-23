@@ -253,6 +253,7 @@ const EmployeeAdvanceController = {
   getByEmployee: async (req, res) => {
     try {
       const { employee_id } = req.params;
+      console.log(employee_id);
 
       if (!employee_id) {
         return res.status(400).json({ message: "Employee ID is required" });
