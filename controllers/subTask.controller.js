@@ -5,7 +5,6 @@ const dailyLogModel = require("../models/subTaskLog.model");
  * Helper: recalculate progress from daily logs
  */
 const recalculateProgress = async (area_sub_task_id) => {
- 
   const subTask = await subTaskModel.findById(area_sub_task_id);
   if (!subTask) return;
 
@@ -40,12 +39,13 @@ exports.findAll = async (req, res) => {
 
 exports.findAllByEngineerId = async (req, res) => {
   try {
-    const { engId } = req.params;
+    const { engId, projectId } = req.params;
+    console.log(projectId, "project id");
     if (!engId) {
       return res.status(400).json({ message: "Engineer Id not found." });
     }
 
-    const subTasks = await subTaskModel.findAllByEngineer(engId);
+    const subTasks = await subTaskModel.findAllByEngineer(engId, projectId);
     res.json(subTasks);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -192,7 +192,6 @@ exports.engineerUpdateTask = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 /**
  * Update sub-task
