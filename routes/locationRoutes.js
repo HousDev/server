@@ -5,12 +5,6 @@ const LocationController = require("../controllers/locationController");
 const { query: dbQuery } = require("../config/db");
 const authMiddleware = require("../middleware/authMiddleware");
 
-// UUID validator
-const validateUUID = param("id")
-  .isString()
-  .matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-  .withMessage("Invalid UUID format");
-
 // Validation schemas
 const createLocationValidation = [
   body("country")
@@ -40,11 +34,10 @@ const createLocationValidation = [
   body("is_active")
     .optional()
     .isBoolean()
-    .withMessage("is_active must be boolean")
+    .withMessage("is_active must be boolean"),
 ];
 
 const updateLocationValidation = [
-  validateUUID,
   body("country")
     .optional()
     .trim()
@@ -68,29 +61,31 @@ const updateLocationValidation = [
   body("is_active")
     .optional()
     .isBoolean()
-    .withMessage("is_active must be boolean")
+    .withMessage("is_active must be boolean"),
 ];
 
 // Apply auth middleware
 router.use(authMiddleware);
 
 // Test endpoints for debugging
-router.get("/test/all", async (req, res) => {
+router.get("/all", async (req, res) => {
   try {
-    const rows = await dbQuery("SELECT * FROM locations ORDER BY created_at DESC");
-    
+    const rows = await dbQuery(
+      "SELECT * FROM locations ORDER BY created_at DESC",
+    );
+
     res.json({
       success: true,
       total_count: rows.length,
       data: rows,
-      message: "All locations (raw database query)"
+      message: "All locations (raw database query)",
     });
   } catch (error) {
     console.error("Error fetching all locations:", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch all locations",
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -108,9 +103,9 @@ router.get(
     query("query")
       .trim()
       .isLength({ min: 2 })
-      .withMessage("Search query must be at least 2 characters")
+      .withMessage("Search query must be at least 2 characters"),
   ],
-  LocationController.searchLocations
+  LocationController.searchLocations,
 );
 
 // Get unique countries
@@ -135,7 +130,7 @@ router.get("/state/:state", LocationController.getLocationsByState);
 router.get("/city/:city", LocationController.getLocationsByCity);
 
 // Get location by ID
-router.get("/:id", [validateUUID], LocationController.getLocationById);
+router.get("/:id", LocationController.getLocationById);
 
 // Create location
 router.post("/", createLocationValidation, LocationController.createLocation);
@@ -144,16 +139,16 @@ router.post("/", createLocationValidation, LocationController.createLocation);
 router.put("/:id", updateLocationValidation, LocationController.updateLocation);
 
 // Delete location
-router.delete("/:id", [validateUUID], LocationController.deleteLocation);
+router.delete("/:id", LocationController.deleteLocation);
 
 // Toggle location active status
-router.patch("/:id/toggle", [validateUUID], LocationController.toggleLocationActive);
+router.patch("/:id/toggle", LocationController.toggleLocationActive);
 
 // 404 handler
 router.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Location API endpoint not found"
+    message: "Location API endpoint not found",
   });
 });
 
