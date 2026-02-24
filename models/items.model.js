@@ -36,13 +36,13 @@ const create = async (data) => {
     sgst_rate = 0,
     standard_rate = 0,
     is_active = 1,
-    location,
+    work_type,
   } = data;
 
   const [result] = await promisePool.query(
     `INSERT INTO items
-      (item_code, item_name, category, description, unit, hsn_code, igst_rate, cgst_rate, sgst_rate, standard_rate, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (item_code, item_name, category, description, unit, hsn_code, igst_rate, cgst_rate, sgst_rate, standard_rate, is_active, work_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item_code,
       item_name,
@@ -55,6 +55,7 @@ const create = async (data) => {
       sgst_rate,
       standard_rate,
       is_active ? 1 : 0,
+      work_type,
     ],
   );
 
@@ -67,7 +68,6 @@ const update = async (id, data) => {
   const vals = [];
 
   const allowed = [
-    "item_code",
     "item_name",
     "category",
     "description",
@@ -78,7 +78,7 @@ const update = async (id, data) => {
     "sgst_rate",
     "standard_rate",
     "is_active",
-    "location",
+    "work_type",
   ];
   allowed.forEach((k) => {
     if (Object.prototype.hasOwnProperty.call(data, k)) {

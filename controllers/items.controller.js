@@ -32,6 +32,7 @@ exports.getItem = async (req, res) => {
 exports.createItem = async (req, res) => {
   try {
     const payload = req.body;
+    console.log(req.body);
     if (
       !payload.item_code ||
       !payload.item_name ||
@@ -40,7 +41,6 @@ exports.createItem = async (req, res) => {
     ) {
       return res.status(400).json({ message: "all fields are required" });
     }
-
     // check duplicate code
     const existing = await Items.findByCode(payload.item_code);
     if (existing) {
@@ -62,14 +62,6 @@ exports.updateItem = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const payload = req.body;
-
-    // if updating code, ensure uniqueness
-    if (payload.item_code) {
-      const found = await Items.findByCode(payload.item_code);
-      if (found && found.id !== id) {
-        return res.status(409).json({ message: "Item code already exists" });
-      }
-    }
 
     const updated = await Items.update(id, payload);
     if (!updated) return res.status(404).json({ message: "Item not found" });
@@ -131,6 +123,7 @@ exports.importItems = async (req, res) => {
       item.sgst_rate ?? 9,
       item.standard_rate ?? 0,
       item.is_active ?? 1,
+      item.work_type,
     ]);
 
     const sql = `
@@ -147,8 +140,9 @@ exports.importItems = async (req, res) => {
         cgst_rate,
         sgst_rate,
         standard_rate,
-        is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        is_active,
+        work_type
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     values.forEach(async (element) => {
@@ -158,6 +152,7 @@ exports.importItems = async (req, res) => {
     res.json({
       success: true,
       inserted: values.length,
+      message: "Bulk Import Successfull.",
     });
   } catch (err) {
     console.error(err);
