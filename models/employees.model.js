@@ -521,7 +521,7 @@ const update = async (id, data) => {
     const fields = [];
     const values = [];
 
-    // Check which columns exist
+    // ✅ Check optional columns
     const hasCompanyIdColumn = await checkColumnExists(
       "hrms_employees",
       "company_id",
@@ -540,75 +540,92 @@ const update = async (id, data) => {
       "date_of_leaving",
     );
 
-    // Parse allotted_project - convert array to JSON string
+    // =====================================================
+    // 🔥 FIX 1: Convert empty DATE fields to NULL
+    // =====================================================
+    const dateFields = ["date_of_birth", "joining_date", "date_of_leaving"];
+
+    dateFields.forEach((field) => {
+      if (data[field] === "") {
+        data[field] = null;
+      }
+    });
+
+    // =====================================================
+    // 🔥 FIX 2: Convert empty string to NULL for numeric fields
+    // =====================================================
+    const numericFields = [
+      "salary",
+      "notice_period",
+      "probation_period",
+      "company_id",
+    ];
+
+    numericFields.forEach((field) => {
+      if (data[field] === "") {
+        data[field] = null;
+      }
+    });
+
+    // =====================================================
+    // 🔥 Parse allotted_project
+    // =====================================================
     if (data.allotted_project !== undefined) {
-      let allottedProjectValue = null;
+      let value = null;
+
       if (
         Array.isArray(data.allotted_project) &&
         data.allotted_project.length > 0
       ) {
-        allottedProjectValue = JSON.stringify(
+        value = JSON.stringify(
           data.allotted_project.map((id) => parseInt(id)).filter(Boolean),
         );
-      } else if (typeof data.allotted_project === "number") {
-        allottedProjectValue = JSON.stringify([data.allotted_project]);
       } else if (typeof data.allotted_project === "string") {
         try {
           const parsed = JSON.parse(data.allotted_project);
           if (Array.isArray(parsed)) {
-            allottedProjectValue = JSON.stringify(
+            value = JSON.stringify(
               parsed.map((id) => parseInt(id)).filter(Boolean),
             );
-          } else {
-            const num = parseInt(data.allotted_project);
-            allottedProjectValue = isNaN(num) ? null : JSON.stringify([num]);
           }
         } catch {
           const num = parseInt(data.allotted_project);
-          allottedProjectValue = isNaN(num) ? null : JSON.stringify([num]);
+          value = isNaN(num) ? null : JSON.stringify([num]);
         }
-      } else if (
-        data.allotted_project === null ||
-        data.allotted_project === ""
-      ) {
-        allottedProjectValue = null;
       }
 
-      data.allotted_project = allottedProjectValue;
+      data.allotted_project = value;
     }
 
-    // Parse attendance_location - convert array to JSON string
+    // =====================================================
+    // 🔥 Parse attendence_location
+    // =====================================================
     if (data.attendence_location !== undefined) {
-      let attendanceLocationValue = null;
+      let value = null;
+
       if (
         Array.isArray(data.attendence_location) &&
         data.attendence_location.length > 0
       ) {
-        attendanceLocationValue = JSON.stringify(data.attendence_location);
+        value = JSON.stringify(data.attendence_location);
       } else if (typeof data.attendence_location === "string") {
         try {
           const parsed = JSON.parse(data.attendence_location);
           if (Array.isArray(parsed)) {
-            attendanceLocationValue = JSON.stringify(parsed);
-          } else {
-            attendanceLocationValue = data.attendence_location;
+            value = JSON.stringify(parsed);
           }
         } catch {
-          attendanceLocationValue = data.attendence_location;
+          value = data.attendence_location || null;
         }
-      } else if (
-        data.attendence_location === null ||
-        data.attendence_location === ""
-      ) {
-        attendanceLocationValue = null;
       }
 
-      data.attendence_location = attendanceLocationValue;
+      data.attendence_location = value;
     }
 
-    // Base allowed fields - ONLY fields that exist in your table
+    // =====================================================
+    // ✅ Allowed fields
+    // =====================================================
     const allowedFields = [
-      // Basic Details
       "first_name",
       "last_name",
       "email",
@@ -623,8 +640,6 @@ const update = async (id, data) => {
       "profile_picture",
       "employee_code",
       "employee_status",
-
-      // Personal Details
       "blood_group",
       "date_of_birth",
       "marital_status",
@@ -632,53 +647,42 @@ const update = async (id, data) => {
       "emergency_contact_relationship",
       "emergency_contact_name",
       "nationality",
-
-      // Address Details
       "current_address",
       "permanent_address",
       "city",
       "state",
       "pincode",
       "same_as_permanent",
-
-      // Identification
       "aadhar_number",
       "pan_number",
-
-      // Educational Details
       "highest_qualification",
       "university",
       "passing_year",
       "percentage",
-
-      // Employment Details
       "employee_type",
       "probation_period",
       "work_mode",
       "notice_period",
-
-      // System Details
       "laptop_assigned",
       "system_login_id",
       "system_password",
       "office_email_id",
       "office_email_password",
-
-      // Bank Details
       "bank_account_number",
       "bank_name",
       "ifsc_code",
       "upi_id",
     ];
 
-    // Add optional fields if they exist
     if (hasMiddleNameColumn) allowedFields.push("middle_name");
     if (hasCompanyIdColumn) allowedFields.push("company_id");
     if (hasSalaryColumn) allowedFields.push("salary");
     if (hasSalaryTypeColumn) allowedFields.push("salary_type");
     if (hasDateOfLeavingColumn) allowedFields.push("date_of_leaving");
 
-    // Add fields to update - REMOVE designation_id as it doesn't exist
+    // =====================================================
+    // ✅ Build dynamic query
+    // =====================================================
     allowedFields.forEach((key) => {
       if (
         Object.prototype.hasOwnProperty.call(data, key) &&
@@ -699,7 +703,6 @@ const update = async (id, data) => {
 
     await promisePool.query(sql, values);
 
-    // Return updated employee
     return await findById(id);
   } catch (error) {
     console.error("Update employee error:", error);
