@@ -51,6 +51,7 @@ const employeeCtcAssign = require("./routes/employeeCtcAssignment.route.js");
 const employeeAdvance = require("./routes/employeeAdvance.router.js");
 const employeeIncentive = require("./routes/employeeIncentive.router.js");
 const employeeReimbursement = require("./routes/employeeReimbursement.router.js");
+const woPaymentRouter = require("./routes/woPayment.Router.js");
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/po_types", poTypesRoutes);
 app.use("/api/service-types", serviceTypesRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
+app.use("/api/wo_payments", woPaymentRouter);
 app.use("/api/designations", designationRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/settings", settingsRoutes);

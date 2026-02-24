@@ -83,7 +83,7 @@ const create = async (data) => {
     start_date,
     end_date,
   } = data;
-
+  console.log(data);
   const sql = `
     INSERT INTO area_sub_tasks
       (project_id, building_id, floor_id, flat_id, common_area_id, area_id, engineer_id, name, unit, total_work,  start_date, end_date, progress, status)
@@ -98,7 +98,6 @@ const create = async (data) => {
     common_area_id || null,
     area_id || null,
     engineer_id,
-    findAllByEngineer,
     name,
     unit,
     total_work,
@@ -107,6 +106,16 @@ const create = async (data) => {
     0.0,
     "pending",
   ]);
+
+  await promisePool.query(
+    `INSERT INTO notifications (title, description, type)
+     VALUES (?, ?, ?)`,
+    [
+      "New Task Assigned",
+      "You have new task check in task management.",
+      "Info",
+    ],
+  );
 
   return await findById(result.insertId);
 };
@@ -153,7 +162,14 @@ const updateEngineerTask = async (id, data) => {
       today_work_unit === "sqm"
         ? Number(today_work_completed) * 10.7639
         : today_work_completed;
-    const progress = (Number(today_work_completed) * 100) / Number(total_work);
+    const [[ast]] = await conn.query(
+      "SELECT * FROM area_sub_tasks WHERE id = ?",
+      [id],
+    );
+    const progress =
+      (Number(today_work_completed) * 100) / Number(total_work) +
+      Number(ast.progress);
+
     const sql = `
     UPDATE area_sub_tasks
     SET work_done=work_done + ?, progress=?, status=?
@@ -163,7 +179,7 @@ const updateEngineerTask = async (id, data) => {
     await conn.query(sql, [
       work_done,
       progress,
-      Number(progress) > 0 || Number(progress) < 100
+      Number(progress) > 0 && Number(progress) < 100
         ? "in progress"
         : Number(progress) >= 100
           ? "completed"
@@ -180,6 +196,16 @@ const updateEngineerTask = async (id, data) => {
         JSON.stringify(work_proof_photos),
         issue,
         engineer_id,
+      ],
+    );
+
+    await conn.query(
+      `INSERT INTO notifications (title, description, type)
+     VALUES (?, ?, ?)`,
+      [
+        "Task Updated",
+        `Task updated by user ${engineer_id}, check in task management for details.`,
+        "Info",
       ],
     );
 

@@ -11,7 +11,6 @@ const createWoPayment = async (data) => {
 
     const {
       wo_id,
-      wo_payment_id,
       transaction_type,
       amount_paid,
       payment_method,
@@ -36,37 +35,26 @@ const createWoPayment = async (data) => {
       throw new Error("Work Order not found");
     }
 
-    let newBalance = Number(wo.balance_amount);
-    let totalPaid = Number(wo.total_paid);
-    let result;
-
     if (status === "SUCCESS") {
-      if (Number(amount_paid) > newBalance) {
-        throw new Error("Payment exceeds WO balance");
-      }
-
-      newBalance -= Number(amount_paid);
-      totalPaid += Number(amount_paid);
-
       const woStatus =
-        newBalance === 0
-          ? "completed"
-          : newBalance === Number(wo.grand_total)
-            ? "pending"
-            : "partial";
+        Number(amount_paid) > 0 && Number(amount_paid) <= Number(wo.grand_total)
+          ? "partial"
+          : Number(amount_paid) + Number(wo.advance_amount) >=
+              Number(wo.grand_total)
+            ? "completed"
+            : "pending";
 
       await connection.query(
         `UPDATE service_orders 
-         SET balance_amount = ?, total_paid = ?, payment_status = ?
+         SET advance_amount = ?, payment_status = ?
          WHERE id = ?`,
-        [newBalance, totalPaid, woStatus, wo_id],
+        [Number(amount_paid) + Number(wo.advance_amount), woStatus, wo_id],
       );
 
       // ➕ Insert history
       [result] = await connection.query(
         `INSERT INTO wo_payments_history (
           wo_id,
-          wo_payment_id,
           transaction_type,
           amount_paid,
           payment_method,
@@ -76,46 +64,18 @@ const createWoPayment = async (data) => {
           status,
           remarks,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          wo_id,
-          wo_payment_id,
-          transaction_type,
+          wo_id, // Use the inserted ID from the previous query
+          transxaction_type,
           amount_paid,
           payment_method,
           payment_reference_no,
           payment_proof,
           payment_date,
-          status,
-          remarks,
-          created_by,
+          status || "PENDING",
+          remarks || null,
         ],
-      );
-
-      // 🔄 Update wo_payments summary
-      const [[woPayment]] = await connection.query(
-        `SELECT * FROM wo_payments WHERE id = ?`,
-        [wo_payment_id],
-      );
-
-      let woPaymentBalance = Number(woPayment.balance_amount);
-      let woPaymentPaid = Number(woPayment.amount_paid);
-
-      woPaymentBalance -= Number(amount_paid);
-      woPaymentPaid += Number(amount_paid);
-
-      const woPaymentStatus =
-        woPaymentBalance === 0
-          ? "COMPLETED"
-          : woPaymentBalance === Number(woPayment.total_amount)
-            ? "PENDING"
-            : "PARTIAL";
-
-      await connection.query(
-        `UPDATE wo_payments 
-         SET balance_amount = ?, amount_paid = ?, status = ?
-         WHERE id = ?`,
-        [woPaymentBalance, woPaymentPaid, woPaymentStatus, wo_payment_id],
       );
     } else {
       [result] = await connection.query(
