@@ -18,7 +18,7 @@ class Designation {
       LEFT JOIN users u2 ON ds.updated_by = u2.id
       ORDER BY ds.is_active DESC, d.name, r.name, ds.hierarchy_level DESC, ds.name
     `);
-    return rows.map(row => this.normalizeRow(row));
+    return rows.map((row) => this.normalizeRow(row));
   }
 
   // Get by ID
@@ -35,7 +35,7 @@ class Designation {
       WHERE ds.id = ?
       LIMIT 1
       `,
-      [id]
+      [id],
     );
     return rows.length ? this.normalizeRow(rows[0]) : null;
   }
@@ -54,9 +54,9 @@ class Designation {
       AND ds.role_id = ? 
       ORDER BY ds.is_active DESC, ds.hierarchy_level DESC, ds.name
       `,
-      [departmentId, roleId]
+      [departmentId, roleId],
     );
-    return rows.map(row => this.normalizeRow(row));
+    return rows.map((row) => this.normalizeRow(row));
   }
 
   // Get designations by department
@@ -72,9 +72,9 @@ class Designation {
       WHERE ds.department_id = ? 
       ORDER BY ds.is_active DESC, r.name, ds.hierarchy_level DESC, ds.name
       `,
-      [departmentId]
+      [departmentId],
     );
-    return rows.map(row => this.normalizeRow(row));
+    return rows.map((row) => this.normalizeRow(row));
   }
 
   // Get designations by role
@@ -90,9 +90,9 @@ class Designation {
       WHERE ds.role_id = ? 
       ORDER BY ds.is_active DESC, d.name, ds.hierarchy_level DESC, ds.name
       `,
-      [roleId]
+      [roleId],
     );
-    return rows.map(row => this.normalizeRow(row));
+    return rows.map((row) => this.normalizeRow(row));
   }
 
   // Check if designation name exists for same department-role
@@ -105,7 +105,7 @@ class Designation {
       AND name = ?
       LIMIT 1
       `,
-      [departmentId, roleId, name]
+      [departmentId, roleId, name],
     );
     return rows.length > 0;
   }
@@ -117,22 +117,28 @@ class Designation {
     role_id,
     hierarchy_level = 0,
     is_active = true,
-    created_by = null
+    created_by = null,
   }) {
     // Check if name exists for same department-role
-    const existingByName = await this.existsInDepartmentRole(department_id, role_id, name);
+    const existingByName = await this.existsInDepartmentRole(
+      department_id,
+      role_id,
+      name,
+    );
     if (existingByName) {
-      throw new Error('Designation name already exists for this department-role combination');
+      throw new Error(
+        "Designation name already exists for this department-role combination",
+      );
     }
 
     // Verify department-role mapping exists
     const deptRoleExists = await query(
       "SELECT id FROM department_roles WHERE department_id = ? AND role_id = ? AND is_active = TRUE LIMIT 1",
-      [department_id, role_id]
+      [department_id, role_id],
     );
-    
+
     if (deptRoleExists.length === 0) {
-      throw new Error('Role is not assigned to this department');
+      throw new Error("Role is not assigned to this department");
     }
 
     const sql = `
@@ -147,7 +153,7 @@ class Designation {
       role_id,
       hierarchy_level,
       is_active ? 1 : 0,
-      created_by
+      created_by,
     ]);
 
     return await this.findById(result.insertId);
@@ -158,8 +164,15 @@ class Designation {
     const fields = [];
     const params = [];
 
-    const allowedFields = ['name', 'hierarchy_level', 'is_active', 'updated_by'];
-    allowedFields.forEach(field => {
+    const allowedFields = [
+      "name",
+      "department_id",
+      "role_id",
+      "hierarchy_level",
+      "is_active",
+      "updated_by",
+    ];
+    allowedFields.forEach((field) => {
       if (updateData[field] !== undefined) {
         fields.push(`${field} = ?`);
         params.push(updateData[field]);
@@ -170,7 +183,7 @@ class Designation {
       return await this.findById(id);
     }
 
-    fields.push('updated_at = CURRENT_TIMESTAMP');
+    fields.push("updated_at = CURRENT_TIMESTAMP");
     const sql = `UPDATE designations SET ${fields.join(", ")} WHERE id = ?`;
     params.push(id);
 
@@ -190,16 +203,16 @@ class Designation {
     // First get current status
     const current = await this.findById(id);
     if (!current) {
-      throw new Error('Designation not found');
+      throw new Error("Designation not found");
     }
-    
+
     // Toggle the status
     const newStatus = !current.is_active;
     await query(
       "UPDATE designations SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [newStatus ? 1 : 0, id]
+      [newStatus ? 1 : 0, id],
     );
-    
+
     // Return updated designation
     return await this.findById(id);
   }
@@ -231,9 +244,9 @@ class Designation {
       WHERE (ds.name LIKE ? OR d.name LIKE ? OR r.name LIKE ?)
       ORDER BY ds.is_active DESC, d.name, r.name, ds.name
       `,
-      [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]
+      [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`],
     );
-    return rows.map(row => this.normalizeRow(row));
+    return rows.map((row) => this.normalizeRow(row));
   }
 
   // Normalize row

@@ -1,13 +1,13 @@
 // backend/config/db.js
-const mysql = require('mysql2/promise');
-require('dotenv').config();
+const mysql = require("mysql2/promise");
+require("dotenv").config();
 
 const {
-  DB_HOST = 'localhost',
+  DB_HOST = "localhost",
   DB_PORT = 3306,
-  DB_USER = 'root',
-  DB_PASS = '',
-  DB_NAME = 'nayash_crm',
+  DB_USER = "root",
+  DB_PASS = "",
+  DB_NAME = "nayash_crm",
 } = process.env;
 
 const pool = mysql.createPool({
