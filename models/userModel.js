@@ -198,7 +198,6 @@ const findByPhoneWithPassword = async (phone) => {
   }
 };
 
-
 /**
  * Create new user - FIXED: Generate UUID for id
  */
@@ -304,7 +303,7 @@ const update = async (id, data) => {
       "users",
       "department_id",
     );
-
+    console.log(data);
     const fields = [];
     const values = [];
 
@@ -440,42 +439,41 @@ const updateUserPermissions = async (userId, permissions) => {
 };
 const checkPhoneExists = async (phone, excludeUserId = null) => {
   try {
-    if (!phone || phone.trim() === '') {
+    if (!phone || phone.trim() === "") {
       return { exists: false, table: null };
     }
 
     // Check in users table (excluding current user if provided)
-    let userQuery = 'SELECT id FROM users WHERE phone = ?';
+    let userQuery = "SELECT id FROM users WHERE phone = ?";
     let userParams = [phone];
-    
+
     if (excludeUserId) {
-      userQuery += ' AND id != ?';
+      userQuery += " AND id != ?";
       userParams.push(excludeUserId);
     }
 
     const [userRows] = await promisePool.query(userQuery, userParams);
-    
+
     if (userRows && userRows.length > 0) {
-      return { exists: true, table: 'users' };
+      return { exists: true, table: "users" };
     }
 
     // Check in employees table
     const [employeeRows] = await promisePool.query(
-      'SELECT id FROM hrms_employees WHERE phone = ?',
-      [phone]
+      "SELECT id FROM hrms_employees WHERE phone = ?",
+      [phone],
     );
-    
+
     if (employeeRows && employeeRows.length > 0) {
-      return { exists: true, table: 'employees' };
+      return { exists: true, table: "employees" };
     }
 
     return { exists: false, table: null };
   } catch (error) {
-    console.error('Check phone exists error:', error);
+    console.error("Check phone exists error:", error);
     throw error;
   }
 };
-
 
 module.exports = {
   findAll,
@@ -483,7 +481,7 @@ module.exports = {
   findById,
   findByEmail,
   findByEmailWithPassword,
-    findByPhoneWithPassword, // ← ADD THIS LINE
+  findByPhoneWithPassword, // ← ADD THIS LINE
 
   create,
   update,
