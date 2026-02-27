@@ -13,6 +13,8 @@ const createWoPayment = async (data) => {
       wo_id,
       transaction_type,
       amount_paid,
+      advance_amount,
+      retention_percentage,
       payment_method,
       payment_reference_no,
       payment_proof,
@@ -21,8 +23,6 @@ const createWoPayment = async (data) => {
       remarks,
       created_by,
     } = data;
-
-    console.log(data);
 
     // 🔒 Lock WO row
     const [[wo]] = await connection.query(
@@ -83,20 +83,42 @@ const createWoPayment = async (data) => {
     }
     if (status === "SUCCESS" && transaction_type === "PAYMENT") {
       const woStatus =
-        Number(amount_paid) > 0 && Number(amount_paid) <= Number(wo.grand_total)
+        Number(amount_paid) > 0 &&
+        Number(amount_paid) < Number(wo.balance_amount)
           ? "partial"
-          : Number(amount_paid) + Number(wo.advance_amount) >=
-                Number(wo.grand_total) ||
-              Number(amount_paid) + Number(wo.total_paid) >=
-                Number(wo.grand_total)
+          : Number(amount_paid) - Number(wo.balance_amount) === 0
             ? "completed"
             : "pending";
 
+      let retention_amount =
+        (Number(amount_paid) * Number(retention_percentage)) / 100;
+
+      let final_retention_amount =
+        Number(wo.retention_amount) + Number(retention_amount);
+
+      const amountAfterRetention =
+        Number(amount_paid) - Number(retention_amount);
+
+      const total_paid = Number(wo.total_paid) + Number(amountAfterRetention);
+
+      const balance_amount =
+        Number(wo.balance_amount) - Number(amountAfterRetention);
+
+      const wo_advance_amount =
+        Number(wo.advance_amount) - Number(advance_amount);
+
       await connection.query(
         `UPDATE service_orders 
-         SET total_paid = total_paid + ?, payment_status = ?
+         SET total_paid = ?, balance_amount = ?, advance_amount = ?, retention_amount = ?, payment_status = ?
          WHERE id = ?`,
-        [Number(amount_paid), woStatus, wo_id],
+        [
+          Number(total_paid),
+          Number(balance_amount),
+          Number(wo_advance_amount),
+          Number(final_retention_amount),
+          woStatus,
+          wo_id,
+        ],
       );
 
       // ➕ Insert history

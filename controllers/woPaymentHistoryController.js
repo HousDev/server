@@ -51,7 +51,7 @@ exports.createPayment = async (req, res) => {
 exports.getAllPaymentsHistory = async (req, res) => {
   try {
     const data = await woPaymentsModel.getWoPaymentsHistory();
-    console.log(data);
+
     res.status(200).json({
       success: true,
       data,
