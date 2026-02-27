@@ -236,6 +236,37 @@ class AttendanceModel {
          WHERE date BETWEEN ? AND ?`,
         [start_date, end_date],
       );
+      console.log(rows);
+
+      return rows.length > 0
+        ? rows[0]
+        : {
+            total_employees: 0,
+            present_today: 0,
+            currently_present: 0,
+            avg_working_hours: 0,
+          };
+    } catch (error) {
+      console.error("❌ Error in getStatistics:", error.message);
+      return {
+        total_employees: 0,
+        present_today: 0,
+        currently_present: 0,
+        avg_working_hours: 0,
+      };
+    }
+  }
+
+  async getTodaysStatistics() {
+    try {
+      const rows = await db.query(
+        `SELECT 
+          COUNT(DISTINCT user_id) AS total_employees,
+          COUNT(CASE WHEN status = 'PRESENT' THEN 1 END) AS present_today,
+          COUNT(CASE WHEN punch_out_time IS NULL THEN 1 END) AS currently_present,
+          AVG(total_hours) AS avg_working_hours
+          FROM (SELECT * FROM attendance WHERE date = CURDATE() Group by user_id)`,
+      );
 
       return rows.length > 0
         ? rows[0]
