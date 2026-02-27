@@ -13,6 +13,8 @@ const createWoPayment = async (data) => {
       wo_id,
       transaction_type,
       amount_paid,
+      advance_amount,
+      retention_percentage,
       payment_method,
       payment_reference_no,
       payment_proof,
@@ -35,7 +37,7 @@ const createWoPayment = async (data) => {
       throw new Error("Work Order not found");
     }
 
-    if (status === "SUCCESS") {
+    if (status === "SUCCESS" && transaction_type === "ADVANCE") {
       const woStatus =
         Number(amount_paid) > 0 && Number(amount_paid) <= Number(wo.grand_total)
           ? "partial"
@@ -48,7 +50,7 @@ const createWoPayment = async (data) => {
         `UPDATE service_orders 
          SET advance_amount = ?, payment_status = ?
          WHERE id = ?`,
-        [Number(amount_paid) + Number(wo.advance_amount), woStatus, wo_id],
+        [Number(amount_paid) + Number(wo.advance_amount || 0), woStatus, wo_id],
       );
 
       // ➕ Insert history
@@ -67,7 +69,7 @@ const createWoPayment = async (data) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           wo_id, // Use the inserted ID from the previous query
-          transxaction_type,
+          transaction_type,
           amount_paid,
           payment_method,
           payment_reference_no,
@@ -75,13 +77,54 @@ const createWoPayment = async (data) => {
           payment_date,
           status || "PENDING",
           remarks || null,
+          created_by,
         ],
       );
-    } else {
+    }
+    if (status === "SUCCESS" && transaction_type === "PAYMENT") {
+      const woStatus =
+        Number(amount_paid) > 0 &&
+        Number(amount_paid) < Number(wo.balance_amount)
+          ? "partial"
+          : Number(amount_paid) - Number(wo.balance_amount) === 0
+            ? "completed"
+            : "pending";
+
+      let retention_amount =
+        (Number(amount_paid) * Number(retention_percentage)) / 100;
+
+      let final_retention_amount =
+        Number(wo.retention_amount) + Number(retention_amount);
+
+      const amountAfterRetention =
+        Number(amount_paid) - Number(retention_amount);
+
+      const total_paid = Number(wo.total_paid) + Number(amountAfterRetention);
+
+      const balance_amount =
+        Number(wo.balance_amount) - Number(amountAfterRetention);
+
+      const wo_advance_amount =
+        Number(wo.advance_amount) - Number(advance_amount);
+
+      await connection.query(
+        `UPDATE service_orders 
+         SET total_paid = ?, balance_amount = ?, advance_amount = ?, retention_amount = ?, payment_status = ?
+         WHERE id = ?`,
+        [
+          Number(total_paid),
+          Number(balance_amount),
+          Number(wo_advance_amount),
+          Number(final_retention_amount),
+          woStatus,
+          wo_id,
+        ],
+      );
+
+      // ➕ Insert history
       [result] = await connection.query(
         `INSERT INTO wo_payments_history (
           wo_id,
-          wo_payment_id,
           transaction_type,
           amount_paid,
           payment_method,
@@ -91,10 +134,36 @@ const createWoPayment = async (data) => {
           status,
           remarks,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          wo_id, // Use the inserted ID from the previous query
+          transaction_type,
+          amount_paid,
+          payment_method,
+          payment_reference_no,
+          payment_proof,
+          payment_date,
+          status || "PENDING",
+          remarks || null,
+          created_by,
+        ],
+      );
+    } else {
+      [result] = await connection.query(
+        `INSERT INTO wo_payments_history (
+          wo_id,
+          transaction_type,
+          amount_paid,
+          payment_method,
+          payment_reference_no,
+          payment_proof,
+          payment_date,
+          status,
+          remarks,
+          created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           wo_id,
-          wo_payment_id,
           transaction_type,
           amount_paid,
           payment_method,
@@ -112,7 +181,6 @@ const createWoPayment = async (data) => {
 
     return {
       payment_id: result.insertId,
-      balance_after_payment: newBalance,
     };
   } catch (err) {
     await connection.rollback();
@@ -123,37 +191,17 @@ const createWoPayment = async (data) => {
 };
 
 /**
- * Get All WO Payments
- */
-const getWoPayments = async () => {
-  const rows = await db.query(
-    `SELECT 
-      wop.*, 
-      so.wo_number,
-      DATE_FORMAT(so.wo_date, '%Y-%m-%d') as wo_date,
-      so.payment_status,
-      so.balance_amount as wo_balance_amount,
-      so.grand_total as wo_grand_total,
-      so.total_paid as wo_total_paid
-     FROM wo_payments wop
-     LEFT JOIN service_orders so ON wop.wo_id = so.id
-     ORDER BY wop.created_at DESC`,
-  );
-
-  return rows;
-};
-
-/**
  * Get WO Payment History
  */
 const getWoPaymentsHistory = async () => {
   const rows = await db.query(
     `SELECT 
       wph.*, 
-      so.wo_number,
-      so.wo_date
+      so.so_number AS po_number,
+      so.so_date as po_date,
+      v.name as vendor
      FROM wo_payments_history wph
-     LEFT JOIN service_orders so ON so.id = wph.wo_id
+     LEFT JOIN service_orders so ON so.id = wph.wo_id LEFT JOIN vendors AS v ON so.vendor_id = v.id 
      ORDER BY wph.created_at DESC`,
   );
 
@@ -213,7 +261,6 @@ const deleteWoPayment = async (id) => {
 
 module.exports = {
   createWoPayment,
-  getWoPayments,
   getWoPaymentsHistory,
   updateWoPayment,
   deleteWoPayment,

@@ -30,6 +30,7 @@ serviceOrdersRouter.get(
 );
 
 serviceOrdersRouter.get("/vendor/:vendor_id", getServiceOrdersByVendor);
+serviceOrdersRouter.get("/:id", getServiceOrderById);
 
 /**
  * POST
