@@ -1037,15 +1037,8 @@ async function updateUser(req, res) {
   try {
     const { id } = req.params;
 
-    console.log("Update user request received:", {
-      id,
-      body: req.body,
-      params: req.params,
-    });
-
     const existing = await UserModel.findById(id);
     if (!existing) {
-      console.log("User not found with ID:", id);
       return res.status(404).json({
         success: false,
         error: "User not found",
@@ -1054,6 +1047,7 @@ async function updateUser(req, res) {
 
     // ✅ FIX: Get phone from req.body only once
     const {
+      email,
       full_name,
       phone, // Get phone from req.body
       role,
@@ -1096,6 +1090,7 @@ async function updateUser(req, res) {
     // Prepare update data with safe values
     const updateData = {};
 
+    if (email !== undefined) updateData.email = email || null;
     if (full_name !== undefined) updateData.full_name = full_name || null;
     if (phone !== undefined) updateData.phone = phone || null;
     if (role !== undefined) updateData.role = role.toLowerCase();
@@ -1119,10 +1114,7 @@ async function updateUser(req, res) {
         });
       }
       updateData.password = await bcrypt.hash(password, 10);
-      console.log("Password hashed for update");
     }
-
-    console.log("Updating user with data:", updateData);
 
     // Update user
     const updated = await UserModel.update(id, updateData);
@@ -1130,8 +1122,6 @@ async function updateUser(req, res) {
     if (!updated) {
       throw new Error("Failed to update user in database");
     }
-
-    console.log("User updated successfully:", scrub(updated));
 
     // ✅ SYNC TO EMPLOYEE TABLE
     try {
