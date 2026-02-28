@@ -13,14 +13,14 @@ router.post(
 router.get("/today/:user_id", attendanceController.getTodayStatus);
 
 router.get(
-  "/currentMonthAttendance/:user_id",
+  "/currentMonthAttendance/:user_id/:yearMonth",
   attendanceController.getCurrentMonthAttendance,
 );
 
 router.get("/todayLast/:user_id", attendanceController.getLastAttendanceOfUser);
 router.get("/today", attendanceController.getTodayAll);
 router.get("/history/:user_id", attendanceController.getHistory);
-router.get("/statistics", attendanceController.getStatistics);
+// router.get("/statistics", attendanceController.getStatistics);
 router.get("/todayStatistics", attendanceController.getTodaysStatistics);
 router.get("/check/:user_id", attendanceController.checkAttendance);
 

@@ -253,10 +253,13 @@ class AttendanceController {
   // ---------------- CURRENT MONTH ATTENDANCE ---------------- //
   getCurrentMonthAttendance = async (req, res) => {
     try {
-      const { user_id } = req.params;
+      const { user_id, yearMonth } = req.params;
+      console.log(user_id, yearMonth);
 
-      const attendance =
-        await attendanceModel.getUserAttendanceOfCurrentMonth(user_id);
+      const attendance = await attendanceModel.getUserAttendanceOfCurrentMonth(
+        user_id,
+        yearMonth,
+      );
 
       return res.json({
         success: true,
