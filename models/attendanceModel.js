@@ -47,21 +47,29 @@ class AttendanceModel {
     }
   }
 
-  async getUserAttendanceOfCurrentMonth(user_id) {
+  async getUserAttendanceOfCurrentMonth(user_id, yearMonth) {
     try {
       const [employeeData] = await db.query(
-        "SELECT * from hrms_employees WHERE user_id = ?",
+        "SELECT * FROM hrms_employees WHERE user_id = ?",
         [user_id],
       );
+
+      if (!employeeData) return [];
+
+      const firstDay = `${yearMonth}-01`;
+
       const rows = await db.query(
-        `SELECT a.*, CONCAT(u.first_name, ' ', u.last_name) as user_name, u.employee_code as employee_code
-         FROM attendance a
-         LEFT JOIN hrms_employees u ON u.id = a.user_id
-         WHERE a.user_id = ?
-         AND a.date BETWEEN
-           DATE_FORMAT(CURDATE(), '%Y-%m-01')
-           AND LAST_DAY(CURDATE()) ORDER BY date DESC`,
-        [employeeData.id],
+        `SELECT 
+          a.*, 
+          CONCAT(u.first_name, ' ', u.last_name) AS user_name, 
+          u.employee_code AS employee_code
+       FROM attendance a
+       LEFT JOIN hrms_employees u ON u.id = a.user_id
+       WHERE a.user_id = ?
+       AND a.date >= ?
+       AND a.date < DATE_ADD(?, INTERVAL 1 MONTH)
+       ORDER BY a.date DESC`,
+        [employeeData.id, firstDay, firstDay],
       );
 
       return rows;
@@ -235,6 +243,37 @@ class AttendanceModel {
          FROM attendance 
          WHERE date BETWEEN ? AND ?`,
         [start_date, end_date],
+      );
+      console.log(rows);
+
+      return rows.length > 0
+        ? rows[0]
+        : {
+            total_employees: 0,
+            present_today: 0,
+            currently_present: 0,
+            avg_working_hours: 0,
+          };
+    } catch (error) {
+      console.error("❌ Error in getStatistics:", error.message);
+      return {
+        total_employees: 0,
+        present_today: 0,
+        currently_present: 0,
+        avg_working_hours: 0,
+      };
+    }
+  }
+
+  async getTodaysStatistics() {
+    try {
+      const rows = await db.query(
+        `SELECT 
+          COUNT(DISTINCT user_id) AS total_employees,
+          COUNT(CASE WHEN status = 'PRESENT' THEN 1 END) AS present_today,
+          COUNT(CASE WHEN punch_out_time IS NULL THEN 1 END) AS currently_present,
+          AVG(total_hours) AS avg_working_hours
+          FROM (SELECT * FROM attendance WHERE date = CURDATE() Group by user_id)`,
       );
 
       return rows.length > 0

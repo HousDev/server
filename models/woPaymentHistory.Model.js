@@ -5,7 +5,7 @@ const db = require("../config/db");
  */
 const createWoPayment = async (data) => {
   const connection = await db.pool.getConnection();
-
+  console.log("executed...");
   try {
     await connection.beginTransaction();
 
@@ -48,9 +48,15 @@ const createWoPayment = async (data) => {
 
       await connection.query(
         `UPDATE service_orders 
-         SET advance_amount = ?, payment_status = ?
+         SET total_paid = ?, advance_amount = ?, balance_amount = ?, payment_status = ?
          WHERE id = ?`,
-        [Number(amount_paid) + Number(wo.advance_amount || 0), woStatus, wo_id],
+        [
+          Number(amount_paid) + Number(wo.total_paid || 0),
+          Number(amount_paid) + Number(wo.advance_amount || 0),
+          Number(wo.balance_amount) - Number(amount_paid),
+          woStatus,
+          wo_id,
+        ],
       );
 
       // ➕ Insert history
@@ -80,8 +86,7 @@ const createWoPayment = async (data) => {
           created_by,
         ],
       );
-    }
-    if (status === "SUCCESS" && transaction_type === "PAYMENT") {
+    } else if (status === "SUCCESS" && transaction_type === "PAYMENT") {
       const woStatus =
         Number(amount_paid) > 0 &&
         Number(amount_paid) < Number(wo.balance_amount)
@@ -127,6 +132,7 @@ const createWoPayment = async (data) => {
           wo_id,
           transaction_type,
           amount_paid,
+          retention_percent,
           payment_method,
           payment_reference_no,
           payment_proof,
@@ -134,11 +140,12 @@ const createWoPayment = async (data) => {
           status,
           remarks,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           wo_id, // Use the inserted ID from the previous query
           transaction_type,
           amount_paid,
+          retention_percentage,
           payment_method,
           payment_reference_no,
           payment_proof,
@@ -199,7 +206,13 @@ const getWoPaymentsHistory = async () => {
       wph.*, 
       so.so_number AS po_number,
       so.so_date as po_date,
-      v.name as vendor
+      v.name as vendor,
+      so.grand_total as wo_grand_total,
+      so.total_paid as wo_total_paid,
+      so.advance_amount as wo_advance_amount,
+      so.balance_amount as wo_balance_amount,
+      so.retention_amount as wo_retention_amount,
+      so.payment_status as wo_payment_status
      FROM wo_payments_history wph
      LEFT JOIN service_orders so ON so.id = wph.wo_id LEFT JOIN vendors AS v ON so.vendor_id = v.id 
      ORDER BY wph.created_at DESC`,
