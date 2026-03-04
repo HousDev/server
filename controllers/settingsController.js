@@ -687,7 +687,7 @@ _getBaseUrl(req) {
           .json({ success: false, message: "User ID not found in token" });
       }
 
-      const { full_name } = req.body;
+      const { full_name, email, phone } = req.body;
 
       if (!full_name || full_name.trim() === "") {
         return res
@@ -697,6 +697,8 @@ _getBaseUrl(req) {
 
       const updated = await SettingsModel.updateProfile(userId, {
         full_name: full_name.trim(),
+        email,
+        phone,
       });
 
       // Build full URL for avatar if it exists

@@ -48,30 +48,30 @@ class SettingsModel {
        FROM users 
        WHERE id = ? 
        LIMIT 1`,
-      [userId]
+      [userId],
     );
-    
+
     const user = rows[0] || null;
-    
+
     if (user && user.avatar) {
       // If it's already a full URL, return as-is
-      if (user.avatar.startsWith('http')) {
+      if (user.avatar.startsWith("http")) {
         return user;
       }
-      
+
       // If it's just a filename, prepend the full URL
       const BASE_URL = process.env.BASE_URL || "http://localhost:4000";
       user.avatar = `${BASE_URL}/api/uploads/avatars/${user.avatar}`;
     }
-    
+
     return user;
   }
 
   // ─── UPDATE PROFILE (only full_name) ─────────────────────────────────────
-  static async updateProfile(userId, { full_name }) {
+  static async updateProfile(userId, { full_name, email, phone }) {
     await query(
-      `UPDATE users SET full_name = ?, updated_at = NOW() WHERE id = ?`,
-      [full_name, userId]
+      `UPDATE users SET full_name = ?,email = ?, phone = ?,  updated_at = NOW() WHERE id = ?`,
+      [full_name, email, phone, userId],
     );
     return await this.getUserById(userId);
   }
@@ -82,7 +82,7 @@ class SettingsModel {
 
     await query(
       `UPDATE users SET ${col} = ?, updated_at = NOW() WHERE id = ?`,
-      [avatarPath, userId]
+      [avatarPath, userId],
     );
     return await this.getUserById(userId);
   }
@@ -93,7 +93,7 @@ class SettingsModel {
 
     await query(
       `UPDATE users SET ${col} = NULL, updated_at = NOW() WHERE id = ?`,
-      [userId]
+      [userId],
     );
     return await this.getUserById(userId);
   }
@@ -102,7 +102,7 @@ class SettingsModel {
   static async getNotificationPreferences(userId) {
     const rows = await query(
       `SELECT preferences FROM user_notification_preferences WHERE user_id = ? LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (rows.length > 0 && rows[0].preferences) {
@@ -122,7 +122,7 @@ class SettingsModel {
 
     const existing = await query(
       `SELECT id FROM user_notification_preferences WHERE user_id = ? LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (existing.length > 0) {
@@ -130,13 +130,13 @@ class SettingsModel {
         `UPDATE user_notification_preferences 
          SET preferences = ?, updated_at = NOW() 
          WHERE user_id = ?`,
-        [prefsJson, userId]
+        [prefsJson, userId],
       );
     } else {
       await query(
         `INSERT INTO user_notification_preferences (user_id, preferences) 
          VALUES (?, ?)`,
-        [userId, prefsJson]
+        [userId, prefsJson],
       );
     }
 
@@ -147,7 +147,7 @@ class SettingsModel {
   static async verifyPassword(userId, plainPassword) {
     const rows = await query(
       `SELECT password FROM users WHERE id = ? LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (!rows[0]) return false;
@@ -159,18 +159,18 @@ class SettingsModel {
     const hashed = await bcrypt.hash(plainPassword, 10);
     await query(
       `UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?`,
-      [hashed, userId]
+      [hashed, userId],
     );
     return true;
   }
 
   // ─── GET SYSTEM SETTINGS (singleton row id = 1) ─────────────────────────
- static async getSystemSettings() {
+  static async getSystemSettings() {
     const rows = await query(
       `SELECT settings_json, logo_file, favicon_file 
        FROM system_settings 
        WHERE id = 1 
-       LIMIT 1`
+       LIMIT 1`,
     );
 
     if (rows.length > 0) {
@@ -178,9 +178,9 @@ class SettingsModel {
       const raw = rows[0].settings_json;
 
       // MySQL JSON columns auto-parse, so it might already be an object
-      if (typeof raw === 'object' && raw !== null) {
+      if (typeof raw === "object" && raw !== null) {
         settings = raw;
-      } else if (typeof raw === 'string') {
+      } else if (typeof raw === "string") {
         try {
           settings = JSON.parse(raw);
         } catch (e) {
@@ -203,20 +203,23 @@ class SettingsModel {
     // Extract logo and favicon from settings (they might be full URLs or filenames)
     let logo = settings.logo;
     let favicon = settings.favicon;
-    
+
     // If they're full URLs, extract just the filename
-    if (logo && logo.includes('/')) {
-      logo = logo.split('/').pop();
+    if (logo && logo.includes("/")) {
+      logo = logo.split("/").pop();
     }
-    if (favicon && favicon.includes('/')) {
-      favicon = favicon.split('/').pop();
+    if (favicon && favicon.includes("/")) {
+      favicon = favicon.split("/").pop();
     }
-    
+
     // Remove logo and favicon from JSON settings since they're in separate columns
     // Remove logo and favicon from JSON settings since they're in separate columns
     const { logo: _, favicon: __, ...jsonSettings } = settings;
     // Ensure we always store a proper JSON string, never "[object Object]"
-    const json = typeof jsonSettings === 'string' ? jsonSettings : JSON.stringify(jsonSettings);
+    const json =
+      typeof jsonSettings === "string"
+        ? jsonSettings
+        : JSON.stringify(jsonSettings);
 
     const existing = await query(`SELECT id FROM system_settings WHERE id = 1`);
 
@@ -228,13 +231,13 @@ class SettingsModel {
              logo_file = ?,
              favicon_file = ?
          WHERE id = 1`,
-        [json, logo, favicon]
+        [json, logo, favicon],
       );
     } else {
       await query(
         `INSERT INTO system_settings (id, settings_json, logo_file, favicon_file) 
          VALUES (1, ?, ?, ?)`,
-        [json, logo, favicon]
+        [json, logo, favicon],
       );
     }
 
@@ -244,13 +247,13 @@ class SettingsModel {
   // ─── UPDATE ONLY LOGO ──────────────────────────────────────────────────
   static async updateLogo(logoFilename) {
     const existing = await query(`SELECT id FROM system_settings WHERE id = 1`);
-    
+
     if (existing.length > 0) {
       await query(
         `UPDATE system_settings 
          SET logo_file = ?, updated_at = NOW() 
          WHERE id = 1`,
-        [logoFilename]
+        [logoFilename],
       );
     } else {
       // Create new record if doesn't exist
@@ -258,23 +261,23 @@ class SettingsModel {
       await query(
         `INSERT INTO system_settings (id, settings_json, logo_file) 
          VALUES (1, ?, ?)`,
-        [defaultSettings, logoFilename]
+        [defaultSettings, logoFilename],
       );
     }
-    
+
     return await this.getSystemSettings();
   }
 
   // ─── UPDATE ONLY FAVICON ───────────────────────────────────────────────
   static async updateFavicon(faviconFilename) {
     const existing = await query(`SELECT id FROM system_settings WHERE id = 1`);
-    
+
     if (existing.length > 0) {
       await query(
         `UPDATE system_settings 
          SET favicon_file = ?, updated_at = NOW() 
          WHERE id = 1`,
-        [faviconFilename]
+        [faviconFilename],
       );
     } else {
       // Create new record if doesn't exist
@@ -282,10 +285,10 @@ class SettingsModel {
       await query(
         `INSERT INTO system_settings (id, settings_json, favicon_file) 
          VALUES (1, ?, ?)`,
-        [defaultSettings, faviconFilename]
+        [defaultSettings, faviconFilename],
       );
     }
-    
+
     return await this.getSystemSettings();
   }
 
@@ -294,7 +297,7 @@ class SettingsModel {
     await query(
       `UPDATE system_settings 
        SET logo_file = NULL, updated_at = NOW() 
-       WHERE id = 1`
+       WHERE id = 1`,
     );
     return await this.getSystemSettings();
   }
@@ -304,7 +307,7 @@ class SettingsModel {
     await query(
       `UPDATE system_settings 
        SET favicon_file = NULL, updated_at = NOW() 
-       WHERE id = 1`
+       WHERE id = 1`,
     );
     return await this.getSystemSettings();
   }
