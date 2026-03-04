@@ -244,7 +244,6 @@ class AttendanceModel {
          WHERE date BETWEEN ? AND ?`,
         [start_date, end_date],
       );
-      console.log(rows);
 
       return rows.length > 0
         ? rows[0]
@@ -255,7 +254,7 @@ class AttendanceModel {
             avg_working_hours: 0,
           };
     } catch (error) {
-      console.error("❌ Error in getStatistics:", error.message);
+      // console.error("❌ Error in getStatistics:", error.message);
       return {
         total_employees: 0,
         present_today: 0,
@@ -285,7 +284,7 @@ class AttendanceModel {
             avg_working_hours: 0,
           };
     } catch (error) {
-      console.error("❌ Error in getStatistics:", error.message);
+      // console.error("❌ Error in getStatistics:", error.message);
       return {
         total_employees: 0,
         present_today: 0,

@@ -64,8 +64,6 @@ class AttendanceController {
         punch_in_address,
         punch_out_address,
       } = req.body;
-      console.log(user_id, req.body);
-      console.log(punch_in_address, punch_out_address);
 
       if (!user_id || !latitude || !longitude)
         return res.status(400).json({
@@ -106,19 +104,30 @@ class AttendanceController {
         "SELECT * FROM hrms_employees WHERE user_id = ?",
         [user_id],
       );
-      console.log("data of emp", existingEmployee);
+
       if (!existingEmployee) {
         return res
           .status(400)
           .json({ success: false, message: "Employee not found." });
       }
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+        {
+          headers: {
+            "User-Agent": "your-app-name",
+          },
+        },
+      );
+
+      const data = await response.json();
+
       const attendanceId = await attendanceModel.create({
         user_id: existingEmployee.id,
         date: new Date().toISOString().split("T")[0],
         punch_in_time: new Date(),
         punch_in_latitude: parseFloat(latitude),
         punch_in_longitude: parseFloat(longitude),
-        punch_in_location: `Lat: ${latitude}, Long: ${longitude}`,
+        punch_in_location: data.display_name,
         punch_in_selfie: req.file.filename,
         status: "present",
         punch_in_address,
@@ -145,9 +154,6 @@ class AttendanceController {
 
   // ---------------- PUNCH OUT ---------------- //
   punchOut = async (req, res) => {
-    console.log("Body:", req.body);
-    console.log("File:", req.file);
-
     try {
       const {
         user_id,
@@ -173,7 +179,6 @@ class AttendanceController {
       );
       const attendance = await attendanceModel.getTodayByUser(employeeData.id);
 
-      console.log("today last attendance", attendance);
       if (!attendance)
         return res
           .status(400)
@@ -191,11 +196,22 @@ class AttendanceController {
         (1000 * 60 * 60)
       ).toFixed(2);
 
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+        {
+          headers: {
+            "User-Agent": "your-app-name",
+          },
+        },
+      );
+
+      const data = await response.json();
+
       await attendanceModel.update(attendance.id, {
         punch_out_time: punchOutTime,
         punch_out_latitude: parseFloat(latitude),
         punch_out_longitude: parseFloat(longitude),
-        punch_out_location: `Lat: ${latitude}, Long: ${longitude}`,
+        punch_out_location: data.display_name,
         punch_out_selfie: req.file.filename,
         total_hours: hoursWorked,
         work_notes,
@@ -254,7 +270,6 @@ class AttendanceController {
   getCurrentMonthAttendance = async (req, res) => {
     try {
       const { user_id, yearMonth } = req.params;
-      console.log(user_id, yearMonth);
 
       const attendance = await attendanceModel.getUserAttendanceOfCurrentMonth(
         user_id,
