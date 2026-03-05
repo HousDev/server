@@ -5,8 +5,8 @@ const LeaveModel = {
   getAllLeaves: async (filters = {}) => {
     let query = `
       SELECT 
-        l.*
-      FROM hrms_leaves l
+        l.*, u.full_name as approved_by_name
+      FROM hrms_leaves l LEFT JOIN users AS u ON l.approved_by = u.id
       WHERE 1=1
     `;
 
