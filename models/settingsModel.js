@@ -167,7 +167,7 @@ class SettingsModel {
   // ─── GET SYSTEM SETTINGS (singleton row id = 1) ─────────────────────────
   static async getSystemSettings() {
     const rows = await query(
-      `SELECT settings_json, logo_file, favicon_file 
+      `SELECT settings_json, logo_file, favicon_file ,site_name
        FROM system_settings 
        WHERE id = 1 
        LIMIT 1`,
@@ -191,6 +191,7 @@ class SettingsModel {
 
       settings.logo = rows[0].logo_file || null;
       settings.favicon = rows[0].favicon_file || null;
+      settings.site_name = rows[0].site_name || null;
 
       return { ...this.defaultSystemSettings(), ...settings };
     }
@@ -199,7 +200,7 @@ class SettingsModel {
   }
 
   // ─── UPSERT SYSTEM SETTINGS ──────────────────────────────────────────────
-  static async updateSystemSettings(settings) {
+  static async updateSystemSettings(settings, site_name) {
     // Extract logo and favicon from settings (they might be full URLs or filenames)
     let logo = settings.logo;
     let favicon = settings.favicon;
@@ -229,15 +230,15 @@ class SettingsModel {
          SET settings_json = ?, 
              updated_at = NOW(),
              logo_file = ?,
-             favicon_file = ?
+             favicon_file = ?,site_name = ?
          WHERE id = 1`,
-        [json, logo, favicon],
+        [json, logo, favicon, site_name],
       );
     } else {
       await query(
-        `INSERT INTO system_settings (id, settings_json, logo_file, favicon_file) 
-         VALUES (1, ?, ?, ?)`,
-        [json, logo, favicon],
+        `INSERT INTO system_settings (id, settings_json, logo_file, favicon_file, site_name) 
+         VALUES (1, ?, ?, ?, ?)`,
+        [json, logo, favicon, site_name],
       );
     }
 

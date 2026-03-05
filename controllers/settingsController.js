@@ -940,7 +940,8 @@ _getBaseUrl(req) {
   // ─── UPDATE SYSTEM SETTINGS (admin) ───────────────────────────────────────
   updateSystemSettings = async (req, res) => {
     try {
-      const { theme, primaryColor, timezone, dateFormat, language } = req.body;
+      const { theme, primaryColor, timezone, dateFormat, language, site_name } =
+        req.body;
 
       const current = await SettingsModel.getSystemSettings();
 
@@ -961,7 +962,7 @@ _getBaseUrl(req) {
         merged.favicon = this._extractFilename(merged.favicon);
       }
 
-      await SettingsModel.updateSystemSettings(merged);
+      await SettingsModel.updateSystemSettings(merged, site_name);
 
       // Get updated settings and build full URLs
       const finalSettings = await SettingsModel.getSystemSettings();
