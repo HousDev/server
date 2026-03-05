@@ -9,6 +9,7 @@ router.post(
   upload.single("selfie"),
   attendanceController.punchOut,
 );
+router.put("/add-note/:id", attendanceController.addNoteForAttendance);
 
 router.get("/today/:user_id", attendanceController.getTodayStatus);
 

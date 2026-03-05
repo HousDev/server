@@ -236,6 +236,17 @@ class AttendanceController {
     }
   };
 
+  addNoteForAttendance = async (req, res) => {
+    const { id } = req.params;
+    const { note } = req.body;
+    const attendance = await attendanceModel.addNote(id, note);
+
+    return res.json({
+      success: true,
+      data: attendance || null,
+    });
+  };
+
   // ---------------- TODAY STATUS ---------------- //
   getTodayStatus = async (req, res) => {
     const { user_id } = req.params;

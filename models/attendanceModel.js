@@ -231,6 +231,22 @@ class AttendanceModel {
     }
   }
 
+  async addNote(id, note) {
+    try {
+      const result = await db.query(
+        `UPDATE attendance 
+         SET note = ?
+         WHERE id = ?`,
+        [note, id],
+      );
+
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("❌ Error in update:", error.message);
+      throw error;
+    }
+  }
+
   // ADD THIS METHOD - Get statistics
   async getStatistics(start_date, end_date) {
     try {
