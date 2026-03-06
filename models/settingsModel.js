@@ -43,7 +43,7 @@ class SettingsModel {
       `SELECT 
         id, full_name, email, phone, role, 
         ${col} AS avatar,
-        department, department_id,
+        department,
         is_active, created_at, updated_at
        FROM users 
        WHERE id = ? 

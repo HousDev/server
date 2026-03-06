@@ -240,10 +240,10 @@ class AttendanceController {
     const { id } = req.params;
     const { note } = req.body;
     const attendance = await attendanceModel.addNote(id, note);
-
     return res.json({
       success: true,
       data: attendance || null,
+      message: "Note added successfully.",
     });
   };
 
