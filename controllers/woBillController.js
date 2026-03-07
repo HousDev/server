@@ -1,4 +1,4 @@
-const woBillsModel = require("../models/woBillsModel");
+const woBillsModel = require("../models/woBillModel");
 
 /**
  * Create Bill
