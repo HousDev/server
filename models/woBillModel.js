@@ -109,10 +109,18 @@ async function findAllWoBills() {
   return await query(`
     SELECT 
       wb.*,
-      so.order_number,
-      u.name as created_by_name
+      so.so_number,
+      v.name as vendor,
+      p.name as project_name,
+      so.status as so_status,
+      so.so_date,
+      b.building_name,
+      u.full_name as created_by_name
     FROM wo_bills wb
     LEFT JOIN service_orders so ON wb.wo_id = so.id
+    LEFT JOIN vendors v ON v.id = so.vendor_id 
+    LEFT JOIN projects p ON p.id = so.project_id
+    LEFT JOIN buildings b ON b.id = so.building_id
     LEFT JOIN users u ON wb.created_by = u.id
     ORDER BY wb.id DESC
   `);

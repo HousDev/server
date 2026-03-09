@@ -2,11 +2,12 @@ const express = require("express");
 const router = express.Router();
 
 const woBillsController = require("../controllers/woBillController");
+const upload = require("../middleware/upload");
 
 /**
  * Create Bill
  */
-router.post("/", woBillsController.createWoBill);
+router.post("/", upload.single("bill_proof"), woBillsController.createWoBill);
 
 /**
  * Get All Bills

@@ -5,6 +5,7 @@ const woBillsModel = require("../models/woBillModel");
  */
 async function createWoBill(req, res) {
   try {
+    console.log(req.body);
     const {
       wo_id,
       bill_number,
@@ -16,18 +17,34 @@ async function createWoBill(req, res) {
       bill_proof,
       created_by,
     } = req.body;
-
-    if (!wo_id || !bill_proof || !created_by) {
-      return res
-        .status(400)
-        .json({ message: "wo_id, bill_proof and created_by are required" });
+    console.log(!wo_id);
+    console.log(!bill_proof);
+    if (!wo_id) {
+      return res.status(400).json({ message: "Work Order Id required." });
     }
 
-    const result = await woBillsModel.createWoBill(req.body);
+    if (!req.file?.filename) {
+      return res.status(400).json({ message: "Bill proof required." });
+    }
+
+    const payload = {
+      wo_id,
+      bill_number,
+      bill_amount,
+      bill_balance,
+      bill_retention,
+      bill_date,
+      bill_due_date,
+      bill_proof: "/uploads/" + req.file?.filename || "",
+      created_by,
+    };
+
+    const result = await woBillsModel.createWoBill(payload);
 
     return res.status(201).json({
       message: "Bill created successfully",
       id: result.insertId,
+      success: true,
     });
   } catch (error) {
     console.error(error);

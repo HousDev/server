@@ -668,6 +668,7 @@ const update = async (id, data) => {
       "system_password",
       "office_email_id",
       "office_email_password",
+      "account_holder_name",
       "bank_account_number",
       "bank_name",
       "ifsc_code",
