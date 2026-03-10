@@ -9,7 +9,6 @@ async function getAvatarColumn() {
 
   const columns = await query(`SHOW COLUMNS FROM users`);
   const colNames = columns.map((c) => c.Field.toLowerCase());
-  console.log("👀 users table columns:", colNames);
 
   const candidates = [
     "profile_picture",
@@ -24,13 +23,11 @@ async function getAvatarColumn() {
   for (const name of candidates) {
     if (colNames.includes(name)) {
       _avatarColumn = name;
-      console.log("✅ Avatar column auto-detected:", _avatarColumn);
       return _avatarColumn;
     }
   }
 
   _avatarColumn = "profile_picture";
-  console.warn("⚠️  No known avatar column found. Columns:", colNames);
   return _avatarColumn;
 }
 
@@ -69,10 +66,29 @@ class SettingsModel {
 
   // ─── UPDATE PROFILE (only full_name) ─────────────────────────────────────
   static async updateProfile(userId, { full_name, email, phone }) {
-    await query(
-      `UPDATE users SET full_name = ?,email = ?, phone = ?,  updated_at = NOW() WHERE id = ?`,
-      [full_name, email, phone, userId],
-    );
+    const [user] = await query(`SELECT * FROM users WHERE id = ?`, [userId]);
+    const fields = [];
+    const values = [];
+
+    fields.push("full_name = ?");
+    values.push(full_name);
+
+    if (user.email !== email) {
+      fields.push("email = ?");
+      values.push(email);
+    }
+
+    if (user.phone !== phone) {
+      fields.push("phone = ?");
+      values.push(phone);
+    }
+
+    fields.push("updated_at = NOW()");
+
+    values.push(userId);
+
+    await query(`UPDATE users SET ${fields.join(", ")} WHERE id = ?`, values);
+
     return await this.getUserById(userId);
   }
 

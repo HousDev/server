@@ -630,16 +630,17 @@ class SettingsController {
     }
   }
 
- // settingsController.js — replace _getBaseUrl:
+  // settingsController.js — replace _getBaseUrl:
 
-_getBaseUrl(req) {
-  // ✅ Respect X-Forwarded-Proto for servers behind nginx/proxy
-  const protocol = req.headers['x-forwarded-proto'] || 
-                   req.headers['x-forwarded-protocol'] || 
-                   req.protocol;
-  const host = req.headers['x-forwarded-host'] || req.get('host');
-  return `${protocol}://${host}`;
-}
+  _getBaseUrl(req) {
+    // ✅ Respect X-Forwarded-Proto for servers behind nginx/proxy
+    const protocol =
+      req.headers["x-forwarded-proto"] ||
+      req.headers["x-forwarded-protocol"] ||
+      req.protocol;
+    const host = req.headers["x-forwarded-host"] || req.get("host");
+    return `${protocol}://${host}`;
+  }
 
   // ─── GET PROFILE ──────────────────────────────────────────────────────────
   getProfile = async (req, res) => {
@@ -679,9 +680,9 @@ _getBaseUrl(req) {
   // ─── UPDATE PROFILE (name only) ───────────────────────────────────────────
   updateProfile = async (req, res) => {
     try {
-      const userId = this._userId(req);
+      const { user_id } = req.params;
 
-      if (!userId) {
+      if (!user_id) {
         return res
           .status(401)
           .json({ success: false, message: "User ID not found in token" });
@@ -694,8 +695,8 @@ _getBaseUrl(req) {
           .status(400)
           .json({ success: false, message: "Full name is required" });
       }
-
-      const updated = await SettingsModel.updateProfile(userId, {
+      console.log("sdafdsafsdafd");
+      const updated = await SettingsModel.updateProfile(user_id, {
         full_name: full_name.trim(),
         email,
         phone,

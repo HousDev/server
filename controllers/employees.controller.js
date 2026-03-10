@@ -812,7 +812,6 @@ exports.updateEmployee = async (req, res) => {
               userUpdateData.department = deptRows[0].name;
             }
           }
-          console.log(userUpdateData, "user update data");
 
           const fields = [];
           const values = [];
@@ -821,23 +820,24 @@ exports.updateEmployee = async (req, res) => {
             fields.push(`${key} = ?`);
             values.push(value);
           });
-          console.log(fields, "field");
           if (fields.length > 0) {
             fields.push("updated_at = NOW()");
             values.push(userId);
-            await query(
+            const userRes = await query(
               `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
               values,
             );
           }
         }
       } catch (syncError) {
+        console.log("this is errorrrrrrrr");
         console.warn("Could not sync to user:", syncError.message);
       }
-
-      res.json(updated);
+      res.status(200).json(updated);
     });
   } catch (error) {
+    console.log("this is errorrrrrrrr thsdhfodshfasdfh");
+
     console.error("Update employee error:", error);
     console.error("Error stack:", error.stack);
 
@@ -1168,7 +1168,6 @@ exports.createEmployeeFromUser = async (req, res) => {
 
     const existing = await HrmsEmployee.findByEmail(email);
     if (existing) {
-      console.log("Duplicate email found:", email);
       return res.status(409).json({
         success: false,
         message: "Employee with this email already exists",

@@ -5,7 +5,6 @@ const woBillsModel = require("../models/woBillModel");
  */
 async function createWoBill(req, res) {
   try {
-    console.log(req.body);
     const {
       wo_id,
       bill_number,
@@ -17,8 +16,6 @@ async function createWoBill(req, res) {
       bill_proof,
       created_by,
     } = req.body;
-    console.log(!wo_id);
-    console.log(!bill_proof);
     if (!wo_id) {
       return res.status(400).json({ message: "Work Order Id required." });
     }
