@@ -936,8 +936,6 @@ async function createUser(req, res) {
       permissions = {},
     } = req.body;
 
-    console.log("Create user request body:", req.body);
-
     // Validate required fields
     if (!email || !password) {
       return res.status(400).json({
@@ -991,8 +989,6 @@ async function createUser(req, res) {
       permissions: permissions || {},
     });
 
-    console.log("User created successfully:", created);
-
     // Check if role exists, if not create it
     try {
       const existingRole = await Role.findByName(role);
@@ -1009,7 +1005,6 @@ async function createUser(req, res) {
           is_active: true,
           created_by: "system",
         });
-        console.log("Auto-created role:", role);
       }
     } catch (roleError) {
       console.warn("Could not check/create role:", roleError.message);
@@ -1033,6 +1028,28 @@ async function createUser(req, res) {
 
 // ✅ User update करें - SYNC WITH EMPLOYEE (FIXED VERSION)
 // ✅ User update करें - SYNC WITH EMPLOYEE (FIXED VERSION)
+async function updatePassword(req, res) {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    const update = await query("UPDATE users set password=? WHERE id  = ? ", [
+      hash,
+      id,
+    ]);
+
+    console.log(update);
+
+    res
+      .status(200)
+      .json({ message: "Password Changed Successfully.", success: true });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", success: false });
+  }
+}
 async function updateUser(req, res) {
   try {
     const { id } = req.params;
@@ -1620,4 +1637,5 @@ module.exports = {
   login,
   getProfile,
   uploadProfilePicture,
+  updatePassword,
 };
