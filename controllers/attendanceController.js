@@ -110,6 +110,7 @@ class AttendanceController {
           .status(400)
           .json({ success: false, message: "Employee not found." });
       }
+
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
         {
@@ -240,10 +241,10 @@ class AttendanceController {
     const { id } = req.params;
     const { note } = req.body;
     const attendance = await attendanceModel.addNote(id, note);
-
     return res.json({
       success: true,
       data: attendance || null,
+      message: "Note added successfully.",
     });
   };
 

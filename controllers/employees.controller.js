@@ -662,6 +662,10 @@ exports.updateEmployee = async (req, res) => {
             : employee.office_email_password,
 
         // Bank Details
+        account_holder_name:
+          req.body.account_holder_name !== undefined
+            ? req.body.account_holder_name
+            : employee.account_holder_name,
         bank_account_number:
           req.body.bank_account_number !== undefined
             ? req.body.bank_account_number
@@ -772,7 +776,7 @@ exports.updateEmployee = async (req, res) => {
               .join(" ");
           }
 
-          if (req.body.phone !== undefined)
+          if (req.body.phone !== undefined && req.body.phone !== employee.phone)
             userUpdateData.phone = req.body.phone;
           if (req.file)
             userUpdateData.profile_picture = `/uploads/${req.file.filename}`;
@@ -803,9 +807,9 @@ exports.updateEmployee = async (req, res) => {
               `SELECT name FROM departments WHERE id = ? LIMIT 1`,
               [req.body.department_id],
             );
+
             if (deptRows && deptRows.length > 0) {
               userUpdateData.department = deptRows[0].name;
-              userUpdateData.department_id = req.body.department_id;
             }
           }
 
@@ -816,23 +820,24 @@ exports.updateEmployee = async (req, res) => {
             fields.push(`${key} = ?`);
             values.push(value);
           });
-
           if (fields.length > 0) {
             fields.push("updated_at = NOW()");
             values.push(userId);
-            await query(
+            const userRes = await query(
               `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
               values,
             );
           }
         }
       } catch (syncError) {
+        console.log("this is errorrrrrrrr");
         console.warn("Could not sync to user:", syncError.message);
       }
-
-      res.json(updated);
+      res.status(200).json(updated);
     });
   } catch (error) {
+    console.log("this is errorrrrrrrr thsdhfodshfasdfh");
+
     console.error("Update employee error:", error);
     console.error("Error stack:", error.stack);
 
@@ -1163,7 +1168,6 @@ exports.createEmployeeFromUser = async (req, res) => {
 
     const existing = await HrmsEmployee.findByEmail(email);
     if (existing) {
-      console.log("Duplicate email found:", email);
       return res.status(409).json({
         success: false,
         message: "Employee with this email already exists",
