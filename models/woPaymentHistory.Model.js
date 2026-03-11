@@ -5,20 +5,23 @@ const db = require("../config/db");
  */
 const createWoPayment = async (data) => {
   const connection = await db.pool.getConnection();
-  console.log("executed...");
+
   try {
     await connection.beginTransaction();
 
     const {
       wo_id,
+      bill_id,
       transaction_type,
       amount_paid,
+      approved_amount_paid,
       advance_amount,
       retention_percentage,
       payment_method,
       payment_reference_no,
       payment_proof,
       payment_date,
+      payment_due_date,
       status = "SUCCESS",
       remarks,
       created_by,
@@ -159,28 +162,35 @@ const createWoPayment = async (data) => {
       [result] = await connection.query(
         `INSERT INTO wo_payments_history (
           wo_id,
+          bill_id,
           transaction_type,
           amount_paid,
-          payment_method,
-          payment_reference_no,
-          payment_proof,
+          approved_amount_paid,
+          retention_percent,
           payment_date,
+          payment_due_date,
           status,
           remarks,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           wo_id,
+          bill_id,
           transaction_type,
           amount_paid,
-          payment_method,
-          payment_reference_no,
-          payment_proof,
+          approved_amount_paid,
+          retention_percentage,
           payment_date,
+          payment_due_date,
           status,
           remarks,
           created_by,
         ],
+      );
+
+      await connection.query(
+        `UPDATE wo_bills set request_amount = request_amount + ? WHERE id = ?`,
+        [amount_paid, bill_id],
       );
     }
 

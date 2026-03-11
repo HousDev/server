@@ -78,6 +78,7 @@ router.get("/:id", userController.getUserById);
 router.post("/", userController.createUser);
 
 // PUT /api/users/:id
+router.put("/password-change/:id", userController.updatePassword);
 router.put("/:id", userController.updateUser);
 
 // DELETE /api/users/:id

@@ -10,9 +10,9 @@ exports.createPayment = async (req, res) => {
   try {
     const payload = {
       ...req.body,
-      payment_proof: "/uploads/" + req.file.filename,
+      payment_proof: req.file ? "/uploads/" + req.file.filename : "",
     };
-
+    console.log("payload : ", payload);
     const existingWO = await query(
       "SELECT * FROM service_orders WHERE id = ?",
       [payload.wo_id],
