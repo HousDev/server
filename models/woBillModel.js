@@ -37,6 +37,19 @@ async function createWoBill(data) {
   );
 }
 
+async function updateWoBillStatus(id, data) {
+  const { status, rejectionReason } = data;
+
+  return await query(
+    `
+    UPDATE wo_bills
+    SET status = ?, rejection_reason = ?
+    WHERE id = ?
+    `,
+    [status, rejectionReason, id],
+  );
+}
+
 /**
  * Update Bill
  */
@@ -133,4 +146,5 @@ module.exports = {
   findWoBillById,
   findBillsByWoId,
   findAllWoBills,
+  updateWoBillStatus,
 };

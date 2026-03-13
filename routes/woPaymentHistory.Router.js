@@ -14,7 +14,8 @@ router.get("/", controller.getAllPaymentsHistory);
 router.get("/:id", controller.getPaymentById);
 
 // UPDATE
-router.put("/:id", controller.updatePayment);
+router.put("/payment-status/:id", controller.updatePaymentStatus);
+router.put("/:id", upload.single("payment_proof"), controller.updatePayment);
 
 // DELETE
 router.delete("/:id", controller.deletePayment);
