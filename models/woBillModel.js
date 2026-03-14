@@ -16,12 +16,12 @@ async function createWoBill(data) {
     bill_proof,
     created_by,
   } = data;
-
+  const retentionAmount = (Number(bill_amount) * Number(bill_retention)) / 100;
   return await query(
     `
     INSERT INTO wo_bills
-      (wo_id, bill_number, bill_amount, bill_balance, bill_retention, bill_date, bill_due_date, bill_proof, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (wo_id, bill_number, bill_amount, bill_balance, bill_retention, bill_date, bill_due_date, bill_proof,bill_retention_amount, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       wo_id,
@@ -32,6 +32,7 @@ async function createWoBill(data) {
       bill_date,
       bill_due_date,
       bill_proof,
+      retentionAmount,
       created_by,
     ],
   );
@@ -123,10 +124,11 @@ async function findAllWoBills() {
     SELECT 
       wb.*,
       so.so_number,
+      so.so_date,
+      so.status as so_status,
+      so.advance_amount,
       v.name as vendor,
       p.name as project_name,
-      so.status as so_status,
-      so.so_date,
       b.building_name,
       u.full_name as created_by_name
     FROM wo_bills wb
