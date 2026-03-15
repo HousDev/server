@@ -1,5 +1,6 @@
 // models/woBillsModel.js
 const { query } = require("../config/db");
+const db = require("../config/db");
 
 /**
  * Create Bill
@@ -16,12 +17,21 @@ async function createWoBill(data) {
     bill_proof,
     created_by,
   } = data;
+  console.log(data);
   const retentionAmount = (Number(bill_amount) * Number(bill_retention)) / 100;
-  return await query(
+  const connection = await db.pool.getConnection();
+  await connection.beginTransaction();
+
+  await connection.query(
+    `update service_orders set request_amount = request_amount + ? where id = ?`,
+    [bill_amount, wo_id],
+  );
+
+  const bill = await connection.query(
     `
     INSERT INTO wo_bills
-      (wo_id, bill_number, bill_amount, bill_balance, bill_retention, bill_date, bill_due_date, bill_proof,bill_retention_amount, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (wo_id, bill_number, bill_amount, bill_balance, bill_retention, bill_date, bill_due_date, bill_proof,bill_retention_amount, bill_calcu_retention_amount, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       wo_id,
@@ -33,15 +43,33 @@ async function createWoBill(data) {
       bill_due_date,
       bill_proof,
       retentionAmount,
+      retentionAmount,
       created_by,
     ],
   );
+
+  await connection.commit();
+  return bill;
 }
 
 async function updateWoBillStatus(id, data) {
   const { status, rejectionReason } = data;
+  const connection = await db.pool.getConnection();
+  await connection.beginTransaction();
 
-  return await query(
+  const [[woBill]] = await connection.query(
+    "SELECT * FROM wo_bills where id = ?",
+    [id],
+  );
+
+  if (status === "rejected") {
+    await connection.query(
+      `update service_orders set request_amount = request_amount - ? where id = ?`,
+      [woBill.bill_amount, woBill.wo_id],
+    );
+  }
+
+  const woBills = await connection.query(
     `
     UPDATE wo_bills
     SET status = ?, rejection_reason = ?
@@ -49,6 +77,10 @@ async function updateWoBillStatus(id, data) {
     `,
     [status, rejectionReason, id],
   );
+
+  await connection.commit();
+
+  return woBills;
 }
 
 /**
@@ -125,6 +157,10 @@ async function findAllWoBills() {
       wb.*,
       so.so_number,
       so.so_date,
+      so.advance_amount as wo_advance_amount,
+      so.balance_amount as wo_balance_amount,
+      so.grand_total,
+      so.request_amount as wo_request_amount,
       so.status as so_status,
       so.advance_amount,
       v.name as vendor,

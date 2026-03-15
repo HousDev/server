@@ -55,11 +55,12 @@ const createWoPayment = async (data) => {
 
       await connection.query(
         `UPDATE service_orders 
-         SET total_paid = ?, advance_amount = ?, balance_amount = ?, payment_status = ?
+         SET total_paid = ?, advance_amount = ?, request_amount = ?, balance_amount = ?, payment_status = ?
          WHERE id = ?`,
         [
           Number(amount_paid) + Number(wo.total_paid || 0),
           Number(amount_paid) + Number(wo.advance_amount || 0),
+          Number(amount_paid) + Number(wo.request_amount || 0),
           Number(wo.balance_amount) - Number(amount_paid),
           woStatus,
           wo_id,
@@ -72,6 +73,7 @@ const createWoPayment = async (data) => {
           wo_id,
           transaction_type,
           amount_paid,
+          approved_amount_paid,
           payment_method,
           payment_reference_no,
           payment_proof,
@@ -79,10 +81,11 @@ const createWoPayment = async (data) => {
           status,
           remarks,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           wo_id, // Use the inserted ID from the previous query
           transaction_type,
+          amount_paid,
           amount_paid,
           payment_method,
           payment_reference_no,
@@ -163,7 +166,7 @@ const createWoPayment = async (data) => {
         `UPDATE wo_bills SET
       bill_paid = ?,
       bill_balance = ?,
-      bill_retention_amount = ?
+      bill_retention_amount = ?,
       status = ?
       WHERE id = ?`,
         [billPaid, billBalance, retentionAmount, billStatus, bill_id],
@@ -375,36 +378,73 @@ const updateWoPayment = async (id, data) => {
       billStatus = "pending";
     }
 
-    const newRetentionAmountForRetentionCalculation =
-      Number(exisistingWoBill.bill_calcu_retention_amount) -
-      Number(retention_amount);
+    let newRetentionAmountForRetentionCalculation = 0;
+    let retentionForServiceOrder = 0;
+    const actualPay =
+      Number(exisistingWoBill.bill_amount) -
+      Number(exisistingWoBill.bill_retention_amount);
+
+    if (Number(actualPay) === Number(approved_amount_paid)) {
+      console.log("first");
+      newRetentionAmountForRetentionCalculation = 0;
+      retentionForServiceOrder =
+        Number(exisistingWO.retention_amount) +
+        Number(exisistingWoBill.bill_retention_amount);
+    } else if (
+      Number(exisistingWoBill.bill_retention_amount) ===
+      Number(exisistingWoBill.bill_balance) - Number(approved_amount_paid)
+    ) {
+      console.log("third");
+      newRetentionAmountForRetentionCalculation = 0;
+      retentionForServiceOrder =
+        Number(exisistingWO.retention_amount) +
+        Number(exisistingWoBill.bill_calcu_retention_amount);
+    } else if (Number(actualPay) !== Number(approved_amount_paid)) {
+      console.log("second");
+      newRetentionAmountForRetentionCalculation =
+        Number(exisistingWoBill.bill_calcu_retention_amount) -
+        (Number(approved_amount_paid) *
+          Number(exisistingWoBill.bill_retention)) /
+          100;
+
+      retentionForServiceOrder =
+        Number(exisistingWO.retention_amount) +
+        (Number(approved_amount_paid) *
+          Number(exisistingWoBill.bill_retention)) /
+          100;
+    }
+    const requestAmount = Number(amount_paid) - Number(approved_amount_paid);
 
     await connection.query(
       `UPDATE wo_bills SET
       bill_paid = ?,
       bill_balance = ?,
       bill_calcu_retention_amount = ?,
+      request_amount = request_amount - ?,
       status = ?
       WHERE id = ?`,
       [
         billPaid,
         billBalance,
         newRetentionAmountForRetentionCalculation,
+        requestAmount,
         billStatus,
         bill_id,
       ],
     );
-
+    console.log(
+      retentionForServiceOrder,
+      newRetentionAmountForRetentionCalculation,
+    );
     const newAdvanceAmount =
       Number(exisistingWO.advance_amount) - Number(advance_amount);
     const newTotalPaid =
       Number(exisistingWO.total_paid) +
-      (Number(amount_paid) - Number(advance_amount));
+      (Number(approved_amount_paid) - Number(advance_amount));
     const newRetentionAmount =
       Number(exisistingWO.retention_amount) + Number(retention_amount);
     const newBalanceAmount =
-      Number(exisistingWO.balance_amount) -
-      (Number(amount_paid) - Number(advance_amount));
+      Number(exisistingWO.balance_amount) - Number(approved_amount_paid);
 
     const paymentStatus =
       Number(newBalanceAmount) === 0
@@ -425,7 +465,7 @@ const updateWoPayment = async (id, data) => {
       [
         newAdvanceAmount,
         newTotalPaid,
-        newRetentionAmount,
+        retentionForServiceOrder,
         newBalanceAmount,
         paymentStatus,
         exisistingWO.id,
