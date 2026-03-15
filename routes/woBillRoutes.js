@@ -27,6 +27,8 @@ router.get("/:id", woBillsController.getWoBillById);
 /**
  * Update Bill
  */
+router.put("/bill-status/:id", woBillsController.updateWoBillStatus);
+
 router.put("/:id", woBillsController.updateWoBill);
 
 /**

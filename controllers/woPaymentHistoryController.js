@@ -102,8 +102,33 @@ exports.getPaymentById = async (req, res) => {
 exports.updatePayment = async (req, res) => {
   try {
     const { id } = req.params;
+    const payload = {
+      ...req.body,
+      payment_proof: req.file ? "/uploads/" + req.file.filename : "",
+    };
+    // console.log("wo Payment update controller : ", id, req.body);
 
-    await woPaymentsModel.updatePayment(id, req.body);
+    await woPaymentsModel.updateWoPayment(id, payload);
+
+    res.status(200).json({
+      success: true,
+      message: "Payment updated successfully",
+    });
+  } catch (error) {
+    console.error("Update Payment Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update payment",
+      error: error.message,
+    });
+  }
+};
+
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("wo Payment status controller : ", req.body);
+    await woPaymentsModel.updatePaymentStatus(id, req.body);
 
     res.status(200).json({
       success: true,

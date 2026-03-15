@@ -4,6 +4,8 @@ const db = require("../config/db");
  * Create Work Order Payment
  */
 const createWoPayment = async (data) => {
+  console.log(data);
+  // return;
   const connection = await db.pool.getConnection();
 
   try {
@@ -15,7 +17,6 @@ const createWoPayment = async (data) => {
       transaction_type,
       amount_paid,
       approved_amount_paid,
-      advance_amount,
       retention_percentage,
       payment_method,
       payment_reference_no,
@@ -25,6 +26,9 @@ const createWoPayment = async (data) => {
       status = "SUCCESS",
       remarks,
       created_by,
+      paid_on,
+      previous_advance,
+      adjusted_advance,
     } = data;
 
     // 🔒 Lock WO row
@@ -35,7 +39,7 @@ const createWoPayment = async (data) => {
        FOR UPDATE`,
       [wo_id],
     );
-
+    console.log("work orders : ", wo);
     if (!wo) {
       throw new Error("Work Order not found");
     }
@@ -89,46 +93,84 @@ const createWoPayment = async (data) => {
           created_by,
         ],
       );
-    } else if (status === "SUCCESS" && transaction_type === "PAYMENT") {
-      const woStatus =
-        Number(amount_paid) > 0 &&
-        Number(amount_paid) < Number(wo.balance_amount)
-          ? "partial"
-          : Number(amount_paid) - Number(wo.balance_amount) === 0
-            ? "completed"
+    } else if (status === "SUCCESS" && transaction_type === "RETENTION") {
+      const [[exisistingWoBill]] = await connection.query(
+        `SELECT * FROM wo_bills WHERE id = ?`,
+        [bill_id],
+      );
+
+      if (!exisistingWoBill) {
+        throw new Error("WO Bill not found");
+      }
+
+      const newAdvanceAmount =
+        Number(previous_advance) - Number(adjusted_advance);
+      const newTotalPaid = Number(wo.total_paid) + Number(approved_amount_paid);
+      const newRetentionAmount =
+        Number(wo.retention_amount) - Number(approved_amount_paid);
+      const newBalanceAmount =
+        Number(wo.balance_amount) - Number(approved_amount_paid);
+      const paymentStatus =
+        Number(newBalanceAmount) === 0
+          ? "completed"
+          : Number(newBalanceAmount) > 0 &&
+              Number(newBalanceAmount) < Number(wo.grand_total)
+            ? "partial"
             : "pending";
 
-      let retention_amount =
-        (Number(amount_paid) * Number(retention_percentage)) / 100;
-
-      let final_retention_amount =
-        Number(wo.retention_amount) + Number(retention_amount);
-
-      const amountAfterRetention =
-        Number(amount_paid) - Number(retention_amount);
-
-      const total_paid = Number(wo.total_paid) + Number(amountAfterRetention);
-
-      const balance_amount =
-        Number(wo.balance_amount) - Number(amountAfterRetention);
-
-      const wo_advance_amount =
-        Number(wo.advance_amount) - Number(advance_amount);
-
       await connection.query(
-        `UPDATE service_orders 
-         SET total_paid = ?, balance_amount = ?, advance_amount = ?, retention_amount = ?, payment_status = ?
-         WHERE id = ?`,
+        `UPDATE service_orders SET
+      advance_amount = ?,
+      total_paid = ?,
+      retention_amount = ?,
+      balance_amount = ?,
+      payment_status = ?
+      WHERE id = ?`,
         [
-          Number(total_paid),
-          Number(balance_amount),
-          Number(wo_advance_amount),
-          Number(final_retention_amount),
-          woStatus,
+          newAdvanceAmount,
+          newTotalPaid,
+          newRetentionAmount,
+          newBalanceAmount,
+          paymentStatus,
           wo_id,
         ],
       );
 
+      const billPaid =
+        Number(exisistingWoBill.bill_paid) + Number(approved_amount_paid);
+
+      const billBalance =
+        Number(exisistingWoBill.bill_balance) - Number(approved_amount_paid);
+
+      const retentionAmount =
+        Number(exisistingWoBill.bill_retention_amount) -
+        Number(approved_amount_paid);
+
+      let billStatus = "";
+
+      if (Number(billBalance) === 0) {
+        billStatus = "completed";
+      } else if (
+        Number(billBalance) > 0 &&
+        Number(billBalance) < Number(exisistingWoBill.bill_amount)
+      ) {
+        billStatus = "partial";
+      } else {
+        billStatus = "pending";
+      }
+
+      await connection.query(
+        `UPDATE wo_bills SET
+      bill_paid = ?,
+      bill_balance = ?,
+      bill_retention_amount = ?
+      status = ?
+      WHERE id = ?`,
+        [billPaid, billBalance, retentionAmount, billStatus, bill_id],
+      );
+
+      // console.log("in retention");
+      // return;
       // ➕ Insert history
       [result] = await connection.query(
         `INSERT INTO wo_payments_history (
@@ -140,10 +182,16 @@ const createWoPayment = async (data) => {
           payment_reference_no,
           payment_proof,
           payment_date,
+          paid_on,
           status,
           remarks,
-          created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          created_by,
+          payment_due_date,
+          bill_id,
+          approved_amount_paid,
+          previous_advance,
+          adjusted_advance
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           wo_id, // Use the inserted ID from the previous query
           transaction_type,
@@ -153,9 +201,15 @@ const createWoPayment = async (data) => {
           payment_reference_no,
           payment_proof,
           payment_date,
+          paid_on,
           status || "PENDING",
           remarks || null,
           created_by,
+          payment_due_date,
+          bill_id,
+          approved_amount_paid,
+          previous_advance,
+          adjusted_advance,
         ],
       );
     } else {
@@ -208,6 +262,244 @@ const createWoPayment = async (data) => {
 };
 
 /**
+ * Update WO Payment
+ */
+const updateWoPayment = async (id, data) => {
+  const connection = await db.pool.getConnection();
+  try {
+    console.log("pay modal", data);
+    await connection.beginTransaction();
+    const {
+      transaction_type,
+      amount_paid,
+      retention_percent,
+      payment_method,
+      payment_date,
+      payment_due_date,
+      payment_reference_no,
+      payment_proof,
+      wo_advance_amount,
+      advance_amount = 0,
+      status,
+      remarks,
+      approved_amount_paid,
+      bill_amount,
+      bill_balance,
+      bill_created_by,
+      bill_date,
+      bill_due_date,
+      bill_id,
+      bill_number,
+      bill_proof,
+      bill_retention,
+      bill_status,
+      vendor,
+      so_number,
+      retention_amount,
+      paid_on,
+    } = data;
+
+    const [[exisistingTransaction]] = await connection.query(
+      `SELECT * FROM wo_payments_history WHERE id = ?`,
+      [id],
+    );
+
+    console.log("transaction", exisistingTransaction);
+    if (!exisistingTransaction) {
+      throw new Error("Payment Transaction not found");
+    }
+
+    const [[exisistingWoBill]] = await connection.query(
+      `SELECT * FROM wo_bills WHERE id = ?`,
+      [bill_id],
+    );
+    console.log("bill", exisistingWoBill);
+
+    if (!exisistingWoBill) {
+      throw new Error("WO Bill not found");
+    }
+
+    const [[exisistingWO]] = await connection.query(
+      `SELECT * FROM service_orders WHERE id = ?`,
+      [exisistingTransaction.wo_id],
+    );
+
+    console.log("WO", exisistingWO);
+
+    if (!exisistingWO) {
+      throw new Error("Work Order not found");
+    }
+
+    const result = await connection.query(
+      `UPDATE wo_payments_history SET
+      approved_amount_paid = ?,
+      payment_method = ?,
+      payment_reference_no = ?,
+      payment_proof = ?,
+      paid_on = ?,
+      previous_advance = ?,
+      adjusted_advance = ?,
+      status = ?,
+      remarks = ?
+     WHERE id = ?`,
+      [
+        approved_amount_paid,
+        payment_method,
+        payment_reference_no,
+        payment_proof,
+        paid_on,
+        wo_advance_amount,
+        advance_amount,
+        status,
+        remarks,
+        id,
+      ],
+    );
+
+    const billPaid =
+      Number(exisistingWoBill.bill_paid) + Number(approved_amount_paid);
+
+    const billBalance =
+      Number(exisistingWoBill.bill_balance) - Number(approved_amount_paid);
+
+    let billStatus = "";
+
+    if (Number(billBalance) === 0) {
+      billStatus = "completed";
+    } else if (
+      Number(billBalance) > 0 &&
+      Number(billBalance) < Number(exisistingWoBill.bill_amount)
+    ) {
+      billStatus = "partial";
+    } else {
+      billStatus = "pending";
+    }
+
+    const newRetentionAmountForRetentionCalculation =
+      Number(exisistingWoBill.bill_calcu_retention_amount) -
+      Number(retention_amount);
+
+    await connection.query(
+      `UPDATE wo_bills SET
+      bill_paid = ?,
+      bill_balance = ?,
+      bill_calcu_retention_amount = ?,
+      status = ?
+      WHERE id = ?`,
+      [
+        billPaid,
+        billBalance,
+        newRetentionAmountForRetentionCalculation,
+        billStatus,
+        bill_id,
+      ],
+    );
+
+    const newAdvanceAmount =
+      Number(exisistingWO.advance_amount) - Number(advance_amount);
+    const newTotalPaid =
+      Number(exisistingWO.total_paid) +
+      (Number(amount_paid) - Number(advance_amount));
+    const newRetentionAmount =
+      Number(exisistingWO.retention_amount) + Number(retention_amount);
+    const newBalanceAmount =
+      Number(exisistingWO.balance_amount) -
+      (Number(amount_paid) - Number(advance_amount));
+
+    const paymentStatus =
+      Number(newBalanceAmount) === 0
+        ? "completed"
+        : Number(newBalanceAmount) > 0 &&
+            Number(newBalanceAmount) < Number(exisistingWO.grand_total)
+          ? "partial"
+          : "pending";
+
+    await connection.query(
+      `UPDATE service_orders SET
+      advance_amount = ?,
+      total_paid = ?,
+      retention_amount = ?,
+      balance_amount = ?,
+      payment_status = ?
+      WHERE id = ?`,
+      [
+        newAdvanceAmount,
+        newTotalPaid,
+        newRetentionAmount,
+        newBalanceAmount,
+        paymentStatus,
+        exisistingWO.id,
+      ],
+    );
+
+    await connection.commit();
+    return result.affectedRows;
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+};
+
+async function updatePaymentStatus(id, data) {
+  const { status, rejectionReason, approved_amount_paid, amount_paid, wo_id } =
+    data;
+  console.log(data);
+  if (status === "pending") {
+    const connection = await db.pool.getConnection();
+
+    const woPaymentHistory = await connection.query(
+      `
+    UPDATE wo_payments_history
+    SET status = ?, rejection_reason = ?, approved_amount_paid = ?
+    WHERE id = ?
+    `,
+      [status, rejectionReason, approved_amount_paid, id],
+    );
+
+    const requestAmount = Number(amount_paid) - Number(approved_amount_paid);
+
+    await connection.query(
+      `
+    UPDATE wo_bills
+    SET request_amount = request_amount - ?
+    WHERE id = ?
+    `,
+      [requestAmount, wo_id],
+    );
+    await connection.commit();
+    return woPaymentHistory;
+  }
+  if (status === "rejected") {
+    const connection = await db.pool.getConnection();
+
+    const woPaymentHistory = await connection.query(
+      `
+    UPDATE wo_payments_history
+    SET status = ?, rejection_reason = ?
+    WHERE id = ?
+    `,
+      [status, rejectionReason, id],
+    );
+
+    const requestAmount = Number(approved_amount_paid);
+
+    await connection.query(
+      `
+    UPDATE wo_bills
+    SET request_amount = request_amount - ?
+    WHERE id = ?
+    `,
+      [requestAmount, wo_id],
+    );
+
+    await connection.commit();
+    return woPaymentHistory;
+  }
+}
+
+/**
  * Get WO Payment History
  */
 const getWoPaymentsHistory = async () => {
@@ -222,55 +514,22 @@ const getWoPaymentsHistory = async () => {
       so.advance_amount as wo_advance_amount,
       so.balance_amount as wo_balance_amount,
       so.retention_amount as wo_retention_amount,
-      so.payment_status as wo_payment_status
+      so.payment_status as wo_payment_status,
+      wb.bill_number,
+      wb.bill_amount,
+      wb.bill_balance,
+      wb.bill_retention,
+      wb.bill_date,
+      wb.bill_due_date,
+      wb.bill_proof,
+      wb.status as bill_status,
+      wb.created_by as bill_created_by
      FROM wo_payments_history wph
-     LEFT JOIN service_orders so ON so.id = wph.wo_id LEFT JOIN vendors AS v ON so.vendor_id = v.id 
+     LEFT JOIN service_orders so ON so.id = wph.wo_id LEFT JOIN vendors AS v ON so.vendor_id = v.id LEFT JOIN wo_bills AS wb ON wb.id = wph.bill_id
      ORDER BY wph.created_at DESC`,
   );
 
   return rows;
-};
-
-/**
- * Update WO Payment
- */
-const updateWoPayment = async (id, data) => {
-  const {
-    transaction_type,
-    amount_paid,
-    payment_method,
-    payment_reference_no,
-    payment_proof,
-    payment_date,
-    status,
-    remarks,
-  } = data;
-
-  const result = await db.query(
-    `UPDATE wo_payments SET
-      transaction_type = ?,
-      amount_paid = ?,
-      payment_method = ?,
-      payment_reference_no = ?,
-      payment_proof = ?,
-      payment_date = ?,
-      status = ?,
-      remarks = ?
-     WHERE id = ?`,
-    [
-      transaction_type,
-      amount_paid,
-      payment_method,
-      payment_reference_no,
-      payment_proof,
-      payment_date,
-      status,
-      remarks,
-      id,
-    ],
-  );
-
-  return result.affectedRows;
 };
 
 /**
@@ -287,4 +546,5 @@ module.exports = {
   getWoPaymentsHistory,
   updateWoPayment,
   deleteWoPayment,
+  updatePaymentStatus,
 };

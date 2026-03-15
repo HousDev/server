@@ -75,6 +75,34 @@ async function updateWoBill(req, res) {
 }
 
 /**
+ * Update Bill
+ */
+async function updateWoBillStatus(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: "Invalid bill ID" });
+    }
+
+    const existing = await woBillsModel.findWoBillById(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Bill not found" });
+    }
+
+    await woBillsModel.updateWoBillStatus(id, req.body);
+
+    return res.json({
+      message: "Bill status updated successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+/**
  * Delete Bill
  */
 async function deleteWoBill(req, res) {
@@ -164,4 +192,5 @@ module.exports = {
   getWoBillById,
   getBillsByWoId,
   getAllWoBills,
+  updateWoBillStatus,
 };
