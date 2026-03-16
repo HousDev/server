@@ -25,8 +25,8 @@ const createRequestMaterialModel = async (data) => {
     const [requestResult] = await connection.execute(
       `INSERT INTO request_material
         (request_no, userId, projectId, buildingId, floorId, flatId, commonAreaId,
-         work, start_date, remark)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         work, start_date, remark,request_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         request_no,
         userId,
@@ -38,6 +38,7 @@ const createRequestMaterialModel = async (data) => {
         work,
         start_date,
         remark || null,
+        "material",
       ],
     );
 
@@ -137,8 +138,8 @@ const createPORequestMaterialModel = async (data) => {
     const [requestResult] = await connection.execute(
       `INSERT INTO request_material
         (request_no, userId, projectId, buildingId, floorId, flatId, commonAreaId,
-         work, start_date, remark,previous_request_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
+         work, start_date, remark,previous_request_id,request_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         request_no,
         userId,
@@ -151,6 +152,7 @@ const createPORequestMaterialModel = async (data) => {
         start_date,
         remark || null,
         previous_request_id,
+        "po",
       ],
     );
 
@@ -240,6 +242,8 @@ const getAllRequestMaterialsModel = async () => {
       rm.flatId,
       rm.commonAreaId,
       rm.previous_request_id AS previous_request_id,
+      rm.request_type AS request_type,
+      rm.rejection_reason AS rejection_reason,
       u.id AS user_id,
       u.full_name AS user_name,
       u.phone AS user_phone,
@@ -280,12 +284,17 @@ const getAllRequestMaterialsModel = async () => {
   return rows;
 };
 
-const updateRequestMaterialStatusModel = async (id, status, user_id) => {
+const updateRequestMaterialStatusModel = async (
+  id,
+  status,
+  rejection_reason,
+  user_id,
+) => {
   const result = await query(
     `UPDATE request_material
-     SET status = ?, updated_at = CURRENT_TIMESTAMP
+     SET status = ?, rejection_reason = ?, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [status, id],
+    [status, rejection_reason, id],
   );
   if (result.affectedRows === 1)
     createActivityLog(

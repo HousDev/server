@@ -188,6 +188,8 @@ const getAllRequestMaterials = async (req, res) => {
           start_date: row.start_date,
           remark: row.remark,
           status: row.status,
+          request_type: row.request_type,
+          rejection_reason: row.rejection_reason,
 
           items: [],
         });
@@ -214,7 +216,7 @@ const getAllRequestMaterials = async (req, res) => {
 const updateRequestMaterialStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, user_id } = req.body;
+    const { status, user_id, rejection_reason } = req.body;
 
     // ✅ Allowed status values (as per ENUM)
     const allowedStatus = ["rejected", "pending", "approved"];
@@ -236,6 +238,7 @@ const updateRequestMaterialStatus = async (req, res) => {
     const updated = await requestMaterialModel.updateRequestMaterialStatusModel(
       id,
       status,
+      rejection_reason,
       user_id,
     );
 
