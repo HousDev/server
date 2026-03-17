@@ -104,15 +104,9 @@ async function updateInventory(req, res) {
     await inventoryModel.updateInventory(id, payload);
     await query(
       `UPDATE items 
-   SET item_name = ?, location = ?, unit = ?, standard_rate = ?
+   SET item_name = ?, unit = ?, standard_rate = ?
    WHERE id = ?`,
-      [
-        payload.name,
-        payload.location,
-        payload.unit,
-        payload.rate,
-        payload.item_id,
-      ]
+      [payload.name, payload.unit, payload.rate, payload.item_id],
     );
 
     return res.json({ message: "Inventory updated successfully" });

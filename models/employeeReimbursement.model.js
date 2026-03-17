@@ -11,19 +11,28 @@ const EmployeeReimbursementModel = {
     description,
     doc,
   }) => {
-    const query = `
-      INSERT INTO employee_reimbursements (
-        employee_id,
-        category,
-        amount,
-        description,
-        doc
-      )
-      VALUES (?, ?, ?, ?, ?)
-    `;
+    const [emp] = await db.query(
+      `SELECT * FROM hrms_employees WHERE user_id = ?`,
+      [employee_id],
+    );
 
-    const [result] = await db.execute(query, [
+    if (!emp) {
+      throw new Error("Employee not found");
+    }
+
+    const query = `
+    INSERT INTO employee_reimbursements (
       employee_id,
+      category,
+      amount,
+      description,
+      doc
+    )
+    VALUES (?, ?, ?, ?, ?)
+  `;
+
+    const result = await db.query(query, [
+      emp.id,
       category,
       amount,
       description,
@@ -56,6 +65,17 @@ const EmployeeReimbursementModel = {
     ]);
 
     return result.affectedRows > 0;
+  },
+
+  getAll: async () => {
+    const query = `
+      SELECT *
+      FROM employee_reimbursements
+      ORDER BY created_at DESC
+    `;
+    const rows = await db.query(query);
+    console.log(rows);
+    return rows;
   },
 
   // =====================================================
