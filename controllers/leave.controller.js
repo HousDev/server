@@ -188,7 +188,6 @@ class LeaveController {
         limit = 20,
         employee_id,
       } = req.query;
-      console.log("query : ", req.query);
 
       const filters = {};
 
@@ -284,13 +283,41 @@ class LeaveController {
     }
   }
 
+  // Get leave statistics
+  static async getEmployeeLeaveStats(req, res) {
+    const { id } = req.params;
+    try {
+      const stats = await LeaveModel.getEmployeeLeaveStats(id);
+      const onLeaveToday = await LeaveModel.getOnLeaveToday();
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          pending: stats.pending || 0,
+          approved: stats.approved || 0,
+          rejected: stats.rejected || 0,
+          total: stats.total || 0,
+          onLeave: onLeaveToday || 0,
+          half_day_total: stats.half_day_total || 0,
+          half_day_pending: stats.half_day_pending || 0,
+          half_day_approved: stats.half_day_approved || 0,
+          half_day_rejected: stats.half_day_rejected || 0,
+        },
+      });
+    } catch (error) {
+      console.error("Get leave stats error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch leave statistics",
+      });
+    }
+  }
+
   // Approve leave
   static async approveLeave(req, res) {
     try {
       const { id } = req.params;
       const { user_id } = req.body;
-
-      console.log("Approve request data:", id, user_id);
 
       // Prepare user data object with both ID and username
       const userData = {
@@ -360,14 +387,6 @@ class LeaveController {
           message: "Rejection reason is required",
         });
       }
-
-      console.log("Reject request data:", {
-        id,
-        user_id,
-        username,
-        name,
-        rejection_reason,
-      });
 
       // Prepare user data object with both ID and username
       const userData = {
@@ -484,7 +503,6 @@ class LeaveController {
       // Send the file
       res.download(leave.attachment_path, fullFileName, (err) => {
         if (err) {
-          console.error("Download error:", err);
           if (!res.headersSent) {
             return res.status(500).json({
               success: false,

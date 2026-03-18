@@ -211,6 +211,30 @@ const LeaveModel = {
     return rows[0];
   },
 
+  getEmployeeLeaveStats: async (employeeId) => {
+    console.log(employeeId);
+    const [[emp]] = await promisePool.query(
+      `SELECT * FROM hrms_employees WHERE user_id = ?`,
+      [employeeId],
+    );
+
+    const query = `
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+        SUM(CASE WHEN is_half_day = 1 THEN 1 ELSE 0 END) as half_day_total,
+        SUM(CASE WHEN is_half_day = 1 AND status = 'pending' THEN 1 ELSE 0 END) as half_day_pending,
+        SUM(CASE WHEN is_half_day = 1 AND status = 'approved' THEN 1 ELSE 0 END) as half_day_approved,
+        SUM(CASE WHEN is_half_day = 1 AND status = 'rejected' THEN 1 ELSE 0 END) as half_day_rejected
+      FROM hrms_leaves where employee_id = ?
+    `;
+
+    const [rows] = await promisePool.query(query, [emp.id]);
+    return rows[0];
+  },
+
   // Get on leave today with half day support
   getOnLeaveToday: async () => {
     const today = new Date().toISOString().split("T")[0];

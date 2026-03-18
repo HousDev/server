@@ -6,35 +6,29 @@ const EmployeeReimbursementController = {
   // =====================================================
   createRequest: async (req, res) => {
     try {
-      console.log(req.body);
-      const { employee_id, category, amount, description } = req.body;
+      const payload = {
+        ...req.body,
+        doc: req.file ? "/uploads/" + req.file.filename : null,
+      };
 
-      // File comes from multer
-      const doc = req.file ? req.file.filename : null;
-
-      if (!employee_id) {
+      if (!payload.employee_id) {
         return res.status(400).json({ message: "Employee ID is required" });
       }
 
-      if (!category) {
+      if (!payload.category) {
         return res.status(400).json({ message: "Category is required" });
       }
 
-      if (!amount) {
+      if (!payload.amount) {
         return res.status(400).json({ message: "Amount is required" });
       }
-
-      const id = await EmployeeReimbursementModel.createRequest({
-        employee_id,
-        category,
-        amount,
-        description,
-        doc, // now correct file value
-      });
+      console.log(payload);
+      const id = await EmployeeReimbursementModel.createRequest(payload);
 
       return res.status(201).json({
         message: "Reimbursement created successfully",
         reimbursement_id: id,
+        success: true,
       });
     } catch (error) {
       console.error("Create Reimbursement Error:", error);
@@ -119,6 +113,7 @@ const EmployeeReimbursementController = {
 
       return res.status(200).json({
         message: "Reimbursement approved successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Approve Reimbursement Error:", error);
@@ -134,7 +129,7 @@ const EmployeeReimbursementController = {
   rejectRequest: async (req, res) => {
     try {
       const { id } = req.params;
-      const { rejected_by } = req.body;
+      const payload = req.body;
 
       if (!id) {
         return res
@@ -144,7 +139,7 @@ const EmployeeReimbursementController = {
 
       const updated = await EmployeeReimbursementModel.rejectRequest(
         id,
-        rejected_by,
+        payload,
       );
 
       if (!updated) {
@@ -153,6 +148,7 @@ const EmployeeReimbursementController = {
 
       return res.status(200).json({
         message: "Reimbursement rejected successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Reject Reimbursement Error:", error);
@@ -183,6 +179,7 @@ const EmployeeReimbursementController = {
 
       return res.status(200).json({
         message: "Reimbursement marked as paid",
+        success: true,
       });
     } catch (error) {
       console.error("Mark Paid Error:", error);
@@ -216,6 +213,19 @@ const EmployeeReimbursementController = {
       console.error("Get Reimbursement Error:", error);
       return res.status(500).json({
         message: "Failed to fetch reimbursement",
+      });
+    }
+  },
+
+  getAll: async (req, res) => {
+    try {
+      const data = await EmployeeReimbursementModel.getAll();
+
+      return res.status(200).json({ data: data, success: true });
+    } catch (error) {
+      console.error("Get All Reimbursements Error:", error);
+      return res.status(500).json({
+        message: "Failed to fetch reimbursements",
       });
     }
   },
@@ -279,9 +289,10 @@ const EmployeeReimbursementController = {
           .json({ message: "Failed to delete reimbursement." });
       }
 
-      return res
-        .status(200)
-        .json({ message: "Successfully deleted reimbursement." });
+      return res.status(200).json({
+        message: "Successfully deleted reimbursement.",
+        success: true,
+      });
     } catch (error) {
       console.error("Get Reimbursement Error:", error);
       return res.status(500).json({

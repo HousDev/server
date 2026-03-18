@@ -19,6 +19,7 @@ router.put("/:id/reject", controller.rejectRequest);
 router.put("/:id/paid", controller.markAsPaid);
 
 // Get employee reimbursements
+router.get("/", controller.getAll);
 router.get("/employee/:employee_id", controller.getByEmployee);
 
 // Get approved (payroll use)

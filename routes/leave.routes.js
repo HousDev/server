@@ -4,10 +4,10 @@ const LeaveController = require("../controllers/leave.controller");
 
 // Middleware to handle JSON errors
 const handleJsonErrors = (err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid JSON payload'
+      message: "Invalid JSON payload",
     });
   }
   next();
@@ -16,10 +16,7 @@ const handleJsonErrors = (err, req, res, next) => {
 router.use(handleJsonErrors);
 
 // Apply for leave with file upload
-router.post("/apply", 
-  LeaveController.upload, 
-  LeaveController.applyLeave
-);
+router.post("/apply", LeaveController.upload, LeaveController.applyLeave);
 
 // Get all leaves
 router.get("/", LeaveController.getLeaves);
@@ -28,6 +25,7 @@ router.get("/", LeaveController.getLeaves);
 router.get("/stats", LeaveController.getLeaveStats);
 
 // Get single leave by ID
+router.get("/stats/employee/:id", LeaveController.getEmployeeLeaveStats);
 router.get("/:id", LeaveController.getLeaveById);
 
 // Approve leave
