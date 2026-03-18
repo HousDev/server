@@ -54,7 +54,7 @@ class ExpenseModel {
           expenseData.receipt_original_name || null,
           expenseData.receipt_file_type || null,
           expenseData.receipt_size || null,
-          "pending_approval",
+          "pending",
         ],
       );
 
@@ -244,7 +244,7 @@ class ExpenseModel {
       const stats = await query(`
                 SELECT 
                     COUNT(*) as total,
-                    SUM(CASE WHEN status = 'pending_approval' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
                     SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
                     SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                     SUM(amount) as total_amount
@@ -252,6 +252,38 @@ class ExpenseModel {
                 WHERE MONTH(expense_date) = MONTH(CURRENT_DATE())
                 AND YEAR(expense_date) = YEAR(CURRENT_DATE())
             `);
+
+      return (
+        stats[0] || {
+          total: 0,
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          total_amount: 0,
+        }
+      );
+    } catch (error) {
+      console.error("Error getting expense stats:", error);
+      throw error;
+    }
+  }
+
+  static async getEmployeeExpenseStats(employee_id) {
+    try {
+      const stats = await query(
+        `
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+                    SUM(amount) as total_amount
+                FROM hrms_expenses
+                WHERE MONTH(expense_date) = MONTH(CURRENT_DATE())
+                AND YEAR(expense_date) = YEAR(CURRENT_DATE()) AND employee_id = ?
+            `,
+        [employee_id],
+      );
 
       return (
         stats[0] || {

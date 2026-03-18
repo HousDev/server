@@ -4,21 +4,22 @@ const ExpenseController = require("../controllers/expense.controller");
 
 // Middleware to handle JSON errors
 const handleJsonErrors = (err, req, res, next) => {
-    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid JSON payload'
-        });
-    }
-    next();
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid JSON payload",
+    });
+  }
+  next();
 };
 
 router.use(handleJsonErrors);
 
 // Submit expense claim with file upload
-router.post("/submit", 
-    ExpenseController.upload, 
-    ExpenseController.submitExpense
+router.post(
+  "/submit",
+  ExpenseController.upload,
+  ExpenseController.submitExpense,
 );
 
 // Get all expenses
@@ -26,6 +27,10 @@ router.get("/", ExpenseController.getExpenses);
 
 // Get expense statistics
 router.get("/stats", ExpenseController.getExpenseStats);
+router.get(
+  "/employee-stats/:employee_id",
+  ExpenseController.getEmployeeExpenseStats,
+);
 
 // Get categories
 router.get("/categories", ExpenseController.getCategories);

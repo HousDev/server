@@ -113,6 +113,7 @@ const EmployeeReimbursementController = {
 
       return res.status(200).json({
         message: "Reimbursement approved successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Approve Reimbursement Error:", error);
@@ -128,7 +129,7 @@ const EmployeeReimbursementController = {
   rejectRequest: async (req, res) => {
     try {
       const { id } = req.params;
-      const { rejected_by } = req.body;
+      const payload = req.body;
 
       if (!id) {
         return res
@@ -138,7 +139,7 @@ const EmployeeReimbursementController = {
 
       const updated = await EmployeeReimbursementModel.rejectRequest(
         id,
-        rejected_by,
+        payload,
       );
 
       if (!updated) {
@@ -147,6 +148,7 @@ const EmployeeReimbursementController = {
 
       return res.status(200).json({
         message: "Reimbursement rejected successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Reject Reimbursement Error:", error);
@@ -177,6 +179,7 @@ const EmployeeReimbursementController = {
 
       return res.status(200).json({
         message: "Reimbursement marked as paid",
+        success: true,
       });
     } catch (error) {
       console.error("Mark Paid Error:", error);
@@ -286,9 +289,10 @@ const EmployeeReimbursementController = {
           .json({ message: "Failed to delete reimbursement." });
       }
 
-      return res
-        .status(200)
-        .json({ message: "Successfully deleted reimbursement." });
+      return res.status(200).json({
+        message: "Successfully deleted reimbursement.",
+        success: true,
+      });
     } catch (error) {
       console.error("Get Reimbursement Error:", error);
       return res.status(500).json({
