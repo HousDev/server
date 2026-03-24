@@ -55,12 +55,11 @@ const createWoPayment = async (data) => {
 
       await connection.query(
         `UPDATE service_orders 
-         SET total_paid = ?, advance_amount = ?, request_amount = ?, balance_amount = ?, payment_status = ?
+         SET total_paid = ?, advance_amount = ?, balance_amount = ?, payment_status = ?
          WHERE id = ?`,
         [
           Number(amount_paid) + Number(wo.total_paid || 0),
           Number(amount_paid) + Number(wo.advance_amount || 0),
-          Number(amount_paid) + Number(wo.request_amount || 0),
           Number(wo.balance_amount) - Number(amount_paid),
           woStatus,
           wo_id,
@@ -432,10 +431,12 @@ const updateWoPayment = async (id, data) => {
         bill_id,
       ],
     );
+
     console.log(
       retentionForServiceOrder,
       newRetentionAmountForRetentionCalculation,
     );
+
     const newAdvanceAmount =
       Number(exisistingWO.advance_amount) - Number(advance_amount);
     const newTotalPaid =
@@ -444,7 +445,9 @@ const updateWoPayment = async (id, data) => {
     const newRetentionAmount =
       Number(exisistingWO.retention_amount) + Number(retention_amount);
     const newBalanceAmount =
-      Number(exisistingWO.balance_amount) - Number(approved_amount_paid);
+      Number(exisistingWO.balance_amount) -
+      Number(approved_amount_paid) -
+      Number(advance_amount);
 
     const paymentStatus =
       Number(newBalanceAmount) === 0
