@@ -39,7 +39,7 @@ const createWoPayment = async (data) => {
        FOR UPDATE`,
       [wo_id],
     );
-    console.log("work orders : ", wo);
+
     if (!wo) {
       throw new Error("Work Order not found");
     }
@@ -444,10 +444,10 @@ const updateWoPayment = async (id, data) => {
       (Number(approved_amount_paid) - Number(advance_amount));
     const newRetentionAmount =
       Number(exisistingWO.retention_amount) + Number(retention_amount);
+    const newSubForBalanceAmount =
+      Number(approved_amount_paid) - Number(advance_amount);
     const newBalanceAmount =
-      Number(exisistingWO.balance_amount) -
-      Number(approved_amount_paid) -
-      Number(advance_amount);
+      Number(exisistingWO.balance_amount) - Number(newSubForBalanceAmount);
 
     const paymentStatus =
       Number(newBalanceAmount) === 0

@@ -283,6 +283,33 @@ class LeaveController {
     }
   }
 
+  // ---------------- CURRENT MONTH ATTENDANCE ---------------- //
+  static async getCurrentMonthLeaves(req, res) {
+    try {
+      const { user_id, yearMonth } = req.params;
+
+      const attendance = await LeaveModel.getEmployeeLeavesByMonth(
+        user_id,
+        yearMonth,
+      );
+
+      return res.json({
+        success: true,
+        data: attendance || [],
+      });
+    } catch (error) {
+      console.error(
+        "❌ Error in getCurrentMonthAttendance controller:",
+        error.message,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch current month attendance",
+      });
+    }
+  }
+
   // Get leave statistics
   static async getEmployeeLeaveStats(req, res) {
     const { id } = req.params;

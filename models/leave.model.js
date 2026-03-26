@@ -103,7 +103,7 @@ const LeaveModel = {
       }
 
       // Calculate total days if not provided
-      if (!leaveData.total_days && leaveData.is_half_day) {
+      if (Boolean(leaveData.is_half_day)) {
         leaveData.total_days = 0.5;
       }
 
@@ -212,7 +212,6 @@ const LeaveModel = {
   },
 
   getEmployeeLeaveStats: async (employeeId) => {
-    console.log(employeeId);
     const [[emp]] = await promisePool.query(
       `SELECT * FROM hrms_employees WHERE user_id = ?`,
       [employeeId],
@@ -247,6 +246,44 @@ const LeaveModel = {
       [today, today],
     );
     return rows[0].count;
+  },
+
+  // Get employee leaves by month (handles overlap properly)
+  getEmployeeLeavesByMonth: async (employeeId, yearMonth) => {
+    try {
+      const [[employeeData]] = await promisePool.query(
+        "SELECT * FROM hrms_employees WHERE user_id = ?",
+        [employeeId],
+      );
+
+      if (!employeeData) return [];
+      const query = `
+      SELECT 
+        l.*, 
+        u.full_name as approved_by_name, 
+        CONCAT(he.first_name, ' ', he.last_name) as emp_name
+      FROM hrms_leaves l
+      LEFT JOIN users u ON l.approved_by = u.id
+      LEFT JOIN hrms_employees he ON he.id = l.employee_id
+      WHERE l.employee_id = ?
+        AND (
+          l.from_date <= LAST_DAY(CONCAT(?, '-01'))
+          AND l.to_date >= CONCAT(?, '-01')
+        ) AND l.status = 'approved'
+      ORDER BY l.from_date ASC
+    `;
+
+      const [rows] = await promisePool.query(query, [
+        employeeData.id,
+        yearMonth,
+        yearMonth,
+      ]);
+
+      return rows;
+    } catch (error) {
+      console.error("❌ Error in getEmployeeLeavesByMonth:", error.message);
+      return [];
+    }
   },
 
   // Get leave count (for pagination)

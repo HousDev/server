@@ -32,6 +32,8 @@ class AttendanceModel {
       const rows = await db.query(
         `SELECT 
          a.*,
+         DATE_FORMAT(a.punch_in_time, '%Y-%m-%dT%h:%i:%s %p') as punch_in_time,
+         DATE_FORMAT(a.punch_out_time, '%Y-%m-%dT%h:%i:%s %p') as punch_out_time,
          CONCAT(u.first_name, ' ', u.last_name) AS user_name,
          u.employee_code AS employee_code
        FROM attendance a
