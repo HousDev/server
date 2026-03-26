@@ -18,6 +18,11 @@ router.use(handleJsonErrors);
 // Apply for leave with file upload
 router.post("/apply", LeaveController.upload, LeaveController.applyLeave);
 
+router.get(
+  "/currentMonthLeaves/:user_id/:yearMonth",
+  LeaveController.getCurrentMonthLeaves,
+);
+
 // Get all leaves
 router.get("/", LeaveController.getLeaves);
 
