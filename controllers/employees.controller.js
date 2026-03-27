@@ -639,6 +639,16 @@ exports.updateEmployee = async (req, res) => {
             ? req.body.salary_type
             : employee.salary_type,
 
+        emp_punch_in_time:
+          req.body.punch_in_time !== undefined
+            ? req.body.punch_in_time
+            : employee.emp_punch_in_time,
+
+        week_off_days:
+          req.body.week_off_days !== undefined
+            ? JSON.stringify(req.body.week_off_days)
+            : JSON.stringify(employee.week_off_days),
+
         // System Details
         laptop_assigned:
           req.body.laptop_assigned !== undefined

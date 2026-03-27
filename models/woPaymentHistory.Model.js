@@ -55,10 +55,9 @@ const createWoPayment = async (data) => {
 
       await connection.query(
         `UPDATE service_orders 
-         SET total_paid = ?, advance_amount = ?, balance_amount = ?, payment_status = ?
+         SET  advance_amount = ?, balance_amount = ?, payment_status = ?
          WHERE id = ?`,
         [
-          Number(amount_paid) + Number(wo.total_paid || 0),
           Number(amount_paid) + Number(wo.advance_amount || 0),
           Number(wo.balance_amount) - Number(amount_paid),
           woStatus,
@@ -125,14 +124,12 @@ const createWoPayment = async (data) => {
       advance_amount = ?,
       total_paid = ?,
       retention_amount = ?,
-      balance_amount = ?,
       payment_status = ?
       WHERE id = ?`,
         [
           newAdvanceAmount,
           newTotalPaid,
           newRetentionAmount,
-          newBalanceAmount,
           paymentStatus,
           wo_id,
         ],
@@ -439,13 +436,19 @@ const updateWoPayment = async (id, data) => {
 
     const newAdvanceAmount =
       Number(exisistingWO.advance_amount) - Number(advance_amount);
+
     const newTotalPaid =
       Number(exisistingWO.total_paid) +
       (Number(approved_amount_paid) - Number(advance_amount));
+
     const newRetentionAmount =
       Number(exisistingWO.retention_amount) + Number(retention_amount);
+
     const newSubForBalanceAmount =
-      Number(approved_amount_paid) - Number(advance_amount);
+      Number(approved_amount_paid) +
+      Number(retentionForServiceOrder) -
+      Number(advance_amount);
+
     const newBalanceAmount =
       Number(exisistingWO.balance_amount) - Number(newSubForBalanceAmount);
 
