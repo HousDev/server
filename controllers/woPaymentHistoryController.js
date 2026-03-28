@@ -12,7 +12,8 @@ exports.createPayment = async (req, res) => {
       ...req.body,
       payment_proof: req.file ? "/uploads/" + req.file.filename : "",
     };
-    console.log("payload : ", payload);
+    // console.log("payload : ", payload);
+    // return;
     const existingWO = await query(
       "SELECT * FROM service_orders WHERE id = ?",
       [payload.wo_id],
@@ -106,7 +107,6 @@ exports.updatePayment = async (req, res) => {
       ...req.body,
       payment_proof: req.file ? "/uploads/" + req.file.filename : "",
     };
-    // console.log("wo Payment update controller : ", id, req.body);
 
     await woPaymentsModel.updateWoPayment(id, payload);
 
