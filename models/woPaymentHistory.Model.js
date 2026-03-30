@@ -143,8 +143,8 @@ const createWoPayment = async (data) => {
       const billPaid =
         Number(exisistingWoBill.bill_paid) + Number(approved_amount_paid);
 
-      const billBalance =
-        Number(exisistingWoBill.bill_balance) - Number(approved_amount_paid);
+      // const billBalance =
+      //   Number(exisistingWoBill.bill_balance) - Number(approved_amount_paid);
 
       const retentionAmount =
         Number(exisistingWoBill.bill_retention_amount) -
@@ -152,11 +152,16 @@ const createWoPayment = async (data) => {
 
       let billStatus = "";
 
-      if (Number(billBalance) === 0) {
+      if (
+        Number(exisistingWoBill.bill_balance) === 0 &&
+        Number(retentionAmount) === 0
+      ) {
         billStatus = "completed";
       } else if (
-        Number(billBalance) > 0 &&
-        Number(billBalance) < Number(exisistingWoBill.bill_amount)
+        (Number(exisistingWoBill.bill_balance) > 0 &&
+          Number(exisistingWoBill.bill_balance) <
+            Number(exisistingWoBill.bill_amount)) ||
+        Number(retentionAmount) > 0
       ) {
         billStatus = "partial";
       } else {
@@ -166,11 +171,10 @@ const createWoPayment = async (data) => {
       await connection.query(
         `UPDATE wo_bills SET
       bill_paid = ?,
-      bill_balance = ?,
       bill_retention_amount = ?,
       status = ?
       WHERE id = ?`,
-        [billPaid, billBalance, retentionAmount, billStatus, bill_id],
+        [billPaid, retentionAmount, billStatus, bill_id],
       );
 
       // console.log("in retention");
@@ -369,11 +373,15 @@ const updateWoPayment = async (id, data) => {
 
     let billStatus = "";
 
-    if (Number(billBalance) === 0) {
+    if (
+      Number(billBalance) === 0 &&
+      Number(exisistingWoBill.bill_retention_amount) === 0
+    ) {
       billStatus = "completed";
     } else if (
-      Number(billBalance) > 0 &&
-      Number(billBalance) < Number(exisistingWoBill.bill_amount)
+      (Number(billBalance) > 0 &&
+        Number(billBalance) < Number(exisistingWoBill.bill_amount)) ||
+      Number(exisistingWoBill.bill_retention_amount) > 0
     ) {
       billStatus = "partial";
     } else {
