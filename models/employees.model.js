@@ -540,6 +540,15 @@ const update = async (id, data) => {
       "date_of_leaving",
     );
 
+    const hasPunchInTimeColumn = await checkColumnExists(
+      "hrms_employees",
+      "emp_punch_in_time",
+    );
+    const hasWeekOffDaysColumn = await checkColumnExists(
+      "hrms_employees",
+      "week_off_days",
+    );
+
     // =====================================================
     // 🔥 FIX 1: Convert empty DATE fields to NULL
     // =====================================================
@@ -679,6 +688,9 @@ const update = async (id, data) => {
     if (hasCompanyIdColumn) allowedFields.push("company_id");
     if (hasSalaryColumn) allowedFields.push("salary");
     if (hasSalaryTypeColumn) allowedFields.push("salary_type");
+    if (hasMiddleNameColumn) allowedFields.push("emp_punch_in_time");
+    if (hasWeekOffDaysColumn) allowedFields.push("week_off_days");
+
     if (hasDateOfLeavingColumn) allowedFields.push("date_of_leaving");
 
     // =====================================================
@@ -701,7 +713,6 @@ const update = async (id, data) => {
     values.push(id);
 
     const sql = `UPDATE hrms_employees SET ${fields.join(", ")} WHERE id = ?`;
-
     await promisePool.query(sql, values);
 
     return await findById(id);

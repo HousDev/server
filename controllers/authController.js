@@ -24,7 +24,6 @@
 //     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 //     if (!user.is_active) return res.status(401).json({ error: "user is inactive" });
 
-
 //     const match = await bcrypt.compare(password, user.password);
 //     if (!match) return res.status(401).json({ error: "Invalid credentials" });
 
@@ -49,7 +48,6 @@
 
 // module.exports = { login, me };
 
-
 // controllers/authController.js
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -71,23 +69,26 @@ async function login(req, res) {
     const { identifier, email, password } = req.body;
 
     console.log("identifier, email, password : ", identifier, email, password);
-    
+
     // Support both old (email) and new (identifier) parameter names
     const loginIdentifier = identifier || email;
-    
+
     if (!loginIdentifier || !password)
-      return res.status(400).json({ error: "Email/Phone and password required" });
+      return res
+        .status(400)
+        .json({ error: "Email/Phone and password required" });
 
     // Try to find user by email or phone
     let user = await UserModel.findByEmailWithPassword(loginIdentifier);
-    
+
     // If not found by email, try by phone
     if (!user) {
       user = await UserModel.findByPhoneWithPassword(loginIdentifier);
     }
-    
+
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
-    if (!user.is_active) return res.status(403).json({ error: "Account is deactivated" });
+    if (!user.is_active)
+      return res.status(403).json({ error: "Account is deactivated" });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
