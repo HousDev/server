@@ -4,6 +4,7 @@ const attendanceController = require("../controllers/attendanceController");
 const upload = require("../middleware/upload");
 
 router.post("/punch-in", upload.single("selfie"), attendanceController.punchIn);
+router.post("/adminMarkPunchIn", attendanceController.adminMarkAttendance);
 router.post(
   "/punch-out",
   upload.single("selfie"),
