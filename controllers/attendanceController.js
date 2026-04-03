@@ -2,6 +2,7 @@
 const { query } = require("../config/db");
 const attendanceModel = require("../models/attendanceModel");
 const fs = require("fs").promises;
+const db = require("../config/db");
 
 class AttendanceController {
   OFFICE_LOCATION = {
@@ -51,6 +52,42 @@ class AttendanceController {
         success: false,
         message: "Error checking status",
       });
+    }
+  };
+
+  adminMarkAttendance = async (req, res) => {
+    try {
+      const { user_id, status, punch_in_time } = req.body;
+      console.log(user_id, status, punch_in_time);
+
+      const [existngOne] = await db.query(
+        "SELECT * FROM attendance where date=? AND user_id=?",
+        [punch_in_time.slice(0, 10), user_id],
+      );
+      if (existngOne) {
+        await db.query(
+          "update  attendance set user_id = ?, status = ?, punch_in_time = ?, date = ? where id = ?  ",
+          [
+            user_id,
+            status,
+            punch_in_time,
+            punch_in_time.slice(0, 10),
+            existngOne.id,
+          ],
+        );
+      } else {
+        await db.query(
+          "INSERT into attendance(user_id,status,punch_in_time, date) values(?,?,?,?) ",
+          [user_id, status, punch_in_time, punch_in_time.slice(0, 10)],
+        );
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Attendance updated.", success: true });
+    } catch (error) {
+      console.log(error);
+      return res.stats(500).json({ message: "Internal Server Error." });
     }
   };
 

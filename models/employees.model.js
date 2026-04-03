@@ -162,6 +162,8 @@ const findById = async (id) => {
     // Build dynamic SELECT columns
     const selectColumns = [
       "e.*",
+      "DATE(e.date_of_leaving) as date_of_leaving",
+      "DATE(e.date_of_birth) as date_of_birth",
       "r.name AS role_name",
       "d.name AS department_name",
       "p.name AS project_name",
@@ -244,6 +246,8 @@ const findById = async (id) => {
       employee.employee_code =
         employee.employee_code || `EMP${String(employee.id).padStart(4, "0")}`;
     }
+
+    console.log(employee);
 
     return employee;
   } catch (error) {
