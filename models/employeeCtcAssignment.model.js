@@ -76,7 +76,7 @@ const EmployeeCTCAssignmentModel = {
       SELECT *
       FROM employee_ctc_assignments
       WHERE employee_id = ?
-      ORDER BY effective_from DESC
+      ORDER BY effective_from ASC
     `;
 
     const [rows] = await query(sql, [employee_id]);

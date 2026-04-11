@@ -25,6 +25,10 @@ router.get("/today", attendanceController.getTodayAll);
 router.get("/history/:user_id", attendanceController.getHistory);
 // router.get("/statistics", attendanceController.getStatistics);
 router.get("/todayStatistics", attendanceController.getTodaysStatistics);
-router.get("/check/:user_id", attendanceController.checkAttendance);
+router.get("/check/:user_id", attendanceController.checkAttendance); // routes/attendanceRoutes.js
+router.get(
+  "/employee-report",
+  attendanceController.getEmployeeAttendanceReport,
+);
 
 module.exports = router;

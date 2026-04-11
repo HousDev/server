@@ -5,6 +5,41 @@ const { v4: uuidv4 } = require("uuid");
 
 class TicketController {
   // Submit ticket with file upload - FIXED VERSION
+  // controllers/ticketController.js
+
+  // Get all tickets
+  static async getAllTickets(req, res) {
+    try {
+      const filters = {
+        status: req.query.status,
+        priority: req.query.priority,
+        category: req.query.category,
+        employee_id: req.query.employee_id,
+        assigned_to_id: req.query.assigned_to_id,
+        start_date: req.query.start_date,
+        end_date: req.query.end_date,
+        search: req.query.search,
+        limit: req.query.limit,
+        offset: req.query.offset,
+      };
+
+      const result = await TicketModel.getAllTickets(filters);
+
+      return res.status(200).json({
+        success: true,
+        message: "Tickets fetched successfully",
+        ...result,
+      });
+    } catch (error) {
+      console.error("Error in getAllTickets controller:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch tickets",
+        error: error.message,
+      });
+    }
+  }
+  s;
   static async submitTicket(req, res) {
     try {
       const {

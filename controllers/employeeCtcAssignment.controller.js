@@ -112,8 +112,9 @@ const EmployeeCTCAssignmentController = {
   getAllAsiignUserTemplate: async (req, res) => {
     try {
       const allAssignUserTemplate = await query(
-        "SELECT * FROM employee_ctc_assignments",
+        "SELECT *,DATE(effective_from) FROM employee_ctc_assignments ORDER BY effective_from DESC",
       );
+
       return res.status(200).json({ data: allAssignUserTemplate });
     } catch (error) {
       console.log(error);
