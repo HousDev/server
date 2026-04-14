@@ -285,6 +285,32 @@ class AttendanceModel {
     }
   }
 
+  async getAttendanceByMonthRange(
+    startMonth, // format: "YYYY-MM" → "2025-05"
+    endMonth, // format: "YYYY-MM" → "2026-05"
+  ) {
+    try {
+      const rows = await db.query(
+        `SELECT 
+         a.*,
+         DATE_FORMAT(a.punch_in_time, '%Y-%m-%dT%h:%i:%s %p') as punch_in_time,
+         DATE_FORMAT(a.punch_out_time, '%Y-%m-%dT%h:%i:%s %p') as punch_out_time,
+         CONCAT(u.first_name, ' ', u.last_name) AS user_name,
+         u.employee_code AS employee_code
+       FROM attendance a
+       LEFT JOIN hrms_employees u ON u.id = a.user_id
+       WHERE DATE_FORMAT(a.date, '%Y-%m') BETWEEN ? AND ?
+       ORDER BY a.date ASC, a.punch_in_time ASC`,
+        [startMonth, endMonth],
+      );
+
+      return rows;
+    } catch (error) {
+      console.error("❌ Error in getAttendanceByMonthRange:", error.message);
+      return [];
+    }
+  }
+
   async getUserAttendanceOfCurrentMonth(user_id, yearMonth) {
     try {
       const [employeeData] = await db.query(

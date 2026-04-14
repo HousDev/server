@@ -20,6 +20,11 @@ router.get(
   attendanceController.getCurrentMonthAttendance,
 );
 
+router.get(
+  "/month-range",
+  attendanceController.getAttendanceByMonthRangeController,
+);
+
 router.get("/todayLast/:user_id", attendanceController.getLastAttendanceOfUser);
 router.get("/today", attendanceController.getTodayAll);
 router.get("/history/:user_id", attendanceController.getHistory);

@@ -322,7 +322,16 @@ const getProjectHierarchy = async (projectId) => {
 const getAllProjects = async () => {
   try {
     const projects = await query(
-      "SELECT * FROM projects ORDER BY created_at DESC",
+      `
+      SELECT 
+  p.*, 
+  COUNT(b.id) AS buildingCount
+FROM projects AS p
+LEFT JOIN buildings AS b 
+  ON b.project_id = p.id
+GROUP BY p.id
+ORDER BY p.created_at DESC
+`,
     );
     return projects;
   } catch (error) {

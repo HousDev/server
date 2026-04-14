@@ -167,8 +167,8 @@ const getPayments = async () => {
     `SELECT 
     pop.*, po.po_number, DATE_FORMAT(po.po_date, '%Y-%m-%d') as po_date,
     v.name, po.payment_status,po.balance_amount AS po_balance_amount,po.grand_total as po_grand_total,
-     po.total_paid as po_amount_paid, po.payment_status as po_payment_status
-     FROM po_payments as pop LEFT JOIN purchase_orders as po ON pop.po_id = po.id LEFT JOIN vendors as v ON v.id=po.vendor_id
+     po.total_paid as po_amount_paid, po.payment_status as po_payment_status, pph.payment_method
+     FROM po_payments as pop LEFT JOIN purchase_orders as po ON pop.po_id = po.id LEFT JOIN vendors as v ON v.id=po.vendor_id LEFT JOIN po_payments_history as pph on pph.po_payment_id = pop.id
       ORDER BY pop.created_at DESC`,
   );
   return rows;

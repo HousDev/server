@@ -305,6 +305,37 @@ class AttendanceController {
     });
   };
 
+  async getAttendanceByMonthRangeController(req, res) {
+    try {
+      const { startMonth, endMonth } = req.query;
+
+      // ✅ Validation
+      if (!startMonth || !endMonth) {
+        return res.status(400).json({
+          success: false,
+          message: "startMonth and endMonth are required (format: YYYY-MM)",
+        });
+      }
+
+      const data = await attendanceModel.getAttendanceByMonthRange(
+        startMonth,
+        endMonth,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.error("❌ Controller Error:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
   getLastAttendanceOfUser = async (req, res) => {
     const { user_id } = req.params;
     const attendance =
