@@ -177,8 +177,66 @@ async function findAllWoBills() {
   `);
 }
 
+async function findAllEmployeeWoBills(employeeId) {
+  try {
+    const employees = await query(`SELECT * FROM hrms_employees WHERE id = ?`, [
+      employeeId,
+    ]);
+
+    const employee = employees[0];
+
+    if (!employee) {
+      throw new Error("Employee not found");
+    }
+
+    if (!employee.allotted_project) return [];
+
+    const projectIds =
+      typeof employee.allotted_project === "string"
+        ? JSON.parse(employee.allotted_project)
+        : employee.allotted_project;
+
+    if (!projectIds || !projectIds.length) return [];
+
+    const placeholders = projectIds.map(() => "?").join(",");
+
+    const rows = await query(
+      `
+      SELECT 
+        wb.*,
+        so.so_number,
+        so.so_date,
+        so.advance_amount as wo_advance_amount,
+        so.balance_amount as wo_balance_amount,
+        so.grand_total,
+        so.request_amount as wo_request_amount,
+        so.status as so_status,
+        v.name as vendor,
+        p.name as project_name,
+        b.building_name,
+        u.full_name as created_by_name
+      FROM wo_bills wb
+      LEFT JOIN service_orders so ON wb.wo_id = so.id
+      LEFT JOIN vendors v ON v.id = so.vendor_id 
+      LEFT JOIN projects p ON p.id = so.project_id
+      LEFT JOIN buildings b ON b.id = so.building_id
+      LEFT JOIN users u ON wb.created_by = u.id 
+      WHERE so.project_id IN (${placeholders})
+      ORDER BY wb.id DESC
+      `,
+      projectIds,
+    );
+
+    return rows;
+  } catch (err) {
+    console.error("getWoBills error", err);
+    throw err;
+  }
+}
+
 module.exports = {
   createWoBill,
+  findAllEmployeeWoBills,
   updateWoBill,
   deleteWoBill,
   findWoBillById,

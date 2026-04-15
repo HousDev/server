@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getAllServiceOrders,
+  getAllEmployeeServiceOrders,
   getServiceOrderById,
   getServiceOrdersByVendor,
   createServiceOrderController,
@@ -22,6 +23,7 @@ serviceOrdersRouter.get("/next", next);
  * GET
  */
 serviceOrdersRouter.get("/", getAllServiceOrders);
+serviceOrdersRouter.get("/:employeeId", getAllEmployeeServiceOrders);
 serviceOrdersRouter.get("/service-order-tracking", getAllServiceOrderTracking);
 
 serviceOrdersRouter.get(

@@ -247,8 +247,6 @@ const findById = async (id) => {
         employee.employee_code || `EMP${String(employee.id).padStart(4, "0")}`;
     }
 
-    console.log(employee);
-
     return employee;
   } catch (error) {
     console.error("Find by ID error:", error);

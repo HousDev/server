@@ -13,6 +13,7 @@ router.post("/", upload.single("bill_proof"), woBillsController.createWoBill);
  * Get All Bills
  */
 router.get("/", woBillsController.getAllWoBills);
+router.get("/:employeeId", woBillsController.getAllEmployeeWoBills);
 
 /**
  * Get Bills By Work Order

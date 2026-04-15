@@ -8,10 +8,10 @@ function bindRoute(method, path, handler, name) {
   if (typeof handler !== "function") {
     console.error(
       `Route handler ${name} for [${method.toUpperCase()} ${path}] is not a function.`,
-      handler
+      handler,
     );
     throw new TypeError(
-      `Route handler ${name} is not a function. Check controller export and require path.`
+      `Route handler ${name} is not a function. Check controller export and require path.`,
     );
   }
   router[method](path, handler);
@@ -20,6 +20,12 @@ function bindRoute(method, path, handler, name) {
 bindRoute("post", "/", poController.createPO, "poController.createPO");
 
 bindRoute("get", "/", poController.getPOs, "poController.getPOs");
+bindRoute(
+  "get",
+  "/:employeeId",
+  poController.getEmployeePOs,
+  "poController.getEmployeePOs",
+);
 
 // optional: next sequence endpoint
 if (poSeqController && typeof poSeqController.next === "function") {
@@ -27,11 +33,11 @@ if (poSeqController && typeof poSeqController.next === "function") {
     "get",
     "/next-sequence",
     poSeqController.next,
-    "poSeqController.next"
+    "poSeqController.next",
   );
 } else {
   console.warn(
-    "poSequenceController.next is not available as a route (you can still call nextNumber() internally)."
+    "poSequenceController.next is not available as a route (you can still call nextNumber() internally).",
   );
 }
 
@@ -41,7 +47,7 @@ router.put("/updatePOStatus/:poId", poController.updatePurchaseOrderStatus);
 router.get("/purchaseOrderItems", poController.getItemsOfPO);
 router.delete(
   "/poItem/:poItemId/:poMaterialTrackingId",
-  poController.deletePOItem
+  poController.deletePOItem,
 );
 
 module.exports = router;

@@ -249,8 +249,6 @@ class ExpenseModel {
                     SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                     SUM(amount) as total_amount
                 FROM hrms_expenses
-                WHERE MONTH(expense_date) = MONTH(CURRENT_DATE())
-                AND YEAR(expense_date) = YEAR(CURRENT_DATE())
             `);
 
       return (

@@ -214,14 +214,48 @@ const getItemsOfPO = async (req, res) => {
  */
 async function getPOs(req, res) {
   try {
+    console.log("object");
     const [rows] = await pool.query(`
       SELECT p.*, v.name AS vendor_name
       FROM purchase_orders p
       LEFT JOIN vendors v ON v.id = p.vendor_id
       ORDER BY p.created_at DESC
-      LIMIT 500
     `);
     return res.json(rows);
+  } catch (err) {
+    console.error("getPOs error", err);
+    return res.status(500).json({ error: err.message || "internal" });
+  }
+}
+
+async function getEmployeePOs(req, res) {
+  try {
+    const { employeeId } = req.params;
+    const [[employee]] = await pool.query(
+      `select * from hrms_employees where id = ?`,
+      [employeeId],
+    );
+    if (employee.allotted_project) {
+      const projectIds = employee.allotted_project;
+
+      const placeholders = projectIds.map(() => "?").join(",");
+
+      const [rows] = await pool.query(
+        `
+  SELECT p.*, v.name AS vendor_name
+  FROM purchase_orders p
+  LEFT JOIN vendors v ON v.id = p.vendor_id
+  WHERE project_id IN (${placeholders})
+  ORDER BY p.created_at DESC
+  `,
+        projectIds,
+      );
+      console.log(rows);
+      console.log(placeholders);
+      return res.json(rows);
+    } else {
+      return res.json([]);
+    }
   } catch (err) {
     console.error("getPOs error", err);
     return res.status(500).json({ error: err.message || "internal" });
@@ -315,6 +349,7 @@ module.exports = {
   getItemsOfPO,
   createPO,
   getPOs,
+  getEmployeePOs,
   updatePurchaseOrder,
   deletePurchaseOrder,
   updatePurchaseOrderStatus,
