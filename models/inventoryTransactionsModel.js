@@ -425,6 +425,19 @@ const createInventoryTransactionIssueMaterial = async (transactionData) => {
   }
 };
 
+const getTransactionById = async (transactionId) => {
+  try {
+    const [rows] = await query(
+      `SELECT * FROM inventory_transactions WHERE id = ?`,
+      [transactionId],
+    );
+    return rows;
+  } catch (error) {
+    console.log(error);
+    throw new Error("Failed to fetch transaction");
+  }
+};
+
 const getAllInventoryTransactions = async () => {
   const rows = await query(`
     SELECT 
@@ -442,6 +455,7 @@ const getAllInventoryTransactions = async () => {
       it.delivery_location,
       it.created_at,
       it.remark,
+      it.request_status,
 
       iti.id AS transaction_item_id,
       iti.item_id,
@@ -467,6 +481,21 @@ const getAllInventoryTransactions = async () => {
   `);
 
   return rows;
+};
+
+const updateStatus = async (transactionId, status) => {
+  try {
+    console.log(transactionId, status);
+    const result = await query(
+      `UPDATE inventory_transactions SET request_status = ? WHERE id = ?`,
+      [status, transactionId],
+    );
+
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.log(error);
+    throw new Error("Failed to update status");
+  }
 };
 
 const getAllIssueMaterialTransactions = async () => {
@@ -516,6 +545,8 @@ const getAllIssueMaterialTransactions = async () => {
 
 module.exports = {
   createInventoryTransaction,
+  updateStatus,
+  getTransactionById,
   getAllInventoryTransactions,
   createInventoryTransactionOut,
   createInventoryTransactionIssueMaterial,

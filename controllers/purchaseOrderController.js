@@ -214,7 +214,6 @@ const getItemsOfPO = async (req, res) => {
  */
 async function getPOs(req, res) {
   try {
-    console.log("object");
     const [rows] = await pool.query(`
       SELECT p.*, v.name AS vendor_name
       FROM purchase_orders p
