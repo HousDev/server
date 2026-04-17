@@ -305,6 +305,37 @@ class AttendanceController {
     });
   };
 
+  async getAttendanceByMonthRangeController(req, res) {
+    try {
+      const { startMonth, endMonth } = req.query;
+
+      // ✅ Validation
+      if (!startMonth || !endMonth) {
+        return res.status(400).json({
+          success: false,
+          message: "startMonth and endMonth are required (format: YYYY-MM)",
+        });
+      }
+
+      const data = await attendanceModel.getAttendanceByMonthRange(
+        startMonth,
+        endMonth,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.error("❌ Controller Error:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
   getLastAttendanceOfUser = async (req, res) => {
     const { user_id } = req.params;
     const attendance =
@@ -369,6 +400,89 @@ class AttendanceController {
       success: true,
       data: stats,
     });
+  };
+
+  // ---------------- EMPLOYEE ATTENDANCE REPORT (RANGE BASED) ---------------- //
+  getEmployeeAttendanceReport = async (req, res) => {
+    try {
+      const { start_date, end_date } = req.query;
+
+      // Validate required parameters
+      if (!start_date || !end_date) {
+        return res.status(400).json({
+          success: false,
+          message: "start_date and end_date are required",
+        });
+      }
+
+      // Validate date format
+      const startDate = new Date(start_date);
+      const endDate = new Date(end_date);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format. Use YYYY-MM-DD",
+        });
+      }
+
+      // Call the model function
+      const report = await attendanceModel.getEmployeeAttendanceSummary(
+        start_date,
+        end_date,
+      );
+
+      // Calculate summary statistics
+      const summary = {
+        total_employees: report.length,
+        total_present_days: 0,
+        total_half_days: 0,
+        total_absent_days: 0,
+        total_paid_leaves: 0,
+        total_late_arrivals: 0,
+        total_working_hours: 0,
+        average_attendance_percentage: 0,
+      };
+
+      // Aggregate summary data
+      report.forEach((employee) => {
+        summary.total_present_days += employee.present_days;
+        summary.total_half_days += employee.half_days;
+        summary.total_absent_days += employee.absent_days;
+        summary.total_paid_leaves += employee.paid_leaves;
+        summary.total_late_arrivals += employee.late_arrivals;
+        summary.total_working_hours += employee.total_working_hours;
+        summary.average_attendance_percentage += employee.attendance_percentage;
+      });
+
+      if (report.length > 0) {
+        summary.average_attendance_percentage = Math.round(
+          summary.average_attendance_percentage / report.length,
+        );
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          date_range: {
+            start_date,
+            end_date,
+          },
+          summary,
+          employees: report,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "❌ Error in getEmployeeAttendanceReport controller:",
+        error.message,
+      );
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch employee attendance report",
+        error: error.message,
+      });
+    }
   };
 }
 

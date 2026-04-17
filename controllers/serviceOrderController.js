@@ -1,6 +1,7 @@
 const {
   findAllServiceOrders,
   findServiceOrderById,
+  findAllEmployeeServiceOrders,
   findServiceOrdersByVendor,
   findAllServiceOrdersTrackings,
   createServiceOrder,
@@ -19,6 +20,20 @@ const { findByIdVendor } = require("../models/vendorModel");
 const getAllServiceOrders = async (req, res) => {
   try {
     const data = await findAllServiceOrders();
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to fetch service orders" });
+  }
+};
+
+/**
+ * GET all employee Service Orders
+ */
+const getAllEmployeeServiceOrders = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const data = await findAllEmployeeServiceOrders(employeeId);
     return res.status(200).json(data);
   } catch (err) {
     console.error(err);
@@ -242,6 +257,7 @@ const deleteServiceOrderServiceController = async (req, res) => {
 
 module.exports = {
   getAllServiceOrders,
+  getAllEmployeeServiceOrders,
   getServiceOrderById,
   getAllServiceOrderTracking,
   getServiceOrderServicesById,

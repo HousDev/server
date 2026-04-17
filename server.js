@@ -52,16 +52,19 @@ const employeeAdvance = require("./routes/employeeAdvance.router.js");
 const employeeIncentive = require("./routes/employeeIncentive.router.js");
 const employeeReimbursement = require("./routes/employeeReimbursement.router.js");
 const woPaymentRouter = require("./routes/woPaymentHistory.Router.js");
+const documentTemplateRouter = require("./routes/documentTemplates.routes.js");
+const generatedDocument = require("./routes/generatedDocuments.routes.js");
 
 dotenv.config();
 
 const app = express();
+
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(cors({ origin: "*" }));
 app.use(express.json());
-
 app.get("/health", (req, res) => res.json({ ok: true }));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/items", itemsRoutes);
@@ -123,6 +126,8 @@ app.use("/api/employee-ctc-assign", employeeCtcAssign);
 app.use("/api/employee-advance", employeeAdvance);
 app.use("/api/employee-incentive", employeeIncentive);
 app.use("/api/employee-reimbursement", employeeReimbursement);
+app.use("/api/document-templates", documentTemplateRouter);
+app.use("/api/generated-document", generatedDocument);
 
 startPoPaymentReminderCron();
 const PORT = process.env.PORT || 4000;

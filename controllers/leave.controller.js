@@ -92,6 +92,7 @@ class LeaveController {
         }
 
         if (fromDate > toDate) {
+          console.log("asdlfkjasldkfj");
           return res.status(400).json({
             success: false,
             message: "From date cannot be after to date",
@@ -123,16 +124,24 @@ class LeaveController {
             "Leave cannot exceed 30 days. Please contact HR for longer leaves.",
         });
       }
-
+      console.log(
+        employee_id,
+        leave_type,
+        from_date,
+        to_date,
+        reason,
+        is_half_day,
+        half_day_period,
+      );
       // Check if from date is in the past
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (fromDate < today) {
-        return res.status(400).json({
-          success: false,
-          message: "From date cannot be in the past",
-        });
-      }
+      // if (fromDate < today) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: "From date cannot be in the past",
+      //   });
+      // }
 
       // Prepare leave data
       const leaveData = {

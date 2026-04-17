@@ -26,7 +26,7 @@ const recalcSubTaskProgress = async (sub_task_id) => {
 exports.findAll = async (req, res) => {
   try {
     const sub_task_id = req.params.id;
-    console.log("task id", sub_task_id);
+
     if (!sub_task_id)
       return res.status(400).json({ message: "sub_task_id is required" });
 

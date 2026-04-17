@@ -5,6 +5,7 @@ const upload = require("../middleware/upload");
 const {
   createInventoryTransaction,
   getAllInventoryTransaction,
+  updateTransactionStatus,
   createInventoryTransactionOut,
   createInventoryTransactionIssueMaterial,
   getAllIssueMaterialInventoryTransaction,
@@ -16,21 +17,26 @@ const {
 InventoryTransactionRouter.post(
   "/",
   upload.single("challan_image"),
-  createInventoryTransaction
+  createInventoryTransaction,
 );
 
 InventoryTransactionRouter.post("/materialOut", createInventoryTransactionOut);
 
 InventoryTransactionRouter.post(
   "/issueMaterial",
-  createInventoryTransactionIssueMaterial
+  createInventoryTransactionIssueMaterial,
+);
+
+InventoryTransactionRouter.put(
+  "/updateStatus/:transactionId",
+  updateTransactionStatus,
 );
 
 // Get all transactions
 InventoryTransactionRouter.get("/", getAllInventoryTransaction);
 InventoryTransactionRouter.get(
   "/issueMaterialTransaction",
-  getAllIssueMaterialInventoryTransaction
+  getAllIssueMaterialInventoryTransaction,
 );
 
 module.exports = InventoryTransactionRouter;

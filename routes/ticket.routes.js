@@ -40,6 +40,7 @@ router.post(
 
 // Get all tickets
 router.get("/", TicketController.getTickets);
+router.get("/tickets/tickets", TicketController.getAllTickets);
 
 // Get ticket statistics
 router.get("/stats", TicketController.getTicketStats);

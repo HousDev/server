@@ -171,7 +171,6 @@ async function getAllInventoryTransaction(req, res) {
   try {
     const rows = await inventoryTransactionModel.getAllInventoryTransactions();
     const transactionMap = new Map();
-
     rows.forEach((row) => {
       if (!transactionMap.has(row.transaction_id)) {
         transactionMap.set(row.transaction_id, {
@@ -189,6 +188,7 @@ async function getAllInventoryTransaction(req, res) {
           delivery_location: row.delivery_location,
           created_at: row.created_at,
           remark: row.remark,
+          request_status: row.request_status,
           items: [], // 👈 important
         });
       }
@@ -214,6 +214,33 @@ async function getAllInventoryTransaction(req, res) {
     return res.status(500).json({ message: "Server error" });
   }
 }
+
+const updateTransactionStatus = async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const { status } = req.body;
+    const existingTransaction =
+      await inventoryTransactionModel.getTransactionById(transactionId);
+    if (!existingTransaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    const result = await inventoryTransactionModel.updateStatus(
+      transactionId,
+      status,
+    );
+
+    return res.status(200).json({
+      message: "Status updated successfully",
+      data: result,
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Failed to update status" });
+  }
+};
 
 const getAllIssueMaterialInventoryTransaction = async (req, res) => {
   try {
@@ -262,6 +289,7 @@ const getAllIssueMaterialInventoryTransaction = async (req, res) => {
 module.exports = {
   createInventoryTransaction,
   getAllInventoryTransaction,
+  updateTransactionStatus,
   createInventoryTransactionOut,
   createInventoryTransactionIssueMaterial,
   getAllIssueMaterialInventoryTransaction,

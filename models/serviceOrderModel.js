@@ -10,6 +10,54 @@ async function findAllServiceOrders() {
 }
 
 /**
+ * Get all employee Service Orders
+ */
+async function findAllEmployeeServiceOrders(employeeId) {
+  try {
+    const [[employee]] = await pool.query(
+      `SELECT * FROM hrms_employees WHERE id = ?`,
+      [employeeId],
+    );
+
+    if (!employee?.allotted_project) return [];
+
+    const projectIds =
+      typeof employee.allotted_project === "string"
+        ? JSON.parse(employee.allotted_project)
+        : employee.allotted_project;
+
+    if (!projectIds.length) return [];
+
+    const placeholders = projectIds.map(() => "?").join(",");
+
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        so.*, 
+        v.name as vendor, 
+        p.name as project, 
+        b.building_name as building, 
+        u.full_name as created_by_user, 
+        pot.name as service_type 
+      FROM service_orders as so 
+      LEFT JOIN vendors as v ON v.id = so.vendor_id 
+      LEFT JOIN projects as p ON p.id = so.project_id 
+      LEFT JOIN buildings as b ON b.id = so.building_id 
+      LEFT JOIN users as u ON u.id = so.created_by 
+      LEFT JOIN po_types as pot ON pot.id = so.service_type_id 
+      WHERE so.project_id IN (${placeholders})
+      ORDER BY so.created_at DESC
+      `,
+      projectIds,
+    );
+
+    return rows;
+  } catch (err) {
+    console.error("getServiceOrders error", err);
+    throw err;
+  }
+}
+/**
  * Get all Service Orders Tracking
  */
 async function findAllServiceOrdersTrackings() {
@@ -428,6 +476,7 @@ async function deleteServiceOrderService(soId, service_id) {
 
 module.exports = {
   findAllServiceOrders,
+  findAllEmployeeServiceOrders,
   findServiceOrderById,
   findAllServiceOrderServices,
   findAllServiceOrdersTrackings,

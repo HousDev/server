@@ -185,8 +185,21 @@ async function getAllWoBills(req, res) {
   }
 }
 
+async function getAllEmployeeWoBills(req, res) {
+  try {
+    const { employeeId } = req.params;
+    const data = await woBillsModel.findAllEmployeeWoBills(employeeId);
+
+    return res.json(data);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
 module.exports = {
   createWoBill,
+  getAllEmployeeWoBills,
   updateWoBill,
   deleteWoBill,
   getWoBillById,
