@@ -32,7 +32,6 @@ exports.getItem = async (req, res) => {
 exports.createItem = async (req, res) => {
   try {
     const payload = req.body;
-    console.log(req.body);
     if (
       !payload.item_code ||
       !payload.item_name ||

@@ -165,7 +165,6 @@ async function createServiceOrder(payload) {
       payload.created_by,
     ],
   );
-  console.log("created so : ", so);
   // Insert items bulk if present
   if (Array.isArray(payload.items) && payload.items.length > 0) {
     const itemColumns = [
@@ -208,7 +207,6 @@ async function createServiceOrder(payload) {
     )}) VALUES ?`;
 
     const [services] = await conn.query(itemSql, [itemsValues]);
-    console.log(services);
 
     if (Array.isArray(payload.items) && payload.items.length) {
       const cols = [
@@ -246,8 +244,6 @@ async function createServiceOrder(payload) {
         ", ",
       )}) VALUES ?`;
       const [serviceTrack] = await conn.query(sql, [values]);
-
-      console.log("serviceTrack : ", serviceTrack);
     }
   }
   await conn.commit();
@@ -258,7 +254,6 @@ async function createServiceOrder(payload) {
  * Update Service Order
  */
 async function updateServiceOrder(id, payload) {
-  console.log("data : ", id, payload);
   const conn = await pool.getConnection();
   const updatedService = await conn.query(
     `UPDATE service_orders SET

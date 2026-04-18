@@ -202,7 +202,6 @@ async function createPO(req, res) {
 const getItemsOfPO = async (req, res) => {
   try {
     const rows = await query("SELECT * FROM purchase_order_items");
-
     return res.status(200).json({ message: "PO Items fetched.", data: rows });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error." });
@@ -234,7 +233,7 @@ async function getEmployeePOs(req, res) {
       `select * from hrms_employees where id = ?`,
       [employeeId],
     );
-    if (employee.allotted_project) {
+    if (employee) {
       const projectIds = employee.allotted_project;
 
       const placeholders = projectIds.map(() => "?").join(",");
@@ -249,8 +248,7 @@ async function getEmployeePOs(req, res) {
   `,
         projectIds,
       );
-      console.log(rows);
-      console.log(placeholders);
+
       return res.json(rows);
     } else {
       return res.json([]);

@@ -166,8 +166,6 @@ pdfRouter.get("/po/:id", async (req, res) => {
 pdfRouter.get("/so/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(id);
-
     /* =======================
        1️⃣ Fetch SO Header
     ======================= */

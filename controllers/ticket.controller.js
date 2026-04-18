@@ -53,20 +53,8 @@ class TicketController {
         priority,
       } = req.body;
 
-      console.log("Parsed data:", {
-        employee_id,
-        employee_name,
-        employee_department,
-        employee_designation,
-        category,
-        subject,
-        description,
-        priority,
-      });
-
       // Validate required fields
       if (!employee_id || !category || !subject || !description) {
-        console.log("❌ Validation failed - missing required fields");
         return res.status(400).json({
           success: false,
           message: "Please fill all required fields",
@@ -85,33 +73,21 @@ class TicketController {
         priority: priority || "medium",
       };
 
-      console.log("✅ Ticket data prepared:", ticketData);
-
       // Handle file uploads
       const attachments = [];
 
       if (req.files && req.files.length > 0) {
-        console.log(`📁 Processing ${req.files.length} files`);
-
         // Create uploads directory if it doesn't exist
         const uploadDir = path.join(__dirname, "..", "uploads", "tickets");
-        console.log("📁 Upload directory:", uploadDir);
 
         if (!fs.existsSync(uploadDir)) {
-          console.log("📁 Creating upload directory...");
           fs.mkdirSync(uploadDir, { recursive: true });
         }
 
         // Process each uploaded file
         for (const file of req.files) {
-          console.log(
-            `📄 Processing file: ${file.originalname} (${file.mimetype})`,
-          );
-
           const uniqueFileName = `${uuidv4()}-${file.originalname}`;
           const filePath = path.join(uploadDir, uniqueFileName);
-
-          console.log(`📁 Moving file to: ${filePath}`);
 
           try {
             // Move file to uploads directory
@@ -125,8 +101,6 @@ class TicketController {
               file_size: file.size,
               uploaded_at: new Date().toISOString(),
             });
-
-            console.log(`✅ File saved: ${uniqueFileName}`);
           } catch (fileError) {
             console.error(
               `❌ Error moving file ${file.originalname}:`,
@@ -135,16 +109,9 @@ class TicketController {
             throw new Error(`Failed to save file: ${file.originalname}`);
           }
         }
-
-        console.log(`✅ All ${attachments.length} files processed`);
-      } else {
-        console.log("📁 No files uploaded");
       }
 
-      // Create ticket with attachments
-      console.log("💾 Creating ticket in database...");
       const result = await TicketModel.createTicket(ticketData, attachments);
-      console.log("✅ Ticket created successfully:", result);
 
       return res.status(201).json({
         success: true,
@@ -157,7 +124,6 @@ class TicketController {
       });
     } catch (error) {
       console.error("❌ Submit ticket error:", error);
-      console.error("❌ Error stack:", error.stack);
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to create ticket",

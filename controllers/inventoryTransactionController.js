@@ -72,8 +72,7 @@ async function createInventoryTransactionOut(req, res) {
       ...req.body,
       items,
     };
-    console.log(payload);
-    // 🔴 Required field validation
+
     if (
       !payload.receiving_date ||
       !payload.receiver_name ||
@@ -186,6 +185,7 @@ async function getAllInventoryTransaction(req, res) {
           receiver_phone: row.receiver_phone,
           trasaction_type: row.trasaction_type,
           delivery_location: row.delivery_location,
+          project_id: row.project_id,
           created_at: row.created_at,
           remark: row.remark,
           request_status: row.request_status,
@@ -219,7 +219,9 @@ const updateTransactionStatus = async (req, res) => {
   try {
     const { transactionId } = req.params;
 
-    const { status } = req.body;
+    const payload = req.body;
+    console.log(payload);
+
     const existingTransaction =
       await inventoryTransactionModel.getTransactionById(transactionId);
     if (!existingTransaction) {
@@ -228,7 +230,7 @@ const updateTransactionStatus = async (req, res) => {
 
     const result = await inventoryTransactionModel.updateStatus(
       transactionId,
-      status,
+      payload,
     );
 
     return res.status(200).json({

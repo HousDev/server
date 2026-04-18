@@ -187,7 +187,6 @@ const updateServiceOrderStatusController = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, note } = req.body;
-    console.log(id, status, note);
     if (!id || !status) {
       return res.status(400).json({ message: "ID and status are required" });
     }

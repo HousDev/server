@@ -173,8 +173,6 @@ const LeaveModel = {
       updateData.approved_at = null;
     }
 
-    console.log("Updating leave with data:", updateData);
-
     const [result] = await promisePool.query(
       "UPDATE hrms_leaves SET ? WHERE id = ?",
       [updateData, id],

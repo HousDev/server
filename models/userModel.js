@@ -254,21 +254,7 @@ const create = async (data) => {
 
     const sql = `INSERT INTO users (${columns.join(", ")}) VALUES (${placeholders.join(", ")})`;
 
-    console.log("Create user SQL:", sql);
-    console.log(
-      "Create user values:",
-      values.map((v, i) =>
-        columns[i] === "password"
-          ? "***PASSWORD***"
-          : columns[i] === "id"
-            ? `ID: ${v.substring(0, 10)}...`
-            : v,
-      ),
-    );
-
     const [result] = await promisePool.query(sql, values);
-
-    console.log("User created with result:", result);
 
     // Get the created user
     const createdUser = await findById(userId);
@@ -303,7 +289,6 @@ const update = async (id, data) => {
       "users",
       "department_id",
     );
-    console.log(data);
     const fields = [];
     const values = [];
 
@@ -356,16 +341,6 @@ const update = async (id, data) => {
     values.push(id);
 
     const sql = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
-    console.log("Update user SQL:", sql);
-    console.log(
-      "Update user values:",
-      values.map((v, i) =>
-        allowedFields.includes(Object.keys(data)[i]) &&
-        Object.keys(data)[i] === "password"
-          ? "***PASSWORD***"
-          : v,
-      ),
-    );
 
     const [result] = await promisePool.query(sql, values);
 

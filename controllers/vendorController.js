@@ -59,7 +59,6 @@ exports.getVendorById = async (req, res) => {
 
 exports.createVendor = async (req, res) => {
   const d = req.body;
-  console.log(d);
   if (
     !d.name ||
     !d.category_name ||

@@ -340,6 +340,50 @@ ORDER BY p.created_at DESC
   }
 };
 
+// Get all employee projects
+const getAllEmployeeProjects = async (employeeId) => {
+  try {
+    const employees = await query(`SELECT * FROM hrms_employees WHERE id = ?`, [
+      employeeId,
+    ]);
+
+    const employee = employees[0];
+
+    if (!employee) {
+      throw new Error("Employee not found");
+    }
+
+    if (!employee.allotted_project) return [];
+
+    const projectIds =
+      typeof employee.allotted_project === "string"
+        ? JSON.parse(employee.allotted_project)
+        : employee.allotted_project;
+
+    if (!projectIds || !projectIds.length) return [];
+
+    const placeholders = projectIds.map(() => "?").join(",");
+
+    const projects = await query(
+      `
+      SELECT 
+  p.*, 
+  COUNT(b.id) AS buildingCount
+FROM projects AS p
+LEFT JOIN buildings AS b 
+  ON b.project_id = p.id WHERE p.id IN (${placeholders})
+GROUP BY p.id
+ORDER BY p.created_at DESC
+`,
+      projectIds,
+    );
+    return projects;
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    throw error;
+  }
+};
+
 // Comprehensive project update with hierarchy
 const updateProjectWithHierarchy = async (projectId, projectData) => {
   const connection = await pool.getConnection();

@@ -236,7 +236,6 @@ async function bulkTogglePaymentMasterStatus(req, res) {
 async function bulkDeletePaymentMasters(req, res) {
   try {
     let { ids } = req.body;
-    console.log(ids);
 
     // Handle string case: "[3,4]"
     if (typeof ids === "string") {

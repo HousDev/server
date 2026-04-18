@@ -58,7 +58,6 @@ class AttendanceController {
   adminMarkAttendance = async (req, res) => {
     try {
       const { user_id, status, punch_in_time } = req.body;
-      console.log(user_id, status, punch_in_time);
 
       const [existngOne] = await db.query(
         "SELECT * FROM attendance where date=? AND user_id=?",

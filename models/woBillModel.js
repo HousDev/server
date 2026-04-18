@@ -17,7 +17,6 @@ async function createWoBill(data) {
     bill_proof,
     created_by,
   } = data;
-  console.log(data);
   const retentionAmount = (Number(bill_amount) * Number(bill_retention)) / 100;
   const connection = await db.pool.getConnection();
   await connection.beginTransaction();

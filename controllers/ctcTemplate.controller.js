@@ -6,7 +6,6 @@ const CTCTemplateController = {
   // CREATE TEMPLATE
   // =====================================================
   createTemplate: async (req, res) => {
-    console.log(req.body);
     try {
       const { name, description, is_default, components } = req.body;
 
@@ -51,7 +50,6 @@ const CTCTemplateController = {
   // =====================================================
   updateTemplate: async (req, res) => {
     try {
-      console.log(req.body);
       const { template_id } = req.params;
       const { name, description, is_active, components } = req.body;
 

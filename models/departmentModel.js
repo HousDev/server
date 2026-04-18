@@ -142,7 +142,7 @@
 //       SELECT d.*, u.full_name as manager_name
 //       FROM departments d
 //       LEFT JOIN users u ON d.manager_id = u.id
-//       WHERE d.is_active = TRUE 
+//       WHERE d.is_active = TRUE
 //       AND (d.name LIKE ? OR d.code LIKE ? OR d.description LIKE ?)
 //       ORDER BY d.name ASC
 //     `,
@@ -155,8 +155,8 @@
 //   static async getActiveManagers() {
 //     const rows = await query(`
 //       SELECT id, full_name, email, role
-//       FROM users 
-//       WHERE is_active = TRUE 
+//       FROM users
+//       WHERE is_active = TRUE
 //       AND (role = 'MANAGER' OR role = 'ADMIN')
 //       ORDER BY full_name ASC
 //     `);
@@ -166,7 +166,7 @@
 //   // Get department statistics
 //   static async getStats() {
 //     const stats = await query(`
-//       SELECT 
+//       SELECT
 //         COUNT(*) as total_departments,
 //         SUM(is_active = 1) as active_departments,
 //         SUM(is_active = 0) as inactive_departments,
@@ -195,7 +195,7 @@
 // }
 
 const { query, pool } = require("../config/db");
-const { v4: uuidv4 } = require('uuid'); // ✅ ADD THIS IMPORT
+const { v4: uuidv4 } = require("uuid"); // ✅ ADD THIS IMPORT
 
 class Department {
   // Get all departments WITH their assigned roles (INCLUDING INACTIVE)
@@ -239,7 +239,7 @@ class Department {
         GROUP BY d.id
         LIMIT 1
         `,
-        [id]
+        [id],
       );
       return rows.length ? this.normalizeRow(rows[0]) : null;
     } catch (error) {
@@ -266,7 +266,7 @@ class Department {
         GROUP BY d.id
         LIMIT 1
         `,
-        [code.toUpperCase()]
+        [code.toUpperCase()],
       );
       return rows.length ? this.normalizeRow(rows[0]) : null;
     } catch (error) {
@@ -282,64 +282,59 @@ class Department {
     description = null,
     manager_id = null,
     is_active = true,
-    role_ids = []
+    role_ids = [],
   }) {
     const connection = await pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
       // ✅ CRITICAL FIX: Generate UUID in Node.js BEFORE inserting
       const departmentId = uuidv4();
-      console.log('✅ Generated department UUID:', departmentId);
 
       // 1. Create department with explicit ID
       const deptSql = `
         INSERT INTO departments (id, name, code, description, manager_id, is_active)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      
+
       await connection.execute(deptSql, [
-        departmentId,  // ✅ Pass the UUID we generated
+        departmentId, // ✅ Pass the UUID we generated
         name,
         code.toUpperCase(),
         description,
         manager_id,
-        is_active ? 1 : 0
+        is_active ? 1 : 0,
       ]);
-      
-      console.log('✅ Successfully created department with ID:', departmentId);
 
       // 2. Create department-role mappings (if any roles provided)
       if (role_ids && role_ids.length > 0) {
         // Validate and prepare role IDs
         const validRoleIds = role_ids
-          .map(roleId => parseInt(roleId))
-          .filter(roleId => !isNaN(roleId) && roleId > 0);
-        
-        if (validRoleIds.length > 0) {
-          console.log('✅ Mapping roles:', validRoleIds, 'to department:', departmentId);
+          .map((roleId) => parseInt(roleId))
+          .filter((roleId) => !isNaN(roleId) && roleId > 0);
 
+        if (validRoleIds.length > 0) {
           // Create placeholders for each role
-          const placeholders = validRoleIds.map(() => '(?, ?, 1)').join(', ');
-          const values = validRoleIds.flatMap(roleId => [departmentId, roleId]);
-          
+          const placeholders = validRoleIds.map(() => "(?, ?, 1)").join(", ");
+          const values = validRoleIds.flatMap((roleId) => [
+            departmentId,
+            roleId,
+          ]);
+
           const mappingSql = `
             INSERT INTO department_roles (department_id, role_id, is_active)
             VALUES ${placeholders}
           `;
-          
+
           await connection.execute(mappingSql, values);
-          console.log('✅ Successfully mapped roles to department');
         }
       }
 
       await connection.commit();
-      console.log('✅ Transaction committed successfully');
 
       // 3. Return department with roles
       return await this.findById(departmentId);
-      
     } catch (error) {
       await connection.rollback();
       console.error("❌ Error in createWithRoles:", error);
@@ -348,7 +343,7 @@ class Department {
         code,
         role_ids,
         sqlMessage: error.sqlMessage,
-        errorCode: error.code
+        errorCode: error.code,
       });
       throw error;
     } finally {
@@ -359,11 +354,12 @@ class Department {
   // ✅ Update department WITH roles
   static async updateWithRoles(id, updateData) {
     const connection = await pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
-      const { name, code, description, manager_id, is_active, role_ids } = updateData;
+      const { name, code, description, manager_id, is_active, role_ids } =
+        updateData;
 
       // 1. Update department details
       const fields = [];
@@ -401,26 +397,26 @@ class Department {
         // Delete existing mappings
         await connection.execute(
           "DELETE FROM department_roles WHERE department_id = ?",
-          [id]
+          [id],
         );
 
         // Insert new mappings (if any roles provided)
         if (role_ids && role_ids.length > 0) {
           // Validate and prepare role IDs
           const validRoleIds = role_ids
-            .map(roleId => parseInt(roleId))
-            .filter(roleId => !isNaN(roleId) && roleId > 0);
-          
+            .map((roleId) => parseInt(roleId))
+            .filter((roleId) => !isNaN(roleId) && roleId > 0);
+
           if (validRoleIds.length > 0) {
             // Create placeholders for each role
-            const placeholders = validRoleIds.map(() => '(?, ?, 1)').join(', ');
-            const values = validRoleIds.flatMap(roleId => [id, roleId]);
-            
+            const placeholders = validRoleIds.map(() => "(?, ?, 1)").join(", ");
+            const values = validRoleIds.flatMap((roleId) => [id, roleId]);
+
             const mappingSql = `
               INSERT INTO department_roles (department_id, role_id, is_active)
               VALUES ${placeholders}
             `;
-            
+
             await connection.execute(mappingSql, values);
           }
         }
@@ -430,14 +426,13 @@ class Department {
 
       // 3. Return updated department with roles
       return await this.findById(id);
-      
     } catch (error) {
       await connection.rollback();
       console.error(`Error in updateWithRoles ${id}:`, error);
       console.error("Error details:", {
         id,
         updateData,
-        sqlMessage: error.sqlMessage
+        sqlMessage: error.sqlMessage,
       });
       throw error;
     } finally {
@@ -455,14 +450,14 @@ class Department {
   }) {
     try {
       const departmentId = uuidv4(); // ✅ Generate UUID
-      
+
       const sql = `
         INSERT INTO departments (id, name, code, description, manager_id, is_active)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       await query(sql, [
-        departmentId,  // ✅ Pass the UUID
+        departmentId, // ✅ Pass the UUID
         name,
         code.toUpperCase(),
         description,
@@ -549,7 +544,7 @@ class Department {
         AND r.is_active = TRUE
         ORDER BY r.name
         `,
-        [departmentId]
+        [departmentId],
       );
       return rows;
     } catch (error) {
@@ -585,7 +580,7 @@ class Department {
     try {
       await query(
         "UPDATE departments SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [id]
+        [id],
       );
       return await this.findById(id);
     } catch (error) {
@@ -599,7 +594,7 @@ class Department {
     try {
       const rows = await query(
         "SELECT COUNT(*) as count FROM departments WHERE id = ?",
-        [id]
+        [id],
       );
       return rows[0].count > 0;
     } catch (error) {
@@ -625,7 +620,7 @@ class Department {
         GROUP BY d.id
         ORDER BY d.name ASC
         `,
-        [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]
+        [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`],
       );
       return rows.map((row) => this.normalizeRow(row));
     } catch (error) {
@@ -674,13 +669,18 @@ class Department {
     if (!row) return row;
 
     row.is_active = Boolean(row.is_active);
-    
+
     // Parse role_ids and role_names
     if (row.role_ids) {
-      row.role_ids = row.role_ids ? row.role_ids.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) : [];
+      row.role_ids = row.role_ids
+        ? row.role_ids
+            .split(",")
+            .map((id) => parseInt(id))
+            .filter((id) => !isNaN(id))
+        : [];
     }
     if (row.role_names) {
-      row.role_names = row.role_names ? row.role_names.split(',') : [];
+      row.role_names = row.role_names ? row.role_names.split(",") : [];
     }
 
     // Format dates if needed

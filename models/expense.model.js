@@ -35,8 +35,6 @@ class ExpenseModel {
     try {
       const claimNumber = await this.generateClaimNumber();
 
-      console.log("Generated claim number:", claimNumber);
-
       const result = await query(
         `INSERT INTO hrms_expenses 
                 (claim_number, employee_id, category, expense_date, merchant_vendor_name, 
@@ -58,8 +56,6 @@ class ExpenseModel {
         ],
       );
 
-      console.log("Expense created with ID:", result.insertId);
-
       return {
         id: result.insertId,
         claim_number: claimNumber,
@@ -69,10 +65,6 @@ class ExpenseModel {
 
       // If it's a duplicate entry error, try once more with a different approach
       if (error.code === "ER_DUP_ENTRY" || error.errno === 1062) {
-        console.log(
-          "Duplicate entry detected, generating alternative claim number",
-        );
-
         // Use timestamp-based approach as fallback
         const yearMonth = new Date().toISOString().slice(0, 7).replace("-", "");
         const timestamp = Date.now().toString().slice(-6);
@@ -80,8 +72,6 @@ class ExpenseModel {
           .toString()
           .padStart(3, "0");
         const fallbackClaimNumber = `EXP-${yearMonth}-${timestamp}${random}`;
-
-        console.log("Using fallback claim number:", fallbackClaimNumber);
 
         const result = await query(
           `INSERT INTO hrms_expenses 

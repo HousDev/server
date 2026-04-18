@@ -151,7 +151,7 @@ const EmployeeReimbursementModel = {
     `;
 
     const rows = await db.query(query, [emp.id]);
-    console.log(rows);
+
     return rows;
   },
 
