@@ -6,7 +6,7 @@ const CTCTemplateModel = {
   // =====================================================
   createTemplate: async ({ name, description, is_default, components }) => {
     const connection = await pool.getConnection();
-
+    console.log(components);
     try {
       await connection.beginTransaction();
 
@@ -35,7 +35,7 @@ const CTCTemplateModel = {
             item.name,
             item.type,
             item.is_taxable,
-            item.percentage || null,
+            item.value || null,
           ],
         );
       }
