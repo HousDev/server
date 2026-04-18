@@ -24,7 +24,6 @@ const DocumentTemplateController = {
       if (req.file) {
         logo_url = req.file.filename; // or full path
       }
-      console.log(logo_url);
       const id = await DocumentTemplateModel.createTemplate({
         name,
         category,
@@ -120,12 +119,7 @@ const DocumentTemplateController = {
       // Check if new file was uploaded
       if (req.file) {
         logo_url = req.file.filename;
-        console.log("New logo file uploaded:", logo_url);
-      } else {
-        console.log("No new file uploaded, keeping existing logo:", logo_url);
       }
-
-      console.log("Final logo_url to save:", logo_url);
 
       const updated = await DocumentTemplateModel.updateTemplate(id, {
         name,

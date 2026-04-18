@@ -22,7 +22,6 @@ const EmployeeReimbursementController = {
       if (!payload.amount) {
         return res.status(400).json({ message: "Amount is required" });
       }
-      console.log(payload);
       const id = await EmployeeReimbursementModel.createRequest(payload);
 
       return res.status(201).json({

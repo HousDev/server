@@ -72,14 +72,6 @@ class DesignationController {
         is_active = true,
       } = req.body;
 
-      console.log("Creating designation with data:", {
-        name,
-        department_id,
-        role_id,
-        hierarchy_level,
-        is_active,
-      });
-
       // Verify department exists and is active
       const department = await Department.findById(department_id);
       if (!department) {
@@ -118,8 +110,6 @@ class DesignationController {
         is_active,
         created_by: req.user?.id || null,
       });
-
-      console.log("Designation created successfully:", designation.id);
 
       res.status(201).json({
         success: true,
@@ -208,10 +198,6 @@ class DesignationController {
         });
       }
 
-      console.log(
-        `Attempting to permanently delete designation: ${designation.name} (${id})`,
-      );
-
       const deleted = await Designation.delete(id);
 
       if (!deleted) {
@@ -220,10 +206,6 @@ class DesignationController {
           error: "Designation not found or already deleted",
         });
       }
-
-      console.log(
-        `Designation "${designation.name}" permanently deleted successfully`,
-      );
 
       res.json({
         success: true,
@@ -261,7 +243,6 @@ class DesignationController {
   static async toggleDesignationActive(req, res) {
     try {
       const { id } = req.params;
-      console.log(`Toggling active status for designation ${id}`);
 
       const designation = await Designation.findById(id);
 
@@ -272,15 +253,7 @@ class DesignationController {
         });
       }
 
-      console.log(
-        `Current status: ${designation.is_active ? "Active" : "Inactive"}`,
-      );
-
       const updatedDesignation = await Designation.toggleActive(id);
-
-      console.log(
-        `New status: ${updatedDesignation.is_active ? "Active" : "Inactive"}`,
-      );
 
       res.json({
         success: true,

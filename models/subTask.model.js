@@ -15,7 +15,6 @@ const findAll = async (filters = {}) => {
 };
 
 const findAllByEngineer = async (engId, projectId) => {
-  console.log(projectId);
   let sql = `SELECT ast.*,atwl.id AS log_id,atwl.work_done AS log_work_done, atwl.work_unit AS log_work_unit, 
   atwl.photos, atwl.issue, u.full_name AS log_created_by 
   FROM area_sub_tasks AS ast LEFT JOIN area_task_work_logs AS atwl ON atwl.area_sub_task_id = ast.id LEFT JOIN users AS u
@@ -27,8 +26,6 @@ const findAllByEngineer = async (engId, projectId) => {
 };
 
 const findAllTaskByProjectId = async (projectId) => {
-  console.log(projectId);
-
   const sql = `SELECT ast.*,atwl.id AS log_id,atwl.work_done AS log_work_done, atwl.work_unit AS log_work_unit, 
   atwl.photos, atwl.issue, u.full_name AS log_created_by 
   FROM area_sub_tasks AS ast LEFT JOIN area_task_work_logs AS atwl ON atwl.area_sub_task_id = ast.id LEFT JOIN users AS u
@@ -83,7 +80,6 @@ const create = async (data) => {
     start_date,
     end_date,
   } = data;
-  console.log(data);
   const sql = `
     INSERT INTO area_sub_tasks
       (project_id, building_id, floor_id, flat_id, common_area_id, area_id, engineer_id, name, unit, total_work,  start_date, end_date, progress, status)

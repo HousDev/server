@@ -16,6 +16,7 @@ function bindRoute(method, path, handler, name) {
   }
   router[method](path, handler);
 }
+router.get("/purchaseOrderItems", poController.getItemsOfPO);
 
 bindRoute("post", "/", poController.createPO, "poController.createPO");
 
@@ -44,7 +45,6 @@ if (poSeqController && typeof poSeqController.next === "function") {
 router.put("/:poId", poController.updatePurchaseOrder);
 router.delete("/:poId", poController.deletePurchaseOrder);
 router.put("/updatePOStatus/:poId", poController.updatePurchaseOrderStatus);
-router.get("/purchaseOrderItems", poController.getItemsOfPO);
 router.delete(
   "/poItem/:poItemId/:poMaterialTrackingId",
   poController.deletePOItem,

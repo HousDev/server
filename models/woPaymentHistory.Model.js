@@ -4,7 +4,6 @@ const db = require("../config/db");
  * Create Work Order Payment
  */
 const createWoPayment = async (data) => {
-  console.log(data);
   // return;
   const connection = await db.pool.getConnection();
 
@@ -177,8 +176,6 @@ const createWoPayment = async (data) => {
         [billPaid, retentionAmount, billStatus, bill_id],
       );
 
-      // console.log("in retention");
-      // return;
       // ➕ Insert history
       [result] = await connection.query(
         `INSERT INTO wo_payments_history (
@@ -311,7 +308,6 @@ const updateWoPayment = async (id, data) => {
       [id],
     );
 
-    console.log("transaction", exisistingTransaction);
     if (!exisistingTransaction) {
       throw new Error("Payment Transaction not found");
     }
@@ -320,7 +316,6 @@ const updateWoPayment = async (id, data) => {
       `SELECT * FROM wo_bills WHERE id = ?`,
       [bill_id],
     );
-    console.log("bill", exisistingWoBill);
 
     if (!exisistingWoBill) {
       throw new Error("WO Bill not found");
@@ -330,8 +325,6 @@ const updateWoPayment = async (id, data) => {
       `SELECT * FROM service_orders WHERE id = ?`,
       [exisistingTransaction.wo_id],
     );
-
-    console.log("WO", exisistingWO);
 
     if (!exisistingWO) {
       throw new Error("Work Order not found");
@@ -471,7 +464,6 @@ const updateWoPayment = async (id, data) => {
 async function updatePaymentStatus(id, data) {
   const { status, rejectionReason, approved_amount_paid, amount_paid, wo_id } =
     data;
-  console.log(data);
   if (status === "pending") {
     const connection = await db.pool.getConnection();
 

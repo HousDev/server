@@ -126,7 +126,7 @@ const EmployeeAdvanceModel = {
     `;
 
     const rows = await query(sql, [employee.id]);
-    console.log(rows);
+
     return rows;
   },
 

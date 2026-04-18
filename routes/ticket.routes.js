@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + "-" + cleanName);
   },
 });
-console.log(storage.getDestination.destination);
+
 // Simple upload without file filter for now
 const upload = multer({
   storage: storage,

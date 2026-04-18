@@ -40,7 +40,6 @@ exports.findAll = async (req, res) => {
 exports.findAllByEngineerId = async (req, res) => {
   try {
     const { engId, projectId } = req.params;
-    console.log(projectId, "project id");
     if (!engId) {
       return res.status(400).json({ message: "Engineer Id not found." });
     }

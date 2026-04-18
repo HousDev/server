@@ -840,16 +840,12 @@ exports.updateEmployee = async (req, res) => {
           }
         }
       } catch (syncError) {
-        console.log("this is errorrrrrrrr");
         console.warn("Could not sync to user:", syncError.message);
       }
       res.status(200).json(updated);
     });
   } catch (error) {
-    console.log("this is errorrrrrrrr thsdhfodshfasdfh");
-
     console.error("Update employee error:", error);
-    console.error("Error stack:", error.stack);
 
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);

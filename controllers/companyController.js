@@ -219,7 +219,6 @@ exports.getCompanyLocations = async (req, res) => {
   const { id } = req.params;
 
   try {
-    console.log(id);
     // Remove the "AND is_active = 1" filter to get ALL branches
     const sql = `
       SELECT * FROM office_locations 

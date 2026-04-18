@@ -6,6 +6,7 @@ const projectController = require("../controllers/projectController");
 // Project CRUD routes
 router.post("/", projectController.createProject); // Create project with hierarchy
 router.get("/", projectController.getAllProjects); // Get all projects
+router.get(`/employees/:employeeId`, projectController.getAllEmployeeProjects); // Get all projects for a specific employee
 router.get("/:projectId", projectController.getProject); // Get project with hierarchy
 router.put("/:projectId", projectController.updateProjectHierarchy); // Full hierarchy update
 router.delete("/:projectId", projectController.deleteProject); // Delete project

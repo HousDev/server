@@ -128,9 +128,6 @@ class TicketModel {
   // Create ticket with attachments
   static async createTicket(ticketData, attachments = []) {
     try {
-      console.log("Creating ticket with data:", ticketData);
-      console.log("Attachments count:", attachments.length);
-
       const ticketNumber = await this.generateTicketNumber();
 
       // Prepare attachments data
@@ -138,10 +135,6 @@ class TicketModel {
         attachments.length > 0 ? JSON.stringify(attachments) : "[]";
 
       const attachmentsCount = attachments.length;
-
-      console.log("Ticket number:", ticketNumber);
-      console.log("Attachments JSON:", attachmentsJson);
-      console.log("Attachments count:", attachmentsCount);
 
       const result = await query(
         `INSERT INTO hrms_tickets 
@@ -169,8 +162,6 @@ class TicketModel {
           attachmentsCount, // attachments_count
         ],
       );
-
-      console.log("Insert result:", result);
 
       return {
         id: result.insertId,
@@ -248,9 +239,6 @@ class TicketModel {
         }
       }
 
-      console.log("Get tickets SQL:", sql);
-      console.log("Get tickets params:", params);
-
       // Get data
       const rows = await query(sql, params);
 
@@ -318,32 +306,20 @@ class TicketModel {
   // Get ticket by ID - FIXED VERSION
   static async getTicketById(id) {
     try {
-      console.log("Getting ticket by ID:", id);
-
       const rows = await query(`SELECT * FROM hrms_tickets WHERE id = ?`, [id]);
-
-      console.log("Ticket query result:", rows.length, "rows found");
 
       if (rows[0]) {
         const row = rows[0];
-        console.log("Raw ticket data:", row);
 
         try {
           let attachments = [];
           let attachmentsCount = 0;
 
           if (row.attachments) {
-            console.log("Raw attachments:", row.attachments);
-            console.log("Attachments type:", typeof row.attachments);
-
             if (typeof row.attachments === "string") {
               try {
                 attachments = JSON.parse(row.attachments);
-                console.log("Parsed attachments:", attachments);
                 if (!Array.isArray(attachments)) {
-                  console.log(
-                    "Attachments is not an array, resetting to empty",
-                  );
                   attachments = [];
                 }
               } catch (parseError) {
@@ -366,16 +342,12 @@ class TicketModel {
             attachmentsCount = parseInt(row.attachments_count) || 0;
           }
 
-          console.log("Final attachments:", attachments);
-          console.log("Final attachments count:", attachmentsCount);
-
           const ticket = {
             ...row,
             attachments: attachments,
             attachments_count: attachmentsCount,
           };
 
-          console.log("Returning ticket:", ticket);
           return ticket;
         } catch (parseError) {
           console.error("Error processing ticket:", parseError);
@@ -386,7 +358,6 @@ class TicketModel {
           };
         }
       }
-      console.log("No ticket found for ID:", id);
       return null;
     } catch (error) {
       console.error("Error getting ticket by ID:", error);

@@ -44,7 +44,6 @@ const createInventoryTransaction = async (transactionData) => {
       `SELECT po.project_id AS project_id FROM purchase_orders as po LEFT JOIN projects AS p ON p.id = po.project_id WHERE po.id = ?`,
       [po_id],
     );
-    console.log(poDetails);
 
     const transactionId = trxResult.insertId;
     let receivedMaterialAmount = 0;
@@ -230,6 +229,7 @@ const createInventoryTransactionOut = async (transactionData) => {
       receiver_name,
       receiver_phone,
       delivery_location,
+      project_id,
       items,
     } = transactionData;
 
@@ -238,14 +238,15 @@ const createInventoryTransactionOut = async (transactionData) => {
       `INSERT INTO inventory_transactions
        (remark,
         receiving_date, receiver_name, receiver_phone,
-        trasaction_type, delivery_location)
-       VALUES ( ?, ?, ?, ?, 'OUTWARD', ?)`,
+        trasaction_type, delivery_location, project_id)
+       VALUES ( ?, ?, ?, ?, 'OUTWARD', ?, ?)`,
       [
         remark,
         receiving_date,
         receiver_name,
         receiver_phone,
         delivery_location,
+        project_id,
       ],
     );
 
@@ -453,6 +454,7 @@ const getAllInventoryTransactions = async () => {
       it.receiver_phone,
       it.trasaction_type,
       it.delivery_location,
+      it.project_id,
       it.created_at,
       it.remark,
       it.request_status,
@@ -483,14 +485,41 @@ const getAllInventoryTransactions = async () => {
   return rows;
 };
 
-const updateStatus = async (transactionId, status) => {
+const updateStatus = async (transactionId, payload) => {
   try {
-    console.log(transactionId, status);
-    const result = await query(
+    const conn = await pool.getConnection();
+
+    conn.beginTransaction();
+
+    const result = await conn.query(
       `UPDATE inventory_transactions SET request_status = ? WHERE id = ?`,
-      [status, transactionId],
+      [payload.status, transactionId],
     );
 
+    for (let item of payload.items) {
+      const [[inventoryMaterial]] = await conn.query(
+        `select * from inventory where item_id = ? and project_id = ?`,
+        [item.item_id, payload.project_id],
+      );
+
+      if (inventoryMaterial) {
+        await conn.query(
+          `update inventory set quantity = quantity + ?, quantity_after_approve = quantity_after_approve + ? where id = ?`,
+          [item.quantity_issued, item.quantity_issued, inventoryMaterial.id],
+        );
+      } else {
+        await conn.query(
+          `
+    INSERT INTO inventory
+      (item_id, quantity, reorder_qty, project_id)
+    VALUES (?, ?, ?, ?)
+    `,
+          [item.item_id, item.quantity_issued, 10, payload.project_id],
+        );
+      }
+    }
+
+    await conn.commit();
     return result.affectedRows > 0;
   } catch (error) {
     console.log(error);

@@ -108,6 +108,29 @@ const getAllProjects = async (req, res) => {
   }
 };
 
+// Get all employee projects
+const getAllEmployeeProjects = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const projects = await projectModel.getAllEmployeeProjects(
+      parseInt(employeeId),
+    );
+
+    res.json({
+      success: true,
+      data: projects,
+      count: projects.length,
+    });
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch projects",
+      details: error.message,
+    });
+  }
+};
+
 // Comprehensive project update with hierarchy
 const updateProjectHierarchy = async (req, res) => {
   try {
@@ -221,6 +244,7 @@ const deleteProject = async (req, res) => {
 module.exports = {
   createProject,
   getProject,
+  getAllEmployeeProjects,
   getAllProjects,
   updateProjectHierarchy,
   deleteProject,
