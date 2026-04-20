@@ -75,7 +75,7 @@ const createRequestMaterialModel = async (data) => {
          VALUES (?, ?, ?)`,
       [
         "New Material Request.",
-        "New Material Request From User" + user[0].full_name,
+        "New Material Request From User " + user[0].full_name,
         "Requirement",
       ],
     );
@@ -189,7 +189,7 @@ const createPORequestMaterialModel = async (data) => {
          VALUES (?, ?, ?)`,
       [
         "New Material Request.",
-        "New Material Request From User" + user[0].full_name,
+        "New PO Material Request From User " + user[0].full_name,
         "Requirement",
       ],
     );

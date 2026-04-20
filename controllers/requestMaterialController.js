@@ -73,6 +73,10 @@ async function createRequestMaterial(req, res) {
     const request =
       await requestMaterialModel.createRequestMaterialModel(payload);
 
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
+    io.emit("new_material_request");
+
     return res.status(201).json({
       success: true,
       message: "Request material created successfully",
@@ -134,6 +138,9 @@ async function createPORequestMaterial(req, res) {
 
     const request =
       await requestMaterialModel.createPORequestMaterialModel(payload);
+
+    const io = req.app.get("io");
+    io.emit("new_po_material_request");
 
     return res.status(201).json({
       success: true,
