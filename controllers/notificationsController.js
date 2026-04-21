@@ -68,6 +68,11 @@ async function createNotification(req, res) {
       type,
     });
 
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
+
+    console.log("Emitting notifications_updated");
+
     res.status(201).json({
       success: true,
       message: "Notification created successfully",
@@ -98,6 +103,9 @@ async function markNotificationAsSeen(req, res) {
       });
     }
 
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
+
     res.status(200).json({
       success: true,
       message: "Notification marked as seen",
@@ -114,6 +122,9 @@ async function markNotificationAsSeen(req, res) {
 const markAllNotificationsAsSeen = async (req, res) => {
   try {
     const result = await NotificationModel.markAllNotificationsAsSeen();
+
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
 
     return res.status(200).json({
       success: true,
@@ -144,6 +155,8 @@ async function deleteNotification(req, res) {
         message: "Notification not found",
       });
     }
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
 
     res.status(200).json({
       success: true,

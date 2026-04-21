@@ -54,6 +54,8 @@ const employeeReimbursement = require("./routes/employeeReimbursement.router.js"
 const woPaymentRouter = require("./routes/woPaymentHistory.Router.js");
 const documentTemplateRouter = require("./routes/documentTemplates.routes.js");
 const generatedDocument = require("./routes/generatedDocuments.routes.js");
+const http = require("http");
+const { Server } = require("socket.io");
 
 dotenv.config();
 
@@ -62,6 +64,39 @@ const app = express();
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(cors({ origin: "*" }));
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+// make io globally accessible
+app.set("io", io);
+
+const users = {}; // userId -> socketId
+
+io.on("connection", (socket) => {
+  // client will send userId after login
+  socket.on("register", (userId) => {
+    users[userId] = socket.id;
+  });
+
+  socket.on("disconnect", () => {
+    // remove disconnected user
+    for (let userId in users) {
+      if (users[userId] === socket.id) {
+        delete users[userId];
+        break;
+      }
+    }
+  });
+});
+
+// also store users map
+app.set("users", users);
+
 app.use(express.json());
 app.get("/health", (req, res) => res.json({ ok: true }));
 
@@ -135,7 +170,8 @@ const PORT = process.env.PORT || 4000;
   try {
     await pool.getConnection();
     console.log("Connected to DB");
-    app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+
+    server.listen(PORT, () => console.log(`Server listening on ${PORT}`));
   } catch (err) {
     console.error("DB connection failed", err);
     process.exit(1);

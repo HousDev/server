@@ -4,7 +4,6 @@ const GeneratedDocumentsModel = require("../models/generatedDocuments.model");
 const GeneratedDocumentsController = {
   // Save generated document
   save: async (req, res) => {
-    s;
     try {
       const { employee_id, doc_type, html_content } = req.body;
 
