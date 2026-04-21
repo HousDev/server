@@ -98,6 +98,10 @@ class ExpenseController {
       // Create expense claim
       const result = await ExpenseModel.createExpense(expenseData);
 
+      const io = req.app.get("io");
+      io.emit("notifications_updated");
+      io.emit("expenses_request");
+
       return res.status(201).json({
         success: true,
         message: "Expense claim submitted successfully",

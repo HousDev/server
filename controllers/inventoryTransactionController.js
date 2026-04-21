@@ -220,7 +220,6 @@ const updateTransactionStatus = async (req, res) => {
     const { transactionId } = req.params;
 
     const payload = req.body;
-    console.log(payload);
 
     const existingTransaction =
       await inventoryTransactionModel.getTransactionById(transactionId);

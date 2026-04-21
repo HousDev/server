@@ -113,6 +113,10 @@ class TicketController {
 
       const result = await TicketModel.createTicket(ticketData, attachments);
 
+      const io = req.app.get("io");
+      io.emit("notifications_updated");
+      io.emit("ticket_rised");
+
       return res.status(201).json({
         success: true,
         message: "Ticket created successfully",
