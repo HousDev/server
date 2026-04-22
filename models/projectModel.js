@@ -736,6 +736,7 @@ module.exports = {
   createProjectWithHierarchy,
   getProjectHierarchy,
   getAllProjects,
+  getAllEmployeeProjects,
   updateProjectWithHierarchy,
   deleteProject,
 };

@@ -155,6 +155,10 @@ class LeaveController {
       // Create leave application
       const result = await LeaveModel.createLeave(leaveData);
 
+      const io = req.app.get("io");
+      io.emit("notifications_updated");
+      io.emit("leave_request");
+
       return res.status(201).json({
         success: true,
         message: "Leave application submitted successfully",

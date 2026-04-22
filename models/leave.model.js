@@ -113,6 +113,24 @@ const LeaveModel = {
         application_number,
         applied_at: new Date(),
       });
+      const empData = await connection.query(
+        `SELECT * FROM hrms_employees WHERE id = ?`,
+        [leaveData.employee_id],
+      );
+
+      await connection.execute(
+        `INSERT INTO notifications
+         (title, description, type)
+         VALUES (?, ?, ?)`,
+        [
+          "New Leave Request.",
+          "New Leave Request From " +
+            empData[0][0].first_name +
+            " " +
+            empData[0][0].last_name,
+          "Request",
+        ],
+      );
 
       await connection.commit();
 
