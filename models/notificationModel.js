@@ -42,7 +42,6 @@ async function findAllNotifications(filters = {}) {
 
   // 🧠 Sorting
   queryStr += " ORDER BY created_at DESC";
-  console.log(queryStr);
   return await query(queryStr, params);
 }
 

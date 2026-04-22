@@ -166,7 +166,6 @@ class TicketModel {
       const empData = await query(`SELECT * FROM hrms_employees WHERE id = ?`, [
         ticketData.employee_id,
       ]);
-      console.log(empData);
 
       await query(
         `INSERT INTO notifications

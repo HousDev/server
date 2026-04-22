@@ -92,8 +92,6 @@ async function createNotification(req, res) {
     const io = req.app.get("io");
     io.emit("notifications_updated");
 
-    console.log("Emitting notifications_updated");
-
     res.status(201).json({
       success: true,
       message: "Notification created successfully",
