@@ -112,6 +112,11 @@ exports.create = async (req, res) => {
       return res.status(201).json({ message: "Fill required fields." });
     }
     const subTask = await subTaskModel.create(req.body);
+
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
+    io.emit("tasks_managemtent");
+
     res
       .status(201)
       .json({ message: "Sub-task created", subTask, success: true });
@@ -210,6 +215,10 @@ exports.update = async (req, res) => {
     const subTask = await subTaskModel.update(req.params.id, req.body);
     if (!subTask)
       return res.status(404).json({ message: "Sub-task not found" });
+
+    const io = req.app.get("io");
+    io.emit("notifications_updated");
+    io.emit("tasks_managemtent");
 
     res.json({ message: "Sub-task updated", subTask, success: true });
   } catch (err) {

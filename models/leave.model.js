@@ -128,7 +128,7 @@ const LeaveModel = {
             empData[0][0].first_name +
             " " +
             empData[0][0].last_name,
-          "Request",
+          "Leaves",
         ],
       );
 

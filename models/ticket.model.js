@@ -178,7 +178,7 @@ class TicketModel {
             empData[0].first_name +
             " " +
             empData[0].last_name,
-          "Request",
+          "Tickets",
         ],
       );
 
