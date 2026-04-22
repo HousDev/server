@@ -59,19 +59,19 @@ class ExpenseModel {
       const empData = await query(`SELECT * FROM hrms_employees WHERE id = ?`, [
         expenseData.employee_id,
       ]);
-      console.log(empData);
 
       await query(
         `INSERT INTO notifications
-         (title, description, type)
-         VALUES (?, ?, ?)`,
+         (title, description, type, user_id)
+         VALUES (?, ?, ?, ?)`,
         [
           "New Expenses Added.",
           "New Expenses Added By " +
             empData[0].first_name +
             " " +
             empData[0].last_name,
-          "Request",
+          "Expenses",
+          expenseData.employee_id,
         ],
       );
 

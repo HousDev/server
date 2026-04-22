@@ -104,12 +104,13 @@ const create = async (data) => {
   ]);
 
   await promisePool.query(
-    `INSERT INTO notifications (title, description, type)
-     VALUES (?, ?, ?)`,
+    `INSERT INTO notifications (title, description, type, user_id)
+     VALUES (?, ?, ?, ?)`,
     [
       "New Task Assigned",
       "You have new task check in task management.",
-      "Info",
+      "Task Management",
+      engineer_id,
     ],
   );
 
@@ -201,7 +202,7 @@ const updateEngineerTask = async (id, data) => {
       [
         "Task Updated",
         `Task updated by user ${engineer_id}, check in task management for details.`,
-        "Info",
+        "Task Management",
       ],
     );
 

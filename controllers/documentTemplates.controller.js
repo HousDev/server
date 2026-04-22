@@ -7,8 +7,7 @@ const DocumentTemplateController = {
   createTemplate: async (req, res) => {
     try {
       const { name, category, description, html_content, variables } = req.body;
-      console.log(req.body);
-      console.log(req.file.filename);
+
       return;
       if (!name) {
         return res.status(400).json({ message: "Name is required" });

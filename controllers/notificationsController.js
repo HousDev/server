@@ -5,10 +5,31 @@ const NotificationModel = require("../models/notificationModel");
  */
 async function getAllNotifications(req, res) {
   try {
-    const notifications = await NotificationModel.findAllNotifications();
-    res.status(200).json({
+    const {
+      type,
+      seen,
+      user_id,
+      start_date,
+      end_date,
+      search,
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    const filters = {};
+
+    if (type) filters.type = type;
+    if (seen !== undefined) filters.seen = Number(seen);
+    if (start_date) filters.start_date = start_date;
+    if (end_date) filters.end_date = end_date;
+    if (search) filters.search = search;
+    if (user_id) filters.user_id = user_id;
+
+    const data = await NotificationModel.findAllNotifications(filters);
+
+    return res.status(200).json({
       success: true,
-      data: notifications,
+      data,
     });
   } catch (error) {
     console.error("Get notifications error:", error);
@@ -70,8 +91,6 @@ async function createNotification(req, res) {
 
     const io = req.app.get("io");
     io.emit("notifications_updated");
-
-    console.log("Emitting notifications_updated");
 
     res.status(201).json({
       success: true,
