@@ -6,9 +6,9 @@ const DocumentTemplateController = {
   // ============================================
   createTemplate: async (req, res) => {
     try {
-      const { name, category, description, html_content, variables } = req.body;
+      let { name, category, description, html_content, variables, logo_url } =
+        req.body;
 
-      return;
       if (!name) {
         return res.status(400).json({ message: "Name is required" });
       }
@@ -20,7 +20,6 @@ const DocumentTemplateController = {
       // =========================
       // FILE (MULTER)
       // =========================
-      let logo_url = null;
 
       if (req.file) {
         logo_url = req.file.filename; // or full path
@@ -98,6 +97,54 @@ const DocumentTemplateController = {
     }
   },
 
+  approveDocumentTemplate: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { approved_by, approved_at } = req.body;
+      const data = await DocumentTemplateModel.approveTemplate(id, {
+        approved_by,
+        approved_at,
+      });
+
+      if (!data) {
+        return res.status(404).json({
+          message: "Template not found",
+        });
+      }
+
+      return res.status(200).json({ data, success: true });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: "Failed to fetch template",
+      });
+    }
+  },
+
+  activeInactiveTemplate: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { is_active } = req.body;
+      const data = await DocumentTemplateModel.activeInactiveTemplateModel(
+        id,
+        is_active,
+      );
+
+      if (!data) {
+        return res.status(404).json({
+          message: "Template not found",
+        });
+      }
+
+      return res.status(200).json({ data, success: true });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        message: "Failed to fetch template",
+      });
+    }
+  },
+
   // ============================================
   // UPDATE
   // ============================================
@@ -130,6 +177,39 @@ const DocumentTemplateController = {
         variables: variables ? JSON.parse(variables) : [],
         logo_url,
       });
+
+      if (!updated) {
+        return res.status(404).json({
+          message: "Template not found",
+        });
+      }
+
+      return res.status(200).json({
+        message: "Template updated successfully",
+        success: true,
+      });
+    } catch (error) {
+      console.error("Update Template Error:", error);
+      return res.status(500).json({
+        message: "Failed to update template",
+        error: error.message,
+      });
+    }
+  },
+
+  rejectDocumentTemplate: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const { approved_by, approved_at, rejection_reason } = req.body;
+      const updated = await DocumentTemplateModel.rejectDocumentTemplateModel(
+        id,
+        {
+          approved_by,
+          approved_at,
+          rejection_reason,
+        },
+      );
 
       if (!updated) {
         return res.status(404).json({

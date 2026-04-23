@@ -94,8 +94,8 @@ const LeaveModel = {
         [year, month],
       );
 
-      const sequence = seqRows[0].max_seq + 1;
-      const application_number = `LV/${year}/${month}/${String(sequence).padStart(4, "0")}`;
+      const sequence = Number(seqRows[0].max_seq) + 1;
+      const application_number = `LV/${year}/${month}/${String(sequence).padStart(4, 0)}`;
 
       // For half day, ensure to_date = from_date
       if (leaveData.is_half_day) {
@@ -116,6 +116,10 @@ const LeaveModel = {
       const empData = await connection.query(
         `SELECT * FROM hrms_employees WHERE id = ?`,
         [leaveData.employee_id],
+      );
+
+      const findHR = await connection.execute(
+        `select * from hrms_employees where company_id = ? AND role_id = ?`,
       );
 
       await connection.execute(

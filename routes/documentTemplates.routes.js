@@ -33,11 +33,24 @@ documentTemplateRouter.get("/", DocumentTemplateController.getAll);
 // ============================================
 // GET TEMPLATE BY ID
 // ============================================
+
 documentTemplateRouter.get("/:id", DocumentTemplateController.getById);
 
 // ============================================
 // UPDATE TEMPLATE (WITH FILE UPLOAD)
 // ============================================
+documentTemplateRouter.put(
+  "/active-inactive/:id",
+  DocumentTemplateController.activeInactiveTemplate,
+);
+documentTemplateRouter.put(
+  "/approve/:id",
+  DocumentTemplateController.approveDocumentTemplate,
+);
+documentTemplateRouter.put(
+  "/reject/:id",
+  DocumentTemplateController.rejectDocumentTemplate,
+);
 documentTemplateRouter.put(
   "/:id",
   upload.single("logo_url"),
